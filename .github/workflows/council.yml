@@ -29,9 +29,11 @@ jobs:
   council:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Base filter: fork PRs can't access secrets; skip them.
+    # Base filter: fork PRs can't access secrets; skip them. Manual
+    # workflow_dispatch runs (where github.event.pull_request is null) are
+    # always allowed through — that's the documented operational fallback.
     if: |
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
@@ -109,6 +111,19 @@ jobs:
       # Cache-based monthly budget. Storing state in the repo would be a
       # Denial-of-Wallet vector (a PR could modify yolo_log.jsonl to reset
       # the counter). GH Actions cache is outside the PR's blast radius.
+      #
+      # Known race (Codex review #1, P2, accepted as-is): the read/modify/
+      # write of .budget/count is not serialized across concurrent workflow
+      # runs. The concurrency: group above is per-PR, so two PRs running
+      # simultaneously can both read COUNT=N, both write N+1, and the cap
+      # can be exceeded by ~(concurrent runs - 1) per batch. Accepted
+      # because: (a) this repo has one user and effectively zero concurrent
+      # PR activity, (b) MONTHLY_CAP is a soft target, not a hard wallet
+      # ceiling, and (c) the obvious fixes (workflow-wide concurrency lock
+      # or a separate budget-mutation job) either kill the ~60s comment-
+      # turnaround UX or add moving parts disproportionate to the risk.
+      # If concurrent activity ever materializes, revisit with a separate
+      # budget-mutation job under a global month-scoped concurrency group.
       - name: Restore budget counter
         if: steps.skip.outputs.skip != 'true' && steps.halt.outputs.halted != 'true'
         id: budget-restore
