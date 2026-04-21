@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "97b54a4367a52748158e3c4be91501ad919e7d02",
-    "short": "97b54a4",
-    "subject": "chore: refresh harness state after bootstrap commit",
+    "hash": "35dda07a197c48544b972ecccc30eee4071e231a",
+    "short": "35dda07",
+    "subject": "fix(council): allow workflow_dispatch through job gate; document budget race",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "claude/bootstrap-harness-8MB5B",
-    "committed_at": "2026-04-21T03:34:11+00:00",
-    "files_changed": 2
+    "committed_at": "2026-04-21T03:46:46+00:00",
+    "files_changed": 1
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
