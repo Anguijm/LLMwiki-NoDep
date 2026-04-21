@@ -46,14 +46,18 @@ Example: `"You have 47 SRS cards. Open your wiki to check for due reviews."`
    - Filter: `substringof('.yaml', FileLeafRef)` (only YAML files)
    - Enable pagination in Settings (click `...` → Settings) if you have >100 cards.
 
-5. **Compose — count files:**
-   - Expression: `length(body('Get_files_(properties_only)'))`
+5. **Filter array** — exclude temp files and conflict copies:
+   - From: output of "Get files"
+   - Condition: file name does NOT start with `.` AND does NOT end with ` (1).yaml`, ` (2).yaml`, or ` (3).yaml`.
 
-6. **Condition:** count > 0.
+6. **Compose — count files:**
+   - Expression: `length(body('Filter_array'))`
+
+7. **Condition:** count > 0.
    - If yes: **Microsoft Teams — Post message**: `"You have @{outputs('Compose')} SRS cards. Open your wiki to check for due reviews."`
    - If no: do nothing.
 
-7. **Save** and **Turn on**.
+8. **Save** and **Turn on**.
 
 ## Customization
 

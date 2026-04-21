@@ -52,19 +52,17 @@ Check these numbers against your org's plan ceiling before enabling all three si
 - Check the flow's run history in Power Automate → **My flows** → click the flow → **Run history**. Look for failed steps (red X icons).
 - Common cause: the SharePoint connector lost authentication. Re-authorize in the flow's connection settings.
 
-**Daily reminder says 0 due when you know cards are due:**
-- Check that `YOUR_TIMEZONE` in the expression matches your actual timezone. Use the exact Windows timezone ID from [Microsoft's timezone list](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/default-time-zones) (e.g., `'Eastern Standard Time'`, NOT `'EST'` or `'UTC-5'`).
-- Check that your card files have a `next_review:` line with a `YYYY-MM-DD` date. Files missing this field are skipped.
-
-**Flow runs too often / hits org limits:**
-- The daily reminder scans all cards in `/srs/`. If you have 500+ cards, that's 500+ file-read actions per day. Consider adding a **Top count** limit to the "Get files" action, or sharding cards into subfolders and scanning only the active subfolder.
+**Daily reminder always shows the same total count:**
+- This is by design. The daily reminder counts total card files (metadata only, no content read). It's a nudge to open the app, which has the accurate due-card logic. The count may include conflict files if not filtered — see below.
 
 **Notifications for temp files or conflict copies:**
-- Ensure the filtering conditions in the flow match the ones documented in each flow doc. SharePoint conflict files (`note (1).md`) and Office temp files (`~$note.md`) should be filtered out.
+- Ensure the filtering conditions in each flow match the documented instructions. SharePoint conflict files (e.g., `card (1).yaml`), Office temp files (`~$note.md`), and dot-prefixed temp files (`.card.yaml.tmp`) should all be filtered out.
 
-**Run history shows card content:**
-**Daily reminder always shows the same total count:**
-- The daily reminder counts total cards, not due cards (to avoid reading file content and leaking PII). It's a nudge to open the app. The app itself shows the accurate due-card count.
+**New-note notification for a file that no longer exists:**
+- If a file is created and then quickly renamed (before SharePoint sync completes), the flow may fire on the original filename. This is a known race condition with the SharePoint file-created trigger. The notification is benign — the user can ignore it.
 
 **Sync lag — notification count doesn't match what you see locally:**
 - Power Automate reads SharePoint's server-side state, which may lag a few minutes behind your local sync client. Wait for sync to complete, or run the flow manually after confirming files are synced.
+
+**Flow runs too often / hits org limits:**
+- The three documented flows combined use ~30 actions/week at typical usage. If you have >500 cards, enable pagination and check your org's action quota.
