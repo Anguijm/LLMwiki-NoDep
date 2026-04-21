@@ -9,8 +9,8 @@ Built for a specific workflow: a locked-down work laptop, a single engineer-user
 - **Phase 1** (council harness): merged.
 - **Phase 2a** (folder structure + prompt templates + schema docs + empty SRS folder): merged.
 - **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): merged.
-- **Phase 2c** (SRS review mode + outline view): this branch.
-- **Phase 2d** (Power Automate flow docs): not yet started.
+- **Phase 2c** (SRS review mode + outline view): merged.
+- **Phase 2d** (Power Automate flow docs): this branch.
 
 The app is fully usable: open `index.html` in Edge, grant folder access, and your wiki renders with linked notes, backlinks, SRS review, and a knowledge-graph outline. The prompt templates under `/_prompts/` continue to work via the GenAI.mil copy/paste loop.
 
