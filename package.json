@@ -1,0 +1,23 @@
+{
+  "name": "llmwiki-nodep",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling for LLMwiki-NoDep. Zero runtime dependencies.",
+  "scripts": {
+    "lint": "eslint index.html",
+    "lint:fix": "eslint index.html --fix",
+    "format": "prettier --write index.html",
+    "format:check": "prettier --check index.html",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-html": "^8.0.0",
+    "globals": "^15.0.0",
+    "happy-dom": "^20.9.0",
+    "prettier": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}
