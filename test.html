@@ -27,6 +27,40 @@
 'use strict';
 
 // ──────────────────────────────────────────────
+// Load modules from index.html via hidden iframe
+// ──────────────────────────────────────────────
+
+// The modules (FrontmatterParser, MarkdownParser, WikiLinkResolver,
+// IndexRegenerator, BacklinkGraph) are globals in index.html.
+// We load index.html in a hidden iframe and pull them out.
+// Under file://, same-origin iframe access works in Chromium.
+
+function loadModulesAndRunTests() {
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = 'index.html';
+  iframe.onload = function() {
+    try {
+      var win = iframe.contentWindow;
+      // Pull globals into this window's scope
+      window.FrontmatterParser = win.FrontmatterParser;
+      window.MarkdownParser = win.MarkdownParser;
+      window.WikiLinkResolver = win.WikiLinkResolver;
+      window.IndexRegenerator = win.IndexRegenerator;
+      window.BacklinkGraph = win.BacklinkGraph;
+      window.STRINGS = win.STRINGS;
+    } catch (e) {
+      // Cross-origin or unavailable — tests will report "module not found"
+    }
+    runAllTests();
+  };
+  iframe.onerror = function() {
+    runAllTests(); // will report module-not-found failures
+  };
+  document.body.appendChild(iframe);
+}
+
+// ──────────────────────────────────────��───────
 // Test framework (zero-dependency)
 // ──────────────────────────────────────────────
 
@@ -570,13 +604,18 @@ function runBacklinkGraphTests() {
 // Run all tests
 // ──────────────────────────────────────────────
 
-runFrontmatterParserTests();
-runMarkdownParserXSSTests();
-runMarkdownParserRenderTests();
-runWikiLinkResolverTests();
-runIndexRegeneratorTests();
-runBacklinkGraphTests();
-renderResults();
+function runAllTests() {
+  runFrontmatterParserTests();
+  runMarkdownParserXSSTests();
+  runMarkdownParserRenderTests();
+  runWikiLinkResolverTests();
+  runIndexRegeneratorTests();
+  runBacklinkGraphTests();
+  renderResults();
+}
+
+// Boot: load modules from index.html, then run tests
+loadModulesAndRunTests();
 
 </script>
 </body>
