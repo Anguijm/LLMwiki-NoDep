@@ -42,9 +42,12 @@ scriptContent = scriptContent.replace(constRegex, (match, name) => {
   return topIndent + 'globalThis.' + name + ' = ';
 });
 
-// Execute the modified script
-// Using indirect eval: (0, eval)(...) ensures execution in global scope
-// eslint-disable-next-line no-eval — intentional: dev-only test harness
+// Execute the modified script via indirect eval.
+// DELIBERATE CHOICE: this is a dev-only test harness. Indirect eval
+// is the only way to make const/let declarations from the inline script
+// available as globals without refactoring index.html into ES modules
+// (which would break file:// compatibility). eval() is FORBIDDEN in
+// application code (index.html) — enforced by ESLint no-eval rule.
 (0, eval)(scriptContent);
 
 // Verify key globals are available
