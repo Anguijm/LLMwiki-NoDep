@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "6584a38eaf51d74635769bcc2c078a184c1a5dae",
-    "short": "6584a38",
-    "subject": "chore(wip): add .gitignore for .harness/last_council.md and .harness_halt",
+    "hash": "371d7bce567e09e10d0dc28b627a45640bb9b087",
+    "short": "371d7bc",
+    "subject": "chore: bootstrap council harness (override council: infrastructure bootstrap)",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "claude/bootstrap-harness-8MB5B",
-    "committed_at": "2026-04-20T23:47:25+00:00",
-    "files_changed": 1
+    "committed_at": "2026-04-21T03:33:56+00:00",
+    "files_changed": 18
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
