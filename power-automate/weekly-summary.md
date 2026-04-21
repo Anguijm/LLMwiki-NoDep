@@ -39,13 +39,14 @@ Example: `"Wiki summary (Apr 15–22): 4 notes modified, 12 cards reviewed."`
 5. **For each tier folder** (bedrock, warm, cold):
    a. **Action: SharePoint — Get files (properties only)** in the tier folder.
       - Filter by last modified date >= `week_ago`.
-   b. **Increment** `notes_modified` by the count of returned files.
+   b. **Filter array:** keep only files where the name ends with `.md` AND does not contain ` (` (excludes non-markdown files and SharePoint conflict copies).
+   c. **Increment** `notes_modified` by the count of filtered files.
 
 6. **For the srs/ folder:**
    a. **Action: SharePoint — Get files (properties only)** in `/srs/`.
       - Filter by last modified date >= `week_ago`.
-      - Filter: only `.yaml` files (exclude `.tmp` and conflict files).
-   b. **Set** `cards_modified` to the count of returned files.
+   b. **Filter array:** keep only files where the name ends with `.yaml` AND does not start with `.` AND does not contain ` (` (excludes temp files, non-YAML files, and conflict copies).
+   c. **Set** `cards_modified` to the count of filtered files.
 
 7. **Action: Microsoft Teams — Post message:**
    - `"Wiki summary (@{formatDateTime(addDays(utcNow(), -7), 'MMM dd')}–@{formatDateTime(utcNow(), 'MMM dd')}): @{variables('notes_modified')} notes modified, @{variables('cards_modified')} cards reviewed."`

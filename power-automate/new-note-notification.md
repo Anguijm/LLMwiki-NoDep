@@ -32,20 +32,27 @@ Post a Teams message (or send an email) when a new note is created in any tier f
 3. Trigger: **SharePoint — When a file is created in a folder**.
    - Site Address: your SharePoint site.
    - Folder: `/path/to/your/wiki/bedrock`.
-4. Action: **Microsoft Teams — Post message in a chat or channel** (or **Send an email (V2)**).
+4. **Add filtering conditions** (important — prevents false notifications):
+   - **Condition 1:** file name ends with `.md` — skip non-markdown files.
+   - **Condition 2:** file name does NOT start with `~$` — skip Office temp files.
+   - **Condition 3:** file name does NOT contain ` (` — skip SharePoint conflict copies like `note (1).md`.
+5. If all conditions pass → **Microsoft Teams — Post message in a chat or channel** (or **Send an email (V2)**).
    - Message body: `New note in bedrock: @{triggerOutputs()?['body/{FilenameWithExtension}']}`
-5. **Save** and **Turn on**.
-6. Repeat for `warm` and `cold` folders (3 flows total).
+6. **Save** and **Turn on**.
+7. Repeat for `warm` and `cold` folders (3 flows total).
 
 ### Option B: Single trigger on parent folder with condition
 
 1. Trigger: **SharePoint — When a file is created in a folder** on the wiki root folder.
-2. Add a **Condition**: file path contains `/bedrock/` OR `/warm/` OR `/cold/`.
-   - This filters out changes to `/srs/`, `/power-automate/`, `/_prompts/`, etc.
-3. If yes → post the Teams message.
-4. If no → do nothing (terminate).
+2. Add **conditions** (all must pass):
+   - File path contains `/bedrock/` OR `/warm/` OR `/cold/` — filters out `/srs/`, `/power-automate/`, `/_prompts/`, etc.
+   - File name ends with `.md` — skip non-markdown files.
+   - File name does NOT start with `~$` — skip Office temp files.
+   - File name does NOT contain ` (` — skip SharePoint conflict copies.
+3. If all pass → post the Teams message.
+4. If any fail → do nothing (terminate).
 
-Option A is simpler but creates 3 flows. Option B is one flow but requires the condition step.
+Option A is simpler but creates 3 flows. Option B is one flow but requires more condition steps.
 
 ## Customization
 

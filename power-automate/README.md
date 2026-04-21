@@ -43,3 +43,22 @@ All three flows combined, at typical usage:
 - **Teams notifications/week:** ~8–12
 
 Check these numbers against your org's plan ceiling before enabling all three simultaneously.
+
+## Troubleshooting
+
+**Flow runs but no notification appears:**
+- Check the flow's run history in Power Automate → **My flows** → click the flow → **Run history**. Look for failed steps (red X icons).
+- Common cause: the SharePoint connector lost authentication. Re-authorize in the flow's connection settings.
+
+**Daily reminder says 0 due when you know cards are due:**
+- Check that `YOUR_TIMEZONE` in the expression matches your actual timezone. Use the exact Windows timezone ID from [Microsoft's timezone list](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/default-time-zones) (e.g., `'Eastern Standard Time'`, NOT `'EST'` or `'UTC-5'`).
+- Check that your card files have a `next_review:` line with a `YYYY-MM-DD` date. Files missing this field are skipped.
+
+**Flow runs too often / hits org limits:**
+- The daily reminder scans all cards in `/srs/`. If you have 500+ cards, that's 500+ file-read actions per day. Consider adding a **Top count** limit to the "Get files" action, or sharding cards into subfolders and scanning only the active subfolder.
+
+**Notifications for temp files or conflict copies:**
+- Ensure the filtering conditions in the flow match the ones documented in each flow doc. SharePoint conflict files (`note (1).md`) and Office temp files (`~$note.md`) should be filtered out.
+
+**Run history shows card content:**
+- This is expected. The "Get file content" action in the daily reminder loads entire card files. The content is visible in run history to anyone who can view your flows. If this is a concern, limit access to your Power Automate environment.
