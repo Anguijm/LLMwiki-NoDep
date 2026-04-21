@@ -39,7 +39,7 @@ Example: `"Wiki summary (Apr 15–22): 4 notes modified, 12 cards reviewed."`
 5. **For each tier folder** (bedrock, warm, cold):
    a. **Action: SharePoint — Get files (properties only)** in the tier folder.
       - Filter by last modified date >= `week_ago`.
-   b. **Filter array:** keep only files where the name ends with `.md` AND does not contain ` (` (excludes non-markdown files and SharePoint conflict copies).
+   b. **Filter array:** keep only files where the name ends with `.md` AND does not start with `~$` AND does not contain ` (` (excludes non-markdown files, Office temp files, and SharePoint conflict copies).
    c. **Increment** `notes_modified` by the count of filtered files.
 
 6. **For the srs/ folder:**

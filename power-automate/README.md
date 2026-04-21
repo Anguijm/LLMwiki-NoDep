@@ -62,3 +62,10 @@ Check these numbers against your org's plan ceiling before enabling all three si
 
 **Run history shows card content:**
 - This is expected. The "Get file content" action in the daily reminder loads entire card files. The content is visible in run history to anyone who can view your flows. If this is a concern, limit access to your Power Automate environment.
+
+**Daily reminder fails completely (no notification even with due cards):**
+- A single malformed card file can cause the entire flow run to fail. Check run history for a red X on a specific file-read step. Common causes: a card with incorrect casing (`Next_Review:` instead of `next_review:`), a truncated file, or a file with non-UTF-8 encoding. Fix or remove the offending card file.
+- The wiki app's "Broken cards" panel shows the same files the flow would choke on — fix them there first.
+
+**Sync lag — flow says 0 due right after a review session:**
+- Power Automate reads SharePoint's server-side state, which may lag a few minutes behind your local sync client. Wait for sync to complete, or run the flow manually after confirming files are synced.
