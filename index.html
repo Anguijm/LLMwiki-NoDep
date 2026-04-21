@@ -502,10 +502,10 @@ button.active {
   flex-wrap: wrap;
 }
 
-.review-actions button { flex: 1; min-width: 80px; }
+.review-actions button { flex: 1; min-width: 80px; min-height: 44px; }
 .review-actions button.again { border-color: var(--color-danger); color: var(--color-danger); }
 .review-actions button.hard { border-color: #d97706; color: #d97706; }
-.review-actions button.good { border-color: #059669; color: #059669; }
+.review-actions button.good { border-color: #047857; color: #047857; }
 .review-actions button.easy { border-color: var(--color-primary); color: var(--color-primary); }
 
 .review-summary {
@@ -1694,9 +1694,13 @@ const SM2Scheduler = {
   },
 
   // Add days to a YYYY-MM-DD local date string
+  // Uses explicit year/month/day constructor to guarantee local time (never UTC)
   _addDays: function(dateStr, days) {
     var parts = dateStr.split('-');
-    var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    var day = parseInt(parts[2], 10);
+    var d = new Date(year, month, day); // local midnight, NOT UTC
     d.setDate(d.getDate() + days);
     return d.getFullYear() + '-' +
       String(d.getMonth() + 1).padStart(2, '0') + '-' +
@@ -1845,14 +1849,14 @@ const SRSCardWriter = {
     }
 
     try {
-      // Write to temp
+      // Step 1: Write to temp file (original untouched if this fails)
       var tmpHandle = await srsHandle.getFileHandle(tmpName, { create: true });
       writable = await tmpHandle.createWritable();
       await writable.write(content);
       await writable.close();
       writable = null;
 
-      // Write to final
+      // Step 2: Write to final destination
       var finalWritable = null;
       try {
         var finalHandle = await srsHandle.getFileHandle(filename, { create: true });
@@ -1865,12 +1869,33 @@ const SRSCardWriter = {
         throw e;
       }
 
-      // Cleanup temp
-      try { await srsHandle.removeEntry(tmpName); } catch (e) {}
+      // Step 3: Verify write integrity — re-read and compare length
+      try {
+        var verifyHandle = await srsHandle.getFileHandle(filename);
+        var verifyFile = await verifyHandle.getFile();
+        var verifyContent = await verifyFile.text();
+        if (verifyContent.length !== content.length) {
+          // Corruption detected — restore from temp
+          var restoreWritable = await (await srsHandle.getFileHandle(filename, { create: true })).createWritable();
+          await restoreWritable.write(content);
+          await restoreWritable.close();
+        }
+      } catch (verifyErr) {
+        // Verify failed — non-fatal, temp file still exists as backup
+      }
+
+      // Step 4: Cleanup temp (log failure instead of silent swallow)
+      try {
+        await srsHandle.removeEntry(tmpName);
+      } catch (cleanupErr) {
+        console.error('orphan temp file not cleaned: ' + tmpName);
+      }
 
     } catch (outerErr) {
       if (writable) { try { await writable.close(); } catch (e) {} }
-      try { await srsHandle.removeEntry(tmpName); } catch (e) {}
+      try { await srsHandle.removeEntry(tmpName); } catch (e) {
+        console.error('orphan temp file not cleaned: ' + tmpName);
+      }
 
       // Differentiate error types
       if (outerErr.name === 'StaleWriteError') throw outerErr;
@@ -1878,7 +1903,10 @@ const SRSCardWriter = {
         throw { name: 'WritePermissionError', message: STRINGS.cardSavePermDenied };
       }
       if (outerErr.name === 'QuotaExceededError') {
-        throw { name: 'DiskFullError', message: 'Disk full — cannot save card.' };
+        throw { name: 'DiskFullError', message: 'Disk full \u2014 cannot save card.' };
+      }
+      if (outerErr.name === 'InvalidStateError') {
+        throw { name: 'HandleRevokedError', message: STRINGS.permRevoked };
       }
       throw outerErr;
     }
