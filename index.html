@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMwiki — Study Wiki</title>
+<style>
+/* ── Reset & base ─────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-muted: #555555;
+  --color-border: #d4d4d4;
+  --color-primary: #0b43a5;
+  --color-primary-hover: #0a3584;
+  --color-focus: #4f8ff7;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-warning-bg: #fffbeb;
+  --color-warning-text: #92400e;
+  --color-success-bg: #f0fdf4;
+  --color-link: #0b43a5;
+  --color-link-broken: #b91c1c;
+  --color-tag-bg: #e5e7eb;
+  --radius: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+/* ── Focus styles ─────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Skip link ────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  z-index: 1000;
+  text-decoration: none;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* ── Layout ───────────────────────────────── */
+.app-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 260px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header header"
+    "sidebar main aside";
+  min-height: 100vh;
+}
+
+@media (max-width: 1024px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "sidebar"
+      "main"
+      "aside";
+  }
+}
+
+/* ── Header ───────────────────────────────── */
+.app-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  align-items: center;
+}
+
+/* ── Buttons ──────────────────────────────── */
+button {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+button:hover { background: #f0f0f0; border-color: #bbb; }
+button:active { background: #e5e5e5; }
+
+button.primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+button.primary:hover { background: var(--color-primary-hover); }
+
+button.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+}
+
+/* ── Tier filter ──────────────────────────── */
+.tier-filter {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tier-filter button {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+}
+
+/* ── Sidebar (note list) ──────────────────── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: 0.75rem 0;
+}
+
+.sidebar-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  padding: 0.5rem 1rem 0.25rem;
+}
+
+.note-list {
+  list-style: none;
+}
+
+.note-list-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  min-height: 44px;
+  border-radius: 0;
+}
+
+.note-list-item:hover { background: #f5f5f5; }
+.note-list-item.active { background: #eef2ff; color: var(--color-primary); font-weight: 600; }
+
+.note-list-item .tier-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: var(--color-tag-bg);
+  color: var(--color-text-muted);
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+/* ── Main content ─────────────────────────── */
+.main-content {
+  grid-area: main;
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+  max-width: 52rem;
+}
+
+/* ── Rendered note styles ─────────────────── */
+.note-body h1, .note-body h2, .note-body h3,
+.note-body h4, .note-body h5, .note-body h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+.note-body h1 { font-size: 1.75rem; }
+.note-body h2 { font-size: 1.4rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.25rem; }
+.note-body h3 { font-size: 1.15rem; }
+
+.note-body p { margin-bottom: 1rem; }
+
+.note-body a {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.note-body a:hover { color: var(--color-primary-hover); }
+
+.note-body a.broken-link {
+  color: var(--color-link-broken);
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.note-body code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: #f3f4f6;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+
+.note-body pre {
+  background: #f3f4f6;
+  padding: 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.note-body pre code {
+  background: none;
+  padding: 0;
+}
+
+.note-body blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+}
+
+.note-body ul, .note-body ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.note-body li { margin-bottom: 0.25rem; }
+
+.note-body hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1.5rem 0;
+}
+
+.note-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+.note-body del { text-decoration: line-through; color: var(--color-text-muted); }
+
+/* ── Aside (backlinks) ────────────────────── */
+.aside-panel {
+  grid-area: aside;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.aside-panel h2 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.backlink-list {
+  list-style: none;
+}
+
+.backlink-list li {
+  margin-bottom: 0.35rem;
+}
+
+.backlink-list a {
+  color: var(--color-link);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+.backlink-list a:hover { text-decoration: underline; }
+
+/* ── Landing / picker ─────────────────────── */
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.landing h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.landing p {
+  color: var(--color-text-muted);
+  max-width: 32rem;
+  margin-bottom: 1.5rem;
+}
+
+.drop-zone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem 3rem;
+  margin-top: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  max-width: 28rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop-zone.dragover {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-zone { transition: none; }
+}
+
+/* ── Status panels ────────────────────────── */
+.status-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+}
+
+.status-panel.broken {
+  background: var(--color-danger-bg);
+  border: 1px solid #fecaca;
+}
+
+.status-panel.conflict {
+  background: var(--color-warning-bg);
+  border: 1px solid #fde68a;
+  color: var(--color-warning-text);
+}
+
+.status-panel h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.status-panel ul {
+  list-style: none;
+  padding: 0;
+}
+
+.status-panel li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.status-panel li:last-child { border-bottom: none; }
+
+.error-detail {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-danger);
+}
+
+/* ── Empty state ──────────────────────────── */
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 3rem 1rem;
+}
+
+/* ── Note metadata ────────────────────────── */
+.note-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.note-meta .tag {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  background: var(--color-tag-bg);
+  color: var(--color-text-muted);
+}
+
+.note-meta .meta-date {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Loading ──────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Visibility helper ────────────────────── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<!-- Landing page (before folder is picked) -->
+<div id="landing" class="landing">
+  <h2 id="landing-title"></h2>
+  <p id="landing-desc"></p>
+  <button id="btn-pick-folder" class="primary" type="button"></button>
+  <div id="drop-zone" class="drop-zone" role="region" tabindex="0"></div>
+</div>
+
+<!-- App layout (after folder is picked) -->
+<div id="app" class="app-layout hidden" role="application">
+  <header class="app-header" role="banner">
+    <h1 id="app-title"></h1>
+    <div class="header-actions">
+      <div class="tier-filter" role="group" aria-label="Filter notes by tier">
+        <button id="filter-all" class="active" type="button" data-tier="all"></button>
+        <button id="filter-bedrock" type="button" data-tier="bedrock"></button>
+        <button id="filter-warm" type="button" data-tier="warm"></button>
+        <button id="filter-cold" type="button" data-tier="cold"></button>
+      </div>
+      <button id="btn-rescan" type="button"></button>
+    </div>
+  </header>
+
+  <nav class="sidebar" aria-label="Note list">
+    <div class="sidebar-section-title" id="notes-count"></div>
+    <ul id="note-list" class="note-list" role="listbox" aria-label="Notes"></ul>
+  </nav>
+
+  <main id="main-content" class="main-content" aria-live="polite">
+    <div id="note-view"></div>
+    <div id="broken-panel" class="status-panel broken hidden" role="region" aria-label="Broken notes"></div>
+    <div id="conflict-panel" class="status-panel conflict hidden" role="region" aria-label="Sync conflicts"></div>
+  </main>
+
+  <aside class="aside-panel" aria-label="Backlinks">
+    <h2 id="backlinks-title"></h2>
+    <ul id="backlink-list" class="backlink-list"></ul>
+  </aside>
+</div>
+
+<!-- ARIA live region for announcements -->
+<div id="announcements" aria-live="assertive" aria-atomic="true" class="hidden"></div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════
+// UI Strings — centralized for future i18n
+// ══════════════════════════════════════════════
+
+const STRINGS = {
+  appTitle: 'LLMwiki',
+  landingTitle: 'LLMwiki — Study Wiki',
+  landingDesc: 'Open your wiki folder to get started. All files stay on your machine — no server, no network, no dependencies.',
+  pickFolder: 'Choose wiki folder',
+  dropZone: 'Or drag your wiki folder here (read-only mode)',
+  dropZoneDragover: 'Drop folder here',
+  filterAll: 'All',
+  filterBedrock: 'Bedrock',
+  filterWarm: 'Warm',
+  filterCold: 'Cold',
+  rescan: 'Rescan',
+  backlinksTitle: 'Backlinks',
+  noBacklinks: 'No backlinks',
+  brokenTitle: 'Broken notes',
+  conflictTitle: 'Sync conflicts',
+  conflictMsg: 'resolve by hand',
+  noNotes: 'No notes found. Add markdown files to bedrock/, warm/, or cold/.',
+  loading: 'Scanning folder\u2026',
+  permDenied: 'Folder access denied. Click to try again, or drag your wiki folder below.',
+  permRevoked: 'Folder access was revoked. Click to re-grant.',
+  indexSkipped: 'Read-only mode — _index.md regeneration skipped.',
+  indexWriteFail: 'Could not update _index.md. Check folder permissions.',
+  ambiguousLink: function(n) { return 'ambiguous \u2014 ' + n + ' notes match'; },
+  brokenLink: function(title) { return '[broken: ' + title + ']'; },
+  notesCount: function(n) { return n + (n === 1 ? ' note' : ' notes'); },
+  scanInProgress: 'Scan already in progress.',
+};
+
+// ══════════════════════════════════════════════
+// FrontmatterParser
+// ══════════════════════════════════════════════
+
+const FrontmatterParser = {
+  parse: function(content) {
+    const errors = [];
+    let text = content;
+
+    // Strip BOM
+    if (text.charCodeAt(0) === 0xFEFF) {
+      text = text.slice(1);
+    }
+
+    // Normalize line endings to LF
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Check for frontmatter opening
+    if (!text.startsWith('---\n') && text !== '---') {
+      errors.push({ path: '', kind: 'parse', field: '(frontmatter)', message: 'no frontmatter found (file must start with ---)', recoverable: true });
+      return { frontmatter: {}, body: text, errors: errors };
+    }
+
+    // Find closing ---
+    const closeIdx = text.indexOf('\n---\n', 4);
+    const closeIdxEnd = text.indexOf('\n---', 4);
+    var yamlBlock, body;
+
+    if (closeIdx !== -1) {
+      yamlBlock = text.substring(4, closeIdx);
+      body = text.substring(closeIdx + 5);
+    } else if (closeIdxEnd !== -1 && closeIdxEnd + 4 >= text.length) {
+      // --- at end of file with no trailing newline
+      yamlBlock = text.substring(4, closeIdxEnd);
+      body = '';
+    } else {
+      errors.push({ path: '', kind: 'parse', field: '(frontmatter)', message: 'unclosed frontmatter block (no closing ---)', recoverable: true });
+      return { frontmatter: {}, body: text, errors: errors };
+    }
+
+    // Parse YAML subset
+    var frontmatter;
+    try {
+      frontmatter = FrontmatterParser._parseYaml(yamlBlock);
+    } catch (e) {
+      errors.push({ path: '', kind: 'parse', field: '(frontmatter)', message: 'YAML parse error: ' + e.message, recoverable: true });
+      return { frontmatter: {}, body: body, errors: errors };
+    }
+
+    // Validate required fields
+    var requiredFields = ['title', 'tier', 'created', 'updated', 'tags'];
+    for (var i = 0; i < requiredFields.length; i++) {
+      var field = requiredFields[i];
+      if (frontmatter[field] === undefined || frontmatter[field] === null) {
+        errors.push({ path: '', kind: 'validation', field: field, message: "missing required field '" + field + "'", recoverable: true });
+      }
+    }
+
+    // Validate title is string and non-empty
+    if (frontmatter.title !== undefined && frontmatter.title !== null) {
+      if (typeof frontmatter.title !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: 'title', message: "expected string, got " + typeof frontmatter.title + ": '" + frontmatter.title + "'", recoverable: true });
+      } else if (frontmatter.title.trim() === '') {
+        errors.push({ path: '', kind: 'validation', field: 'title', message: 'title must be non-empty', recoverable: true });
+      }
+    }
+
+    // Validate tier is string and in enum
+    if (frontmatter.tier !== undefined && frontmatter.tier !== null) {
+      if (typeof frontmatter.tier !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: 'tier', message: "expected string, got " + typeof frontmatter.tier + ": '" + frontmatter.tier + "'", recoverable: true });
+      } else {
+        var validTiers = ['bedrock', 'warm', 'cold'];
+        if (validTiers.indexOf(frontmatter.tier) === -1) {
+          errors.push({ path: '', kind: 'validation', field: 'tier', message: "value '" + frontmatter.tier + "' not in enum [bedrock, warm, cold]", recoverable: true });
+        }
+      }
+    }
+
+    // Validate created/updated are strings
+    var stringFields = ['created', 'updated'];
+    for (var sf = 0; sf < stringFields.length; sf++) {
+      var sfVal = frontmatter[stringFields[sf]];
+      if (sfVal !== undefined && sfVal !== null && typeof sfVal !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: stringFields[sf], message: "expected string, got " + typeof sfVal + ": '" + sfVal + "'", recoverable: true });
+      }
+    }
+
+    // Validate ISO 8601 UTC timestamps
+    var tsFields = ['created', 'updated'];
+    var isoUTCRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+    var placeholderRegex = /<TIMESTAMP MISSING/;
+    for (var j = 0; j < tsFields.length; j++) {
+      var val = frontmatter[tsFields[j]];
+      if (typeof val === 'string') {
+        if (placeholderRegex.test(val)) {
+          errors.push({ path: '', kind: 'validation', field: tsFields[j], message: 'unfilled LLM placeholder \u2014 human must set timestamp', recoverable: true });
+        } else if (!isoUTCRegex.test(val)) {
+          errors.push({ path: '', kind: 'validation', field: tsFields[j], message: "not parseable as ISO 8601 UTC: '" + val + "'", recoverable: true });
+        }
+      }
+    }
+
+    // Validate tags is an array
+    if (frontmatter.tags !== undefined && frontmatter.tags !== null && !Array.isArray(frontmatter.tags)) {
+      errors.push({ path: '', kind: 'validation', field: 'tags', message: "expected array, got " + typeof frontmatter.tags + ": '" + frontmatter.tags + "'", recoverable: true });
+    }
+
+    // Clean whitespace-only tags
+    if (Array.isArray(frontmatter.tags)) {
+      frontmatter.tags = frontmatter.tags.filter(function(t) { return typeof t === 'string' && t.trim() !== ''; });
+    }
+
+    // Validate sources is array if present
+    if (frontmatter.sources !== undefined && frontmatter.sources !== null && !Array.isArray(frontmatter.sources)) {
+      errors.push({ path: '', kind: 'validation', field: 'sources', message: "expected array, got " + typeof frontmatter.sources + ": '" + frontmatter.sources + "'", recoverable: true });
+    }
+
+    // Trim body leading newline
+    if (body.length > 0 && body.charAt(0) === '\n') {
+      body = body.substring(1);
+    }
+
+    return { frontmatter: frontmatter, body: body, errors: errors };
+  },
+
+  // Minimal YAML parser: string scalars, flow arrays, block arrays
+  _parseYaml: function(yaml) {
+    var result = {};
+    var lines = yaml.split('\n');
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      // Skip empty lines and comments
+      if (line.trim() === '' || line.trim().charAt(0) === '#') continue;
+
+      // key: value
+      var colonIdx = line.indexOf(':');
+      if (colonIdx === -1) continue;
+
+      var key = line.substring(0, colonIdx).trim();
+      var rawVal = line.substring(colonIdx + 1).trim();
+
+      // Strip inline comment (only if preceded by space)
+      var commentIdx = rawVal.indexOf(' #');
+      if (commentIdx !== -1) {
+        rawVal = rawVal.substring(0, commentIdx).trim();
+      }
+
+      if (rawVal === '') {
+        // Could be block array — look ahead
+        var arr = [];
+        while (i + 1 < lines.length && lines[i + 1].trim().charAt(0) === '-') {
+          i++;
+          arr.push(lines[i].trim().substring(1).trim());
+        }
+        if (arr.length > 0) {
+          result[key] = arr;
+        } else {
+          result[key] = '';
+        }
+      } else if (rawVal.charAt(0) === '[') {
+        // Flow array
+        result[key] = FrontmatterParser._parseFlowArray(rawVal);
+      } else {
+        // Scalar — strip quotes
+        result[key] = FrontmatterParser._unquote(rawVal);
+      }
+    }
+
+    return result;
+  },
+
+  _parseFlowArray: function(str) {
+    // [item1, item2, item3]
+    var inner = str.slice(1, -1).trim();
+    if (inner === '') return [];
+    var items = inner.split(',');
+    return items.map(function(s) {
+      return FrontmatterParser._unquote(s.trim());
+    });
+  },
+
+  _unquote: function(s) {
+    if (s.length >= 2 && ((s.charAt(0) === '"' && s.charAt(s.length-1) === '"') ||
+        (s.charAt(0) === "'" && s.charAt(s.length-1) === "'"))) {
+      return s.slice(1, -1);
+    }
+    return s;
+  }
+};
+
+// ══════════════════════════════════════════════
+// MarkdownParser — escape-by-default
+// ══════════════════════════════════════════════
+
+const MarkdownParser = {
+  _allowedSchemes: /^(https?:|mailto:|[^:]*$)/i,
+  _dangerousScheme: /^(javascript|data|vbscript|file):/i,
+
+  parse: function(markdown, resolver) {
+    var frag = document.createDocumentFragment();
+    var text = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    var lines = text.split('\n');
+    var i = 0;
+
+    while (i < lines.length) {
+      var line = lines[i];
+
+      // Blank line — skip
+      if (line.trim() === '') { i++; continue; }
+
+      // Code fence
+      if (line.trim().startsWith('```')) {
+        var codeContent = [];
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          codeContent.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) i++; // skip closing ```
+        var pre = document.createElement('pre');
+        var code = document.createElement('code');
+        code.textContent = codeContent.join('\n');
+        pre.appendChild(code);
+        frag.appendChild(pre);
+        continue;
+      }
+
+      // Heading
+      var headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+      if (headingMatch) {
+        var level = headingMatch[1].length;
+        var hEl = document.createElement('h' + level);
+        MarkdownParser._parseInline(headingMatch[2], hEl, resolver);
+        frag.appendChild(hEl);
+        i++;
+        continue;
+      }
+
+      // Horizontal rule
+      if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line.trim())) {
+        frag.appendChild(document.createElement('hr'));
+        i++;
+        continue;
+      }
+
+      // Blockquote
+      if (line.trimStart().startsWith('> ') || line.trim() === '>') {
+        var bq = document.createElement('blockquote');
+        var bqLines = [];
+        while (i < lines.length && (lines[i].trimStart().startsWith('> ') || lines[i].trim() === '>')) {
+          var bqLine = lines[i].trimStart();
+          bqLines.push(bqLine.charAt(0) === '>' ? bqLine.substring(bqLine.charAt(1) === ' ' ? 2 : 1) : bqLine);
+          i++;
+        }
+        var bqP = document.createElement('p');
+        MarkdownParser._parseInline(bqLines.join('\n'), bqP, resolver);
+        bq.appendChild(bqP);
+        frag.appendChild(bq);
+        continue;
+      }
+
+      // Unordered list
+      if (/^[\s]*[-*+]\s+/.test(line)) {
+        var ul = document.createElement('ul');
+        while (i < lines.length && /^[\s]*[-*+]\s+/.test(lines[i])) {
+          var li = document.createElement('li');
+          var liText = lines[i].replace(/^[\s]*[-*+]\s+/, '');
+          MarkdownParser._parseInline(liText, li, resolver);
+          ul.appendChild(li);
+          i++;
+        }
+        frag.appendChild(ul);
+        continue;
+      }
+
+      // Ordered list
+      if (/^\s*\d+\.\s+/.test(line)) {
+        var ol = document.createElement('ol');
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+          var oLi = document.createElement('li');
+          var oLiText = lines[i].replace(/^\s*\d+\.\s+/, '');
+          MarkdownParser._parseInline(oLiText, oLi, resolver);
+          ol.appendChild(oLi);
+          i++;
+        }
+        frag.appendChild(ol);
+        continue;
+      }
+
+      // Paragraph — collect consecutive non-special lines
+      var paraLines = [];
+      while (i < lines.length && lines[i].trim() !== '' &&
+             !lines[i].trim().startsWith('```') &&
+             !lines[i].match(/^#{1,6}\s/) &&
+             !/^(\*{3,}|-{3,}|_{3,})\s*$/.test(lines[i].trim()) &&
+             !lines[i].trimStart().startsWith('> ') &&
+             !/^[\s]*[-*+]\s+/.test(lines[i]) &&
+             !/^\s*\d+\.\s+/.test(lines[i])) {
+        paraLines.push(lines[i]);
+        i++;
+      }
+      if (paraLines.length > 0) {
+        var p = document.createElement('p');
+        MarkdownParser._parseInline(paraLines.join('\n'), p, resolver);
+        frag.appendChild(p);
+      }
+    }
+
+    return frag;
+  },
+
+  // Parse inline elements — bold, italic, code, links, images, wiki links, strikethrough
+  _parseInline: function(text, parent, resolver) {
+    // Regex for inline tokens in priority order
+    // Process character by character to handle nested/overlapping patterns
+    var i = 0;
+    var buf = '';
+
+    function flushBuf() {
+      if (buf.length > 0) {
+        parent.appendChild(document.createTextNode(buf));
+        buf = '';
+      }
+    }
+
+    while (i < text.length) {
+      // Wiki link: [[title]]
+      if (text.charAt(i) === '[' && text.charAt(i + 1) === '[') {
+        var wlEnd = text.indexOf(']]', i + 2);
+        if (wlEnd !== -1) {
+          flushBuf();
+          var wlTitle = text.substring(i + 2, wlEnd);
+          if (resolver && resolver.resolve) {
+            var resolved = resolver.resolve(wlTitle);
+            if (resolved) {
+              parent.appendChild(resolved);
+            } else {
+              var brokenSpan = document.createElement('span');
+              brokenSpan.className = 'broken-link';
+              brokenSpan.textContent = STRINGS.brokenLink(wlTitle);
+              parent.appendChild(brokenSpan);
+            }
+          } else {
+            parent.appendChild(document.createTextNode('[[' + wlTitle + ']]'));
+          }
+          i = wlEnd + 2;
+          continue;
+        }
+      }
+
+      // Image: ![alt](url)
+      if (text.charAt(i) === '!' && text.charAt(i + 1) === '[') {
+        var imgAltEnd = text.indexOf(']', i + 2);
+        if (imgAltEnd !== -1 && text.charAt(imgAltEnd + 1) === '(') {
+          var imgUrlEnd = text.indexOf(')', imgAltEnd + 2);
+          if (imgUrlEnd !== -1) {
+            flushBuf();
+            var imgAlt = text.substring(i + 2, imgAltEnd);
+            var imgUrl = text.substring(imgAltEnd + 2, imgUrlEnd).trim();
+            if (MarkdownParser._isSafeUrl(imgUrl)) {
+              var img = document.createElement('img');
+              img.setAttribute('src', imgUrl);
+              img.setAttribute('alt', imgAlt);
+              parent.appendChild(img);
+            } else {
+              parent.appendChild(document.createTextNode('![' + imgAlt + '](' + imgUrl + ')'));
+            }
+            i = imgUrlEnd + 1;
+            continue;
+          }
+        }
+      }
+
+      // Link: [text](url)
+      if (text.charAt(i) === '[') {
+        var linkTextEnd = text.indexOf(']', i + 1);
+        if (linkTextEnd !== -1 && text.charAt(linkTextEnd + 1) === '(') {
+          var linkUrlEnd = text.indexOf(')', linkTextEnd + 2);
+          if (linkUrlEnd !== -1) {
+            flushBuf();
+            var linkText = text.substring(i + 1, linkTextEnd);
+            var linkUrl = text.substring(linkTextEnd + 2, linkUrlEnd).trim();
+            if (MarkdownParser._isSafeUrl(linkUrl)) {
+              var a = document.createElement('a');
+              a.setAttribute('href', linkUrl);
+              a.textContent = linkText;
+              parent.appendChild(a);
+            } else {
+              parent.appendChild(document.createTextNode('[' + linkText + '](' + linkUrl + ')'));
+            }
+            i = linkUrlEnd + 1;
+            continue;
+          }
+        }
+      }
+
+      // Inline code: `code`
+      if (text.charAt(i) === '`') {
+        var codeEnd = text.indexOf('`', i + 1);
+        if (codeEnd !== -1) {
+          flushBuf();
+          var codeEl = document.createElement('code');
+          codeEl.textContent = text.substring(i + 1, codeEnd);
+          parent.appendChild(codeEl);
+          i = codeEnd + 1;
+          continue;
+        }
+      }
+
+      // Strikethrough: ~~text~~
+      if (text.charAt(i) === '~' && text.charAt(i + 1) === '~') {
+        var strikeEnd = text.indexOf('~~', i + 2);
+        if (strikeEnd !== -1) {
+          flushBuf();
+          var del = document.createElement('del');
+          del.textContent = text.substring(i + 2, strikeEnd);
+          parent.appendChild(del);
+          i = strikeEnd + 2;
+          continue;
+        }
+      }
+
+      // Bold-italic: ***text***
+      if (text.charAt(i) === '*' && text.charAt(i+1) === '*' && text.charAt(i+2) === '*') {
+        var biEnd = text.indexOf('***', i + 3);
+        if (biEnd !== -1) {
+          flushBuf();
+          var strong2 = document.createElement('strong');
+          var em2 = document.createElement('em');
+          em2.textContent = text.substring(i + 3, biEnd);
+          strong2.appendChild(em2);
+          parent.appendChild(strong2);
+          i = biEnd + 3;
+          continue;
+        }
+      }
+
+      // Bold: **text**
+      if (text.charAt(i) === '*' && text.charAt(i+1) === '*') {
+        var boldEnd = text.indexOf('**', i + 2);
+        if (boldEnd !== -1) {
+          flushBuf();
+          var strong = document.createElement('strong');
+          strong.textContent = text.substring(i + 2, boldEnd);
+          parent.appendChild(strong);
+          i = boldEnd + 2;
+          continue;
+        }
+      }
+
+      // Italic: *text*
+      if (text.charAt(i) === '*') {
+        var italEnd = text.indexOf('*', i + 1);
+        if (italEnd !== -1) {
+          flushBuf();
+          var em = document.createElement('em');
+          em.textContent = text.substring(i + 1, italEnd);
+          parent.appendChild(em);
+          i = italEnd + 1;
+          continue;
+        }
+      }
+
+      // HTML tags → escaped text (escape-by-default)
+      if (text.charAt(i) === '<') {
+        var tagEnd = text.indexOf('>', i + 1);
+        if (tagEnd !== -1) {
+          // Check if it looks like an HTML tag
+          var tagContent = text.substring(i, tagEnd + 1);
+          if (/^<\/?[a-zA-Z][^>]*>$/.test(tagContent)) {
+            flushBuf();
+            parent.appendChild(document.createTextNode(tagContent));
+            i = tagEnd + 1;
+            continue;
+          }
+        }
+      }
+
+      // Regular character
+      buf += text.charAt(i);
+      i++;
+    }
+
+    flushBuf();
+  },
+
+  _isSafeUrl: function(url) {
+    // Strip whitespace, tabs, newlines
+    var cleaned = url.replace(/[\t\n\r]/g, '').trim();
+    // Decode HTML entities for scheme check
+    var decoded = cleaned.replace(/&#(\d+);/g, function(_, n) { return String.fromCharCode(n); })
+                         .replace(/&#x([0-9a-fA-F]+);/g, function(_, h) { return String.fromCharCode(parseInt(h, 16)); });
+    var schemeless = decoded.replace(/[\s]/g, '');
+    if (MarkdownParser._dangerousScheme.test(schemeless)) return false;
+    if (MarkdownParser._dangerousScheme.test(decoded)) return false;
+    if (MarkdownParser._dangerousScheme.test(cleaned)) return false;
+    return true;
+  }
+};
+
+// ══════════════════════════════════════════════
+// WikiLinkResolver
+// ══════════════════════════════════════════════
+
+const WikiLinkResolver = {
+  _traversalPattern: /(?:\.\.|[\/\\]|%2[eEfF]|%5[cC]|\0|^~|^[a-zA-Z]:)/,
+
+  create: function(titleIndex, currentTitle) {
+    return {
+      resolve: function(rawTitle) {
+        var title = rawTitle.trim();
+
+        // Path-traversal guard
+        if (WikiLinkResolver._traversalPattern.test(title)) {
+          var span = document.createElement('span');
+          span.className = 'broken-link';
+          span.textContent = STRINGS.brokenLink(title);
+          return span;
+        }
+
+        // NUL byte guard
+        if (title.indexOf('\0') !== -1) {
+          var span2 = document.createElement('span');
+          span2.className = 'broken-link';
+          span2.textContent = STRINGS.brokenLink(title);
+          return span2;
+        }
+
+        // Self-link guard
+        var normalizedTitle = WikiLinkResolver._normalize(title);
+        var normalizedCurrent = WikiLinkResolver._normalize(currentTitle || '');
+        if (normalizedTitle === normalizedCurrent) {
+          var selfSpan = document.createElement('span');
+          selfSpan.textContent = title;
+          return selfSpan;
+        }
+
+        // Lookup
+        var matches = [];
+        titleIndex.forEach(function(note, key) {
+          if (key === normalizedTitle) {
+            matches.push(note);
+          }
+        });
+
+        if (matches.length === 0) {
+          // Broken link
+          var brokenSpan = document.createElement('span');
+          brokenSpan.className = 'broken-link';
+          brokenSpan.textContent = STRINGS.brokenLink(title);
+          return brokenSpan;
+        }
+
+        if (matches.length > 1) {
+          // Ambiguous
+          var ambigSpan = document.createElement('span');
+          ambigSpan.className = 'broken-link';
+          ambigSpan.textContent = STRINGS.ambiguousLink(matches.length);
+          return ambigSpan;
+        }
+
+        // Single match — create link
+        var a = document.createElement('a');
+        a.setAttribute('href', '#');
+        a.setAttribute('data-note-path', matches[0].path);
+        a.textContent = title;
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          App.showNote(matches[0].path);
+        });
+        return a;
+      }
+    };
+  },
+
+  _normalize: function(str) {
+    // Unicode NFKD + case fold
+    try {
+      return str.normalize('NFKD').toLowerCase();
+    } catch (e) {
+      return str.toLowerCase();
+    }
+  }
+};
+
+// ══════════════════════════════════════════════
+// BacklinkGraph
+// ══════════════════════════════════════════════
+
+const BacklinkGraph = {
+  build: function(notes) {
+    var graph = new Map();
+
+    // Initialize entries for all notes
+    for (var i = 0; i < notes.length; i++) {
+      graph.set(notes[i].path, []);
+    }
+
+    // Build reverse index from wikiLinks
+    for (var j = 0; j < notes.length; j++) {
+      var note = notes[j];
+      var links = note.wikiLinks || [];
+      for (var k = 0; k < links.length; k++) {
+        var targetTitle = WikiLinkResolver._normalize(links[k]);
+        // Find target note by normalized title
+        for (var m = 0; m < notes.length; m++) {
+          if (WikiLinkResolver._normalize(notes[m].frontmatter.title) === targetTitle) {
+            var backlist = graph.get(notes[m].path);
+            if (backlist && !backlist.some(function(b) { return b.path === note.path; })) {
+              backlist.push({ path: note.path, title: note.frontmatter.title });
+            }
+          }
+        }
+      }
+    }
+
+    return graph;
+  }
+};
+
+// ══════════════════════════════════════════════
+// IndexRegenerator
+// ══════════════════════════════════════════════
+
+const IndexRegenerator = {
+  generate: function(notes) {
+    var header = '<!-- regenerated by index.html in Phase 2b; pinned structure per /docs/data_schemas.md; do not hand-edit -->\n\n# Index\n\n| Title | Tier | Path | Updated |\n|---|---|---|---|\n';
+
+    // Sort by title (Unicode case-fold), ties broken by path (ASCII)
+    var sorted = notes.slice().sort(function(a, b) {
+      var aTitle = (a.frontmatter.title || '').normalize('NFKD').toLowerCase();
+      var bTitle = (b.frontmatter.title || '').normalize('NFKD').toLowerCase();
+      if (aTitle < bTitle) return -1;
+      if (aTitle > bTitle) return 1;
+      if (a.path < b.path) return -1;
+      if (a.path > b.path) return 1;
+      return 0;
+    });
+
+    var rows = '';
+    for (var i = 0; i < sorted.length; i++) {
+      var n = sorted[i];
+      var updated = (n.frontmatter.updated || '').substring(0, 10);
+      rows += '| ' + n.frontmatter.title + ' | ' + n.frontmatter.tier + ' | ' + n.path + ' | ' + updated + ' |\n';
+    }
+
+    return header + rows;
+  }
+};
+
+// ══════════════════════════════════════════════
+// FolderScanner
+// ══════════════════════════════════════════════
+
+const FolderScanner = {
+  _isScanning: false,
+  _conflictPattern: /^(.+)\s+\((\d+|conflict from [^)]+)\)\.(\w+)$/,
+
+  scan: async function(dirHandle) {
+    if (FolderScanner._isScanning) {
+      App.announce(STRINGS.scanInProgress);
+      return null;
+    }
+    FolderScanner._isScanning = true;
+
+    var notes = [];
+    var brokenNotes = [];
+    var conflictFiles = [];
+    var tierFolders = ['bedrock', 'warm', 'cold'];
+
+    try {
+      for (var t = 0; t < tierFolders.length; t++) {
+        var tierName = tierFolders[t];
+        var tierHandle;
+        try {
+          tierHandle = await dirHandle.getDirectoryHandle(tierName);
+        } catch (e) {
+          // Tier folder doesn't exist — skip
+          continue;
+        }
+
+        for await (var entry of tierHandle.values()) {
+          if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue;
+          if (entry.name.startsWith('.')) continue; // skip temp files
+
+          var filePath = tierName + '/' + entry.name;
+
+          // Check for SharePoint conflict pattern
+          if (FolderScanner._conflictPattern.test(entry.name)) {
+            conflictFiles.push({ path: filePath, name: entry.name });
+            continue;
+          }
+
+          var content;
+          try {
+            var file = await entry.getFile();
+            content = await file.text();
+          } catch (ioErr) {
+            // Retry once after 200ms for transient sync issues
+            var retrySuccess = false;
+            try {
+              await new Promise(function(r) { setTimeout(r, 200); });
+              var retryFile = await entry.getFile();
+              content = await retryFile.text();
+              retrySuccess = true;
+            } catch (retryErr) {
+              // Differentiate error types
+              var ioMessage;
+              var errName = (retryErr.name || ioErr.name || '');
+              if (errName === 'NotFoundError') {
+                ioMessage = 'file not found';
+              } else if (errName === 'NotAllowedError') {
+                ioMessage = 'permission denied (check file read permissions)';
+              } else if (errName === 'NotReadableError' || errName === 'InvalidStateError') {
+                ioMessage = 'file locked (another application may have it open)';
+              } else {
+                ioMessage = 'io error: ' + (retryErr.message || ioErr.message || 'unknown');
+              }
+              brokenNotes.push({
+                path: filePath,
+                errors: [{ path: filePath, kind: 'io', field: '', message: ioMessage, recoverable: true }]
+              });
+              continue;
+            }
+            if (!retrySuccess) continue;
+          }
+
+          var parsed = FrontmatterParser.parse(content);
+
+          // Set path on errors
+          for (var e = 0; e < parsed.errors.length; e++) {
+            parsed.errors[e].path = filePath;
+          }
+
+          if (parsed.errors.length > 0) {
+            brokenNotes.push({ path: filePath, errors: parsed.errors });
+          } else {
+            // Extract wiki links from body
+            var wikiLinks = [];
+            var wlRegex = /\[\[([^\]]+)\]\]/g;
+            var wlMatch;
+            while ((wlMatch = wlRegex.exec(parsed.body)) !== null) {
+              wikiLinks.push(wlMatch[1]);
+            }
+
+            notes.push({
+              path: filePath,
+              frontmatter: parsed.frontmatter,
+              body: parsed.body,
+              wikiLinks: wikiLinks
+            });
+          }
+        }
+      }
+
+    } finally {
+      FolderScanner._isScanning = false;
+    }
+
+    return { notes: notes, brokenNotes: brokenNotes, conflictFiles: conflictFiles };
+  },
+
+  _atomicWrite: async function(dirHandle, filename, content) {
+    var tmpName = '.' + filename + '.tmp';
+    var writable = null;
+
+    try {
+      // Step 1: Write content to temp file (safe — if this fails, original is untouched)
+      var tmpHandle = await dirHandle.getFileHandle(tmpName, { create: true });
+      writable = await tmpHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      writable = null; // closed successfully
+
+      // Step 2: Write content to final file
+      // File System Access API has no rename() — we must write to the target directly.
+      // The temp file serves as a backup: if step 2 fails, the temp file is still intact
+      // and can be recovered on next app load.
+      var finalWritable = null;
+      try {
+        var finalHandle = await dirHandle.getFileHandle(filename, { create: true });
+        finalWritable = await finalHandle.createWritable();
+        await finalWritable.write(content);
+        await finalWritable.close();
+        finalWritable = null;
+      } catch (finalErr) {
+        // Ensure final writable is closed on error
+        if (finalWritable) {
+          try { await finalWritable.close(); } catch (e) { /* best effort */ }
+        }
+        throw finalErr;
+      }
+
+      // Step 3: Clean up temp file
+      try { await dirHandle.removeEntry(tmpName); } catch (e) { /* orphan — cleaned on next scan */ }
+
+    } catch (outerErr) {
+      // Ensure temp writable is closed if step 1 failed mid-write
+      if (writable) {
+        try { await writable.close(); } catch (e) { /* best effort */ }
+      }
+      // Attempt temp cleanup on any failure
+      try { await dirHandle.removeEntry(tmpName); } catch (e) { /* best effort */ }
+      throw outerErr;
+    }
+  },
+
+  _cleanupOrphanTemps: async function(dirHandle) {
+    // Scan root for orphaned .*.tmp files from failed writes
+    try {
+      for await (var entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.startsWith('.') && entry.name.endsWith('.tmp')) {
+          try {
+            var file = await entry.getFile();
+            var age = Date.now() - file.lastModified;
+            // Only remove temps older than 1 hour
+            if (age > 3600000) {
+              await dirHandle.removeEntry(entry.name);
+            }
+          } catch (e) { /* skip unreadable temps */ }
+        }
+      }
+    } catch (e) { /* scan failure is non-fatal */ }
+  }
+};
+
+// ══════════════════════════════════════════════
+// App — UI controller
+// ══════════════════════════════════════════════
+
+const App = {
+  _dirHandle: null,
+  _isWritable: false,
+  _notes: [],
+  _brokenNotes: [],
+  _conflictFiles: [],
+  _backlinkGraph: null,
+  _titleIndex: null,
+  _currentNotePath: null,
+  _currentFilter: 'all',
+
+  init: function() {
+    // Populate UI strings
+    document.getElementById('landing-title').textContent = STRINGS.landingTitle;
+    document.getElementById('landing-desc').textContent = STRINGS.landingDesc;
+    document.getElementById('btn-pick-folder').textContent = STRINGS.pickFolder;
+    document.getElementById('drop-zone').textContent = STRINGS.dropZone;
+    document.getElementById('app-title').textContent = STRINGS.appTitle;
+    document.getElementById('filter-all').textContent = STRINGS.filterAll;
+    document.getElementById('filter-bedrock').textContent = STRINGS.filterBedrock;
+    document.getElementById('filter-warm').textContent = STRINGS.filterWarm;
+    document.getElementById('filter-cold').textContent = STRINGS.filterCold;
+    document.getElementById('btn-rescan').textContent = STRINGS.rescan;
+    document.getElementById('backlinks-title').textContent = STRINGS.backlinksTitle;
+
+    // Event listeners
+    document.getElementById('btn-pick-folder').addEventListener('click', App._onPickFolder);
+    document.getElementById('btn-rescan').addEventListener('click', App._onRescan);
+
+    // Tier filter buttons
+    var filterButtons = document.querySelectorAll('.tier-filter button');
+    filterButtons.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        App._currentFilter = btn.getAttribute('data-tier');
+        filterButtons.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        App._renderNoteList();
+      });
+    });
+
+    // Drag-drop
+    var dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+      dropZone.textContent = STRINGS.dropZoneDragover;
+    });
+    dropZone.addEventListener('dragleave', function() {
+      dropZone.classList.remove('dragover');
+      dropZone.textContent = STRINGS.dropZone;
+    });
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      dropZone.textContent = STRINGS.dropZone;
+      App._onDrop(e);
+    });
+
+  },
+
+  _onPickFolder: async function() {
+    try {
+      // Request read-only first (principle of least privilege)
+      var handle = await window.showDirectoryPicker({ mode: 'read', startIn: 'documents' });
+      App._dirHandle = handle;
+      App._isWritable = false;
+      App._showApp();
+      await App._scanAndRender();
+
+      // After scan, attempt to escalate to readwrite for _index.md regeneration
+      try {
+        var writePerm = await handle.requestPermission({ mode: 'readwrite' });
+        if (writePerm === 'granted') {
+          App._isWritable = true;
+          // Regenerate _index.md now that we have write access
+          try {
+            var indexContent = IndexRegenerator.generate(App._notes);
+            await FolderScanner._atomicWrite(handle, '_index.md', indexContent);
+          } catch (writeErr) {
+            App.announce(STRINGS.indexWriteFail);
+          }
+          // Clean up orphan temps
+          await FolderScanner._cleanupOrphanTemps(handle);
+        } else {
+          App.announce(STRINGS.indexSkipped);
+        }
+      } catch (escalateErr) {
+        // User declined write access — read-only mode
+        App.announce(STRINGS.indexSkipped);
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return; // user cancelled
+      App.announce(STRINGS.permDenied);
+    }
+  },
+
+  _onDrop: async function(e) {
+    var items = e.dataTransfer.items;
+    if (!items || items.length === 0) return;
+
+    var item = items[0];
+    if (item.kind === 'file') {
+      // Try to get a directory handle (modern API)
+      if (item.getAsFileSystemHandle) {
+        try {
+          var handle = await item.getAsFileSystemHandle();
+          if (handle.kind === 'directory') {
+            App._dirHandle = handle;
+            App._isWritable = false; // drag-drop is read-only
+            App.announce(STRINGS.indexSkipped);
+            App._showApp();
+            await App._scanAndRender();
+            return;
+          }
+        } catch (err) { /* fall through */ }
+      }
+    }
+  },
+
+  _onRescan: async function() {
+    if (!App._dirHandle) return;
+
+    // Verify handle is still valid
+    try {
+      var perm = await App._dirHandle.queryPermission({ mode: 'read' });
+      if (perm !== 'granted') {
+        perm = await App._dirHandle.requestPermission({ mode: 'read' });
+        if (perm !== 'granted') {
+          App.announce(STRINGS.permRevoked);
+          return;
+        }
+      }
+    } catch (e) {
+      App.announce(STRINGS.permRevoked);
+      return;
+    }
+
+    await App._scanAndRender();
+
+    // Regenerate _index.md if writable
+    if (App._isWritable && App._dirHandle) {
+      try {
+        var indexContent = IndexRegenerator.generate(App._notes);
+        await FolderScanner._atomicWrite(App._dirHandle, '_index.md', indexContent);
+      } catch (writeErr) {
+        App.announce(STRINGS.indexWriteFail);
+      }
+    }
+  },
+
+  _showApp: function() {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+  },
+
+  _scanAndRender: async function() {
+    var noteView = document.getElementById('note-view');
+    noteView.textContent = '';
+    var loadingP = document.createElement('p');
+    loadingP.className = 'loading';
+    loadingP.textContent = STRINGS.loading;
+    noteView.appendChild(loadingP);
+
+    var result = await FolderScanner.scan(App._dirHandle);
+    if (!result) return;
+
+    App._notes = result.notes;
+    App._brokenNotes = result.brokenNotes;
+    App._conflictFiles = result.conflictFiles;
+
+    // Build title index
+    App._titleIndex = new Map();
+    for (var i = 0; i < App._notes.length; i++) {
+      var note = App._notes[i];
+      var key = WikiLinkResolver._normalize(note.frontmatter.title);
+      // If duplicate, store array indicator
+      if (App._titleIndex.has(key)) {
+        var existing = App._titleIndex.get(key);
+        if (!Array.isArray(existing)) {
+          App._titleIndex.set(key, [existing, note]);
+        } else {
+          existing.push(note);
+        }
+      } else {
+        App._titleIndex.set(key, note);
+      }
+    }
+
+    // Build backlink graph
+    App._backlinkGraph = BacklinkGraph.build(App._notes);
+
+    // Render
+    App._renderNoteList();
+    App._renderBrokenPanel();
+    App._renderConflictPanel();
+
+    // Show first note or empty state
+    if (App._notes.length > 0) {
+      App.showNote(App._notes[0].path);
+    } else {
+      noteView.textContent = '';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = STRINGS.noNotes;
+      noteView.appendChild(emptyP);
+    }
+
+    // Announce counts
+    var announcement = STRINGS.notesCount(App._notes.length);
+    if (App._brokenNotes.length > 0) {
+      announcement += ', ' + App._brokenNotes.length + ' broken';
+    }
+    if (App._conflictFiles.length > 0) {
+      announcement += ', ' + App._conflictFiles.length + ' conflicts';
+    }
+    App.announce(announcement);
+  },
+
+  _renderNoteList: function() {
+    var listEl = document.getElementById('note-list');
+    listEl.textContent = '';
+
+    var filtered = App._notes.filter(function(n) {
+      if (App._currentFilter === 'all') return true;
+      return n.frontmatter.tier === App._currentFilter;
+    });
+
+    document.getElementById('notes-count').textContent = STRINGS.notesCount(filtered.length);
+
+    for (var i = 0; i < filtered.length; i++) {
+      var note = filtered[i];
+      var btn = document.createElement('button');
+      btn.className = 'note-list-item';
+      btn.setAttribute('role', 'option');
+      if (note.path === App._currentNotePath) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+      }
+      btn.textContent = note.frontmatter.title;
+
+      var badge = document.createElement('span');
+      badge.className = 'tier-badge';
+      badge.textContent = note.frontmatter.tier;
+      btn.appendChild(badge);
+
+      (function(path) {
+        btn.addEventListener('click', function() { App.showNote(path); });
+      })(note.path);
+
+      listEl.appendChild(btn);
+    }
+  },
+
+  showNote: function(path) {
+    App._currentNotePath = path;
+    var note = App._notes.find(function(n) { return n.path === path; });
+    if (!note) return;
+
+    var noteView = document.getElementById('note-view');
+    noteView.textContent = '';
+
+    // Note title
+    var titleEl = document.createElement('h1');
+    titleEl.textContent = note.frontmatter.title;
+    noteView.appendChild(titleEl);
+
+    // Metadata
+    var metaDiv = document.createElement('div');
+    metaDiv.className = 'note-meta';
+
+    var tierTag = document.createElement('span');
+    tierTag.className = 'tag';
+    tierTag.textContent = note.frontmatter.tier;
+    metaDiv.appendChild(tierTag);
+
+    if (Array.isArray(note.frontmatter.tags)) {
+      for (var t = 0; t < note.frontmatter.tags.length; t++) {
+        var tagSpan = document.createElement('span');
+        tagSpan.className = 'tag';
+        tagSpan.textContent = note.frontmatter.tags[t];
+        metaDiv.appendChild(tagSpan);
+      }
+    }
+
+    var dateSpan = document.createElement('span');
+    dateSpan.className = 'meta-date';
+    var updatedStr = note.frontmatter.updated || '';
+    try {
+      dateSpan.textContent = 'Updated: ' + new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(updatedStr));
+    } catch (e) {
+      dateSpan.textContent = 'Updated: ' + updatedStr.substring(0, 10);
+    }
+    metaDiv.appendChild(dateSpan);
+
+    noteView.appendChild(metaDiv);
+
+    // Render markdown body
+    var bodyDiv = document.createElement('div');
+    bodyDiv.className = 'note-body';
+
+    // Create resolver for this note
+    var resolver = WikiLinkResolver.create(App._titleIndex, note.frontmatter.title);
+    var rendered = MarkdownParser.parse(note.body, resolver);
+    bodyDiv.appendChild(rendered);
+    noteView.appendChild(bodyDiv);
+
+    // Update backlinks panel
+    App._renderBacklinks(path);
+
+    // Update active state in list
+    App._renderNoteList();
+  },
+
+  _renderBacklinks: function(path) {
+    var listEl = document.getElementById('backlink-list');
+    listEl.textContent = '';
+
+    var backlinks = App._backlinkGraph ? (App._backlinkGraph.get(path) || []) : [];
+
+    if (backlinks.length === 0) {
+      var li = document.createElement('li');
+      li.textContent = STRINGS.noBacklinks;
+      li.style.color = 'var(--color-text-muted)';
+      li.style.fontSize = '0.85rem';
+      listEl.appendChild(li);
+      return;
+    }
+
+    for (var i = 0; i < backlinks.length; i++) {
+      var bl = backlinks[i];
+      var li2 = document.createElement('li');
+      var a = document.createElement('a');
+      a.setAttribute('href', '#');
+      a.textContent = bl.title;
+      (function(p) {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          App.showNote(p);
+        });
+      })(bl.path);
+      li2.appendChild(a);
+      listEl.appendChild(li2);
+    }
+  },
+
+  _renderBrokenPanel: function() {
+    var panel = document.getElementById('broken-panel');
+    panel.textContent = '';
+
+    if (App._brokenNotes.length === 0) {
+      panel.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+    var h3 = document.createElement('h3');
+    h3.textContent = STRINGS.brokenTitle + ' (' + App._brokenNotes.length + ')';
+    panel.appendChild(h3);
+
+    var ul = document.createElement('ul');
+    for (var i = 0; i < App._brokenNotes.length; i++) {
+      var bn = App._brokenNotes[i];
+      var li = document.createElement('li');
+      var pathSpan = document.createElement('strong');
+      pathSpan.textContent = bn.path;
+      li.appendChild(pathSpan);
+
+      for (var j = 0; j < bn.errors.length; j++) {
+        var errSpan = document.createElement('div');
+        errSpan.className = 'error-detail';
+        errSpan.textContent = bn.errors[j].field ? bn.errors[j].field + ': ' + bn.errors[j].message : bn.errors[j].message;
+        li.appendChild(errSpan);
+      }
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  },
+
+  _renderConflictPanel: function() {
+    var panel = document.getElementById('conflict-panel');
+    panel.textContent = '';
+
+    if (App._conflictFiles.length === 0) {
+      panel.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+    var h3 = document.createElement('h3');
+    h3.textContent = STRINGS.conflictTitle + ' (' + App._conflictFiles.length + ')';
+    panel.appendChild(h3);
+
+    var ul = document.createElement('ul');
+    for (var i = 0; i < App._conflictFiles.length; i++) {
+      var cf = App._conflictFiles[i];
+      var li = document.createElement('li');
+      var nameSpan = document.createElement('strong');
+      nameSpan.textContent = cf.path;
+      li.appendChild(nameSpan);
+      var msgSpan = document.createElement('span');
+      msgSpan.textContent = ' \u2014 ' + STRINGS.conflictMsg;
+      li.appendChild(msgSpan);
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  },
+
+  announce: function(msg) {
+    var el = document.getElementById('announcements');
+    el.textContent = msg;
+  }
+};
+
+// ── Boot ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', App.init);
+
+</script>
+</body>
+</html>

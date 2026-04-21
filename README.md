@@ -7,12 +7,12 @@ Built for a specific workflow: a locked-down work laptop, a single engineer-user
 ## Status
 
 - **Phase 1** (council harness): merged.
-- **Phase 2a** (folder structure + prompt templates + schema docs + empty SRS folder): this branch.
-- **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): not yet started.
+- **Phase 2a** (folder structure + prompt templates + schema docs + empty SRS folder): merged.
+- **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): this branch.
 - **Phase 2c** (graph canvas + SRS review mode): not yet started.
 - **Phase 2d** (Power Automate flow docs): not yet started.
 
-Until Phase 2b lands, this repo is a **markdown-only, read-in-your-editor** wiki. The prompt templates under `/_prompts/` already work — you can paste them into GenAI.mil today.
+The app is now usable: open `index.html` in Edge, grant folder access, and your wiki renders with linked notes and backlinks. The prompt templates under `/_prompts/` continue to work via the GenAI.mil copy/paste loop.
 
 ## Setup
 
@@ -25,9 +25,11 @@ Until Phase 2b lands, this repo is a **markdown-only, read-in-your-editor** wiki
 
    Any folder that SharePoint (or OneDrive for Business) keeps in sync will work. Personal OneDrive works too if your org permits it.
 
-2. **(Phase 2b and later) Open `index.html` in Microsoft Edge.** Until that file exists, skip this step.
+2. **Open `index.html` in Microsoft Edge** (or any Chromium browser). Right-click the file → Open with → Edge, or navigate to `file:///path/to/study-wiki/index.html`.
 
-3. **That's it for setup.** No `npm install`, no `pip install`, no package manager of any kind. The entire runtime lives in files that git and SharePoint already know how to handle.
+3. **Grant folder access.** The app will prompt you to select your wiki folder via a directory picker. This gives the app read/write access to scan notes and regenerate `_index.md`. If you prefer not to grant write access (or your browser doesn't support the File System Access API), drag your wiki folder onto the drop zone for read-only mode — `_index.md` regeneration is skipped in this mode.
+
+4. **That's it for setup.** No `npm install`, no `pip install`, no package manager of any kind. The entire runtime lives in files that git and SharePoint already know how to handle.
 
 ## The manual GenAI.mil loop
 

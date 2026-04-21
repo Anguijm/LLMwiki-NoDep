@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LLMwiki-NoDep — Test Harness</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; padding: 1.5rem; background: #fafafa; color: #1a1a1a; }
+  h1 { margin-bottom: 1rem; }
+  h2 { margin: 1.5rem 0 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  .summary { font-size: 1.1rem; margin-bottom: 1rem; padding: 0.75rem; border-radius: 4px; }
+  .summary.all-pass { background: #d4edda; color: #155724; }
+  .summary.has-fail { background: #f8d7da; color: #721c24; }
+  .test { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 4px; font-size: 0.9rem; }
+  .test.pass { background: #d4edda; }
+  .test.fail { background: #f8d7da; }
+  .test .label { font-weight: 600; }
+  .test .detail { color: #555; margin-left: 0.5rem; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>LLMwiki-NoDep Test Harness</h1>
+<div id="summary" class="summary"></div>
+<div id="results"></div>
+
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────
+// Load modules from index.html via hidden iframe
+// ──────────────────────────────────────────────
+
+// The modules (FrontmatterParser, MarkdownParser, WikiLinkResolver,
+// IndexRegenerator, BacklinkGraph) are globals in index.html.
+// We load index.html in a hidden iframe and pull them out.
+// Under file://, same-origin iframe access works in Chromium.
+
+function loadModulesAndRunTests() {
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = 'index.html';
+  iframe.onload = function() {
+    try {
+      var win = iframe.contentWindow;
+      // Pull globals into this window's scope
+      window.FrontmatterParser = win.FrontmatterParser;
+      window.MarkdownParser = win.MarkdownParser;
+      window.WikiLinkResolver = win.WikiLinkResolver;
+      window.IndexRegenerator = win.IndexRegenerator;
+      window.BacklinkGraph = win.BacklinkGraph;
+      window.STRINGS = win.STRINGS;
+    } catch (e) {
+      // Cross-origin or unavailable — tests will report "module not found"
+    }
+    runAllTests();
+  };
+  iframe.onerror = function() {
+    runAllTests(); // will report module-not-found failures
+  };
+  document.body.appendChild(iframe);
+}
+
+// ──────────────────────────────────────��───────
+// Test framework (zero-dependency)
+// ──────────────────────────────────────────────
+
+const results = [];
+
+function assert(condition, name, detail) {
+  results.push({ pass: !!condition, name, detail: detail || '' });
+}
+
+function assertEqual(actual, expected, name) {
+  const pass = actual === expected;
+  results.push({
+    pass,
+    name,
+    detail: pass ? '' : `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
+  });
+}
+
+function assertDeepEqual(actual, expected, name) {
+  const pass = JSON.stringify(actual) === JSON.stringify(expected);
+  results.push({
+    pass,
+    name,
+    detail: pass ? '' : `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
+  });
+}
+
+function renderResults() {
+  const el = document.getElementById('results');
+  const summaryEl = document.getElementById('summary');
+  const passCount = results.filter(r => r.pass).length;
+  const failCount = results.length - passCount;
+
+  summaryEl.textContent = `${passCount} passed, ${failCount} failed, ${results.length} total`;
+  summaryEl.className = failCount === 0 ? 'summary all-pass' : 'summary has-fail';
+
+  let currentSection = '';
+  for (const r of results) {
+    const prefix = r.name.split(':')[0];
+    if (prefix !== currentSection) {
+      currentSection = prefix;
+      const h2 = document.createElement('h2');
+      h2.textContent = currentSection;
+      el.appendChild(h2);
+    }
+    const div = document.createElement('div');
+    div.className = `test ${r.pass ? 'pass' : 'fail'}`;
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = `${r.pass ? 'PASS' : 'FAIL'} — ${r.name}`;
+    div.appendChild(label);
+    if (r.detail) {
+      const detail = document.createElement('span');
+      detail.className = 'detail';
+      detail.textContent = r.detail;
+      div.appendChild(detail);
+    }
+    el.appendChild(div);
+  }
+}
+
+// ──────────────────────────────────────────────
+// Helpers — extract text and HTML from DOM fragments
+// ────────────────────────���─────────────────────
+
+function fragmentToText(frag) {
+  const div = document.createElement('div');
+  div.appendChild(frag.cloneNode(true));
+  return div.textContent;
+}
+
+function fragmentToHTML(frag) {
+  const div = document.createElement('div');
+  div.appendChild(frag.cloneNode(true));
+  return div.innerHTML;
+}
+
+function containsExecutableHTML(frag) {
+  const div = document.createElement('div');
+  div.appendChild(frag.cloneNode(true));
+  const html = div.innerHTML;
+  // Check for unescaped script tags, event handlers, or javascript: URLs
+  return /<script/i.test(html) ||
+         /on\w+\s*=/i.test(html) ||
+         /javascript:/i.test(html) ||
+         /vbscript:/i.test(html);
+}
+
+// ──────────────────────────────────────────────
+// Tests run AFTER index.html modules are loaded.
+// This file expects FrontmatterParser, MarkdownParser,
+// WikiLinkResolver, IndexRegenerator, and BacklinkGraph
+// to be globally available. Until they exist, tests FAIL.
+// ─��──────────────────���─────────────────────────
+
+function runFrontmatterParserTests() {
+  if (typeof FrontmatterParser === 'undefined') {
+    assert(false, 'FrontmatterParser: module exists');
+    return;
+  }
+  assert(true, 'FrontmatterParser: module exists');
+
+  // Valid frontmatter
+  const valid = `---
+title: Test Note
+tier: warm
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: [math, calculus]
+---
+Body content here.`;
+
+  const r1 = FrontmatterParser.parse(valid);
+  assertEqual(r1.errors.length, 0, 'FrontmatterParser: valid note has no errors');
+  assertEqual(r1.frontmatter.title, 'Test Note', 'FrontmatterParser: parses title');
+  assertEqual(r1.frontmatter.tier, 'warm', 'FrontmatterParser: parses tier');
+  assertEqual(r1.body, 'Body content here.', 'FrontmatterParser: extracts body');
+  assertDeepEqual(r1.frontmatter.tags, ['math', 'calculus'], 'FrontmatterParser: parses tags array');
+
+  // Missing required field
+  const missing = `---
+title: No Tier
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: []
+---
+Body.`;
+  const r2 = FrontmatterParser.parse(missing);
+  assert(r2.errors.length > 0, 'FrontmatterParser: missing tier produces error');
+  assert(r2.errors.some(e => e.field === 'tier'), 'FrontmatterParser: error identifies tier field');
+
+  // Invalid tier value
+  const badTier = `---
+title: Bad Tier
+tier: hot
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: []
+---
+Body.`;
+  const r3 = FrontmatterParser.parse(badTier);
+  assert(r3.errors.some(e => e.field === 'tier'), 'FrontmatterParser: invalid tier produces error');
+
+  // BOM tolerance
+  const bom = '\uFEFF---\ntitle: BOM Note\ntier: bedrock\ncreated: 2026-04-21T14:22:00Z\nupdated: 2026-04-21T14:22:00Z\ntags: []\n---\nBOM body.';
+  const r4 = FrontmatterParser.parse(bom);
+  assertEqual(r4.errors.length, 0, 'FrontmatterParser: tolerates BOM');
+  assertEqual(r4.frontmatter.title, 'BOM Note', 'FrontmatterParser: BOM does not corrupt title');
+
+  // CRLF tolerance
+  const crlf = '---\r\ntitle: CRLF Note\r\ntier: cold\r\ncreated: 2026-04-21T14:22:00Z\r\nupdated: 2026-04-21T14:22:00Z\r\ntags: []\r\n---\r\nCRLF body.';
+  const r5 = FrontmatterParser.parse(crlf);
+  assertEqual(r5.errors.length, 0, 'FrontmatterParser: tolerates CRLF');
+
+  // No frontmatter
+  const noFm = 'Just a plain file with no frontmatter.';
+  const r6 = FrontmatterParser.parse(noFm);
+  assert(r6.errors.length > 0, 'FrontmatterParser: no frontmatter produces error');
+  assert(r6.errors.some(e => e.kind === 'parse'), 'FrontmatterParser: no frontmatter error kind is parse');
+
+  // --- in body is NOT a second frontmatter block
+  const bodyDash = `---
+title: Dashes In Body
+tier: warm
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: []
+---
+Some text.
+
+---
+
+More text after horizontal rule.`;
+  const r7 = FrontmatterParser.parse(bodyDash);
+  assertEqual(r7.errors.length, 0, 'FrontmatterParser: --- in body does not break parsing');
+  assert(r7.body.includes('---'), 'FrontmatterParser: body preserves --- as content');
+
+  // Empty tags array
+  const emptyTags = `---
+title: Empty Tags
+tier: bedrock
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: []
+---
+Body.`;
+  const r8 = FrontmatterParser.parse(emptyTags);
+  assertDeepEqual(r8.frontmatter.tags, [], 'FrontmatterParser: empty tags array is valid');
+
+  // Optional sources field present
+  const withSources = `---
+title: With Sources
+tier: warm
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: [test]
+sources: [https://example.com, /cold/ref.md]
+---
+Body.`;
+  const r9 = FrontmatterParser.parse(withSources);
+  assertDeepEqual(r9.frontmatter.sources, ['https://example.com', '/cold/ref.md'], 'FrontmatterParser: parses sources array');
+
+  // Optional sources field absent
+  assertEqual(r1.frontmatter.sources, undefined, 'FrontmatterParser: absent sources is undefined');
+
+  // Unknown keys preserved
+  const unknownKey = `---
+title: Unknown Key
+tier: warm
+created: 2026-04-21T14:22:00Z
+updated: 2026-04-21T14:22:00Z
+tags: []
+custom_field: hello
+---
+Body.`;
+  const r10 = FrontmatterParser.parse(unknownKey);
+  assertEqual(r10.errors.length, 0, 'FrontmatterParser: unknown keys do not cause errors');
+  assertEqual(r10.frontmatter.custom_field, 'hello', 'FrontmatterParser: unknown keys preserved');
+
+  // LLM placeholder detection
+  const placeholder = `---
+title: Placeholder
+tier: warm
+created: <TIMESTAMP MISSING — human must fill in before save>
+updated: 2026-04-21T14:22:00Z
+tags: []
+---
+Body.`;
+  const r11 = FrontmatterParser.parse(placeholder);
+  assert(r11.errors.length > 0, 'FrontmatterParser: LLM placeholder detected as error');
+}
+
+function runMarkdownParserXSSTests() {
+  if (typeof MarkdownParser === 'undefined') {
+    assert(false, 'MarkdownParser XSS: module exists');
+    return;
+  }
+  assert(true, 'MarkdownParser XSS: module exists');
+
+  const resolver = { resolve: () => null }; // stub
+
+  // XSS via raw script tag
+  const xss1 = MarkdownParser.parse('<script>alert("xss")</script>', resolver);
+  assert(!containsExecutableHTML(xss1), 'MarkdownParser XSS: raw <script> tag is escaped');
+
+  // XSS via img onerror
+  const xss2 = MarkdownParser.parse('<img src=x onerror=alert(1)>', resolver);
+  assert(!containsExecutableHTML(xss2), 'MarkdownParser XSS: <img onerror> is escaped');
+
+  // XSS via javascript: URL in link
+  const xss3 = MarkdownParser.parse('[click me](javascript:alert(1))', resolver);
+  const xss3html = fragmentToHTML(xss3);
+  assert(!/javascript:/i.test(xss3html), 'MarkdownParser XSS: javascript: URL stripped from link');
+
+  // XSS via javascript: URL with mixed case
+  const xss4 = MarkdownParser.parse('[click](JaVaScRiPt:alert(1))', resolver);
+  const xss4html = fragmentToHTML(xss4);
+  assert(!/javascript:/i.test(xss4html), 'MarkdownParser XSS: mixed-case javascript: URL stripped');
+
+  // XSS via data: URL in link
+  const xss5 = MarkdownParser.parse('[click](data:text/html,<script>alert(1)</script>)', resolver);
+  const xss5html = fragmentToHTML(xss5);
+  assert(!/data:/i.test(xss5html) || !/script/i.test(xss5html), 'MarkdownParser XSS: data: URL stripped from link');
+
+  // XSS via vbscript: URL
+  const xss6 = MarkdownParser.parse('[click](vbscript:MsgBox("xss"))', resolver);
+  const xss6html = fragmentToHTML(xss6);
+  assert(!/vbscript:/i.test(xss6html), 'MarkdownParser XSS: vbscript: URL stripped');
+
+  // XSS via javascript: in image src
+  const xss7 = MarkdownParser.parse('![alt](javascript:alert(1))', resolver);
+  const xss7html = fragmentToHTML(xss7);
+  assert(!/javascript:/i.test(xss7html), 'MarkdownParser XSS: javascript: URL stripped from image');
+
+  // XSS via data: in image src
+  const xss8 = MarkdownParser.parse('![alt](data:image/svg+xml,<svg onload=alert(1)>)', resolver);
+  const xss8html = fragmentToHTML(xss8);
+  assert(!containsExecutableHTML(xss8), 'MarkdownParser XSS: data: URL stripped from image');
+
+  // XSS via inline HTML div with onclick
+  const xss9 = MarkdownParser.parse('<div onclick="alert(1)">click</div>', resolver);
+  assert(!containsExecutableHTML(xss9), 'MarkdownParser XSS: inline HTML onclick is escaped');
+
+  // XSS via SVG with onload
+  const xss10 = MarkdownParser.parse('<svg onload="alert(1)">', resolver);
+  assert(!containsExecutableHTML(xss10), 'MarkdownParser XSS: SVG onload is escaped');
+
+  // XSS in code fence — must render as text, not HTML
+  const xss11 = MarkdownParser.parse('```\n<script>alert(1)</script>\n```', resolver);
+  assert(!containsExecutableHTML(xss11), 'MarkdownParser XSS: code fence content is text-only');
+  assert(fragmentToText(xss11).includes('<script>'), 'MarkdownParser XSS: code fence preserves literal <script> as text');
+
+  // XSS via inline code
+  const xss12 = MarkdownParser.parse('`<script>alert(1)</script>`', resolver);
+  assert(!containsExecutableHTML(xss12), 'MarkdownParser XSS: inline code escapes HTML');
+
+  // XSS via URL-encoded javascript:
+  const xss13 = MarkdownParser.parse('[click](java&#115;cript:alert(1))', resolver);
+  const xss13html = fragmentToHTML(xss13);
+  assert(!containsExecutableHTML(xss13), 'MarkdownParser XSS: HTML-entity-encoded javascript: stripped');
+
+  // XSS via tab in javascript: URL
+  const xss14 = MarkdownParser.parse('[click](java\tscript:alert(1))', resolver);
+  const xss14html = fragmentToHTML(xss14);
+  assert(!/javascript:/i.test(xss14html.replace(/\s/g, '')), 'MarkdownParser XSS: tab-broken javascript: URL stripped');
+
+  // XSS via newline in javascript: URL
+  const xss15 = MarkdownParser.parse('[click](java\nscript:alert(1))', resolver);
+  const xss15html = fragmentToHTML(xss15);
+  assert(!/javascript:/i.test(xss15html.replace(/\s/g, '')), 'MarkdownParser XSS: newline-broken javascript: URL stripped');
+
+  // XSS via file:// absolute URL
+  const xss16 = MarkdownParser.parse('[click](file:///etc/passwd)', resolver);
+  const xss16html = fragmentToHTML(xss16);
+  assert(!/file:\/\//i.test(xss16html), 'MarkdownParser XSS: file:// absolute URL stripped');
+
+  // XSS via heading injection
+  const xss17 = MarkdownParser.parse('# <script>alert(1)</script>', resolver);
+  assert(!containsExecutableHTML(xss17), 'MarkdownParser XSS: script in heading is escaped');
+
+  // XSS via blockquote
+  const xss18 = MarkdownParser.parse('> <img src=x onerror=alert(1)>', resolver);
+  assert(!containsExecutableHTML(xss18), 'MarkdownParser XSS: img onerror in blockquote is escaped');
+
+  // XSS via bold/italic markers around HTML
+  const xss19 = MarkdownParser.parse('**<script>alert(1)</script>**', resolver);
+  assert(!containsExecutableHTML(xss19), 'MarkdownParser XSS: script in bold is escaped');
+
+  // XSS via list item
+  const xss20 = MarkdownParser.parse('- <script>alert(1)</script>', resolver);
+  assert(!containsExecutableHTML(xss20), 'MarkdownParser XSS: script in list item is escaped');
+}
+
+function runMarkdownParserRenderTests() {
+  if (typeof MarkdownParser === 'undefined') {
+    assert(false, 'MarkdownParser Render: module exists');
+    return;
+  }
+  assert(true, 'MarkdownParser Render: module exists');
+
+  const resolver = { resolve: () => null }; // stub
+
+  // Heading levels
+  const h1 = MarkdownParser.parse('# Heading 1', resolver);
+  assert(fragmentToHTML(h1).includes('<h1>'), 'MarkdownParser Render: # produces h1');
+
+  const h3 = MarkdownParser.parse('### Heading 3', resolver);
+  assert(fragmentToHTML(h3).includes('<h3>'), 'MarkdownParser Render: ### produces h3');
+
+  // Paragraphs
+  const para = MarkdownParser.parse('Hello world.\n\nSecond paragraph.', resolver);
+  const paraHTML = fragmentToHTML(para);
+  assert(paraHTML.includes('<p>'), 'MarkdownParser Render: paragraphs produce <p>');
+
+  // Bold
+  const bold = MarkdownParser.parse('**bold text**', resolver);
+  assert(fragmentToHTML(bold).includes('<strong>'), 'MarkdownParser Render: **text** produces <strong>');
+
+  // Italic
+  const italic = MarkdownParser.parse('*italic text*', resolver);
+  assert(fragmentToHTML(italic).includes('<em>'), 'MarkdownParser Render: *text* produces <em>');
+
+  // Inline code
+  const code = MarkdownParser.parse('use `console.log()`', resolver);
+  assert(fragmentToHTML(code).includes('<code>'), 'MarkdownParser Render: `text` produces <code>');
+
+  // Code fence
+  const fence = MarkdownParser.parse('```\nconst x = 1;\n```', resolver);
+  assert(fragmentToHTML(fence).includes('<pre>'), 'MarkdownParser Render: code fence produces <pre>');
+  assert(fragmentToText(fence).includes('const x = 1;'), 'MarkdownParser Render: code fence preserves content');
+
+  // Blockquote
+  const bq = MarkdownParser.parse('> quoted text', resolver);
+  assert(fragmentToHTML(bq).includes('<blockquote>'), 'MarkdownParser Render: > produces <blockquote>');
+
+  // Unordered list
+  const ul = MarkdownParser.parse('- item one\n- item two', resolver);
+  assert(fragmentToHTML(ul).includes('<ul>'), 'MarkdownParser Render: - items produce <ul>');
+  assert(fragmentToHTML(ul).includes('<li>'), 'MarkdownParser Render: - items produce <li>');
+
+  // Ordered list
+  const ol = MarkdownParser.parse('1. first\n2. second', resolver);
+  assert(fragmentToHTML(ol).includes('<ol>'), 'MarkdownParser Render: numbered items produce <ol>');
+
+  // Horizontal rule
+  const hr = MarkdownParser.parse('---', resolver);
+  assert(fragmentToHTML(hr).includes('<hr>'), 'MarkdownParser Render: --- produces <hr>');
+
+  // Link with valid URL
+  const link = MarkdownParser.parse('[Example](https://example.com)', resolver);
+  const linkHTML = fragmentToHTML(link);
+  assert(linkHTML.includes('<a'), 'MarkdownParser Render: link produces <a>');
+  assert(linkHTML.includes('href="https://example.com"'), 'MarkdownParser Render: link href is correct');
+
+  // Image with valid URL
+  const img = MarkdownParser.parse('![alt text](https://example.com/img.png)', resolver);
+  const imgHTML = fragmentToHTML(img);
+  assert(imgHTML.includes('<img'), 'MarkdownParser Render: image produces <img>');
+
+  // Strikethrough
+  const strike = MarkdownParser.parse('~~deleted~~', resolver);
+  assert(fragmentToHTML(strike).includes('<del>') || fragmentToHTML(strike).includes('<s>'), 'MarkdownParser Render: ~~text~~ produces strikethrough');
+
+  // Relative link preserved
+  const relLink = MarkdownParser.parse('[note](/warm/my-note.md)', resolver);
+  const relHTML = fragmentToHTML(relLink);
+  assert(relHTML.includes('href="/warm/my-note.md"'), 'MarkdownParser Render: relative URL preserved');
+
+  // Mailto link preserved
+  const mailto = MarkdownParser.parse('[email](mailto:test@example.com)', resolver);
+  const mailHTML = fragmentToHTML(mailto);
+  assert(mailHTML.includes('href="mailto:test@example.com"'), 'MarkdownParser Render: mailto URL preserved');
+}
+
+function runWikiLinkResolverTests() {
+  if (typeof WikiLinkResolver === 'undefined') {
+    assert(false, 'WikiLinkResolver: module exists');
+    return;
+  }
+  assert(true, 'WikiLinkResolver: module exists');
+
+  // Build a mock index
+  const index = new Map();
+  index.set('laplace transforms', { title: 'Laplace Transforms', path: 'warm/laplace-transforms.md' });
+  index.set('fourier series', { title: 'Fourier Series', path: 'bedrock/fourier-series.md' });
+
+  const resolver = WikiLinkResolver.create(index, 'Other Note');
+
+  // Valid resolution
+  const r1 = resolver.resolve('Laplace Transforms');
+  assert(r1 !== null, 'WikiLinkResolver: resolves valid title');
+  assert(r1.tagName === 'A', 'WikiLinkResolver: resolved link is an <a> element');
+
+  // Case-insensitive resolution
+  const r2 = resolver.resolve('laplace transforms');
+  assert(r2 !== null, 'WikiLinkResolver: case-insensitive resolution works');
+
+  // Missing title → broken link
+  const r3 = resolver.resolve('Nonexistent Topic');
+  assert(r3 !== null, 'WikiLinkResolver: missing title returns element (not null)');
+  assert(r3.tagName !== 'A', 'WikiLinkResolver: missing title does not produce <a>');
+
+  // Path traversal: ..
+  const r4 = resolver.resolve('../../etc/passwd');
+  assert(r4 === null || r4.tagName !== 'A', 'WikiLinkResolver: .. traversal rejected');
+
+  // Path traversal: /
+  const r5 = resolver.resolve('/etc/passwd');
+  assert(r5 === null || r5.tagName !== 'A', 'WikiLinkResolver: absolute path rejected');
+
+  // Path traversal: backslash
+  const r6 = resolver.resolve('..\\..\\windows\\system32');
+  assert(r6 === null || r6.tagName !== 'A', 'WikiLinkResolver: backslash traversal rejected');
+
+  // Path traversal: NUL byte
+  const r7 = resolver.resolve('test\0evil');
+  assert(r7 === null || r7.tagName !== 'A', 'WikiLinkResolver: NUL byte rejected');
+
+  // Path traversal: URL-encoded
+  const r8 = resolver.resolve('%2e%2e%2fetc%2fpasswd');
+  assert(r8 === null || r8.tagName !== 'A', 'WikiLinkResolver: URL-encoded traversal rejected');
+
+  // Path traversal: tilde home
+  const r9 = resolver.resolve('~/.ssh/id_rsa');
+  assert(r9 === null || r9.tagName !== 'A', 'WikiLinkResolver: tilde path rejected');
+
+  // Self-link → plain text
+  const selfResolver = WikiLinkResolver.create(index, 'Laplace Transforms');
+  const r10 = selfResolver.resolve('Laplace Transforms');
+  assert(r10 === null || r10.tagName !== 'A', 'WikiLinkResolver: self-link does not produce <a>');
+}
+
+function runIndexRegeneratorTests() {
+  if (typeof IndexRegenerator === 'undefined') {
+    assert(false, 'IndexRegenerator: module exists');
+    return;
+  }
+  assert(true, 'IndexRegenerator: module exists');
+
+  // Empty notes array → header only
+  const empty = IndexRegenerator.generate([]);
+  assert(empty.includes('# Index'), 'IndexRegenerator: empty notes produces header');
+  assert(empty.includes('| Title | Tier | Path | Updated |'), 'IndexRegenerator: empty notes produces table header');
+
+  // Single note
+  const one = IndexRegenerator.generate([{
+    frontmatter: { title: 'Test Note', tier: 'warm', updated: '2026-04-21T14:22:00Z' },
+    path: 'warm/test-note.md'
+  }]);
+  assert(one.includes('Test Note'), 'IndexRegenerator: includes note title');
+  assert(one.includes('warm'), 'IndexRegenerator: includes note tier');
+  assert(one.includes('warm/test-note.md'), 'IndexRegenerator: includes note path');
+
+  // Idempotency
+  const notes = [
+    { frontmatter: { title: 'B Note', tier: 'cold', updated: '2026-04-20T00:00:00Z' }, path: 'cold/b-note.md' },
+    { frontmatter: { title: 'A Note', tier: 'warm', updated: '2026-04-21T00:00:00Z' }, path: 'warm/a-note.md' }
+  ];
+  const run1 = IndexRegenerator.generate(notes);
+  const run2 = IndexRegenerator.generate(notes);
+  assertEqual(run1, run2, 'IndexRegenerator: idempotent (two runs produce identical output)');
+
+  // Sort order: A before B
+  const aIdx = run1.indexOf('A Note');
+  const bIdx = run1.indexOf('B Note');
+  assert(aIdx < bIdx, 'IndexRegenerator: notes sorted by title (A before B)');
+}
+
+function runBacklinkGraphTests() {
+  if (typeof BacklinkGraph === 'undefined') {
+    assert(false, 'BacklinkGraph: module exists');
+    return;
+  }
+  assert(true, 'BacklinkGraph: module exists');
+
+  const notes = [
+    { path: 'warm/a.md', frontmatter: { title: 'Note A' }, wikiLinks: ['Note B', 'Note C'] },
+    { path: 'warm/b.md', frontmatter: { title: 'Note B' }, wikiLinks: ['Note A'] },
+    { path: 'cold/c.md', frontmatter: { title: 'Note C' }, wikiLinks: [] }
+  ];
+
+  const graph = BacklinkGraph.build(notes);
+
+  // Note A is linked from Note B
+  const aBacklinks = graph.get('warm/a.md') || [];
+  assert(aBacklinks.some(b => b.path === 'warm/b.md'), 'BacklinkGraph: Note A has backlink from Note B');
+
+  // Note B is linked from Note A
+  const bBacklinks = graph.get('warm/b.md') || [];
+  assert(bBacklinks.some(b => b.path === 'warm/a.md'), 'BacklinkGraph: Note B has backlink from Note A');
+
+  // Note C is linked from Note A
+  const cBacklinks = graph.get('cold/c.md') || [];
+  assert(cBacklinks.some(b => b.path === 'warm/a.md'), 'BacklinkGraph: Note C has backlink from Note A');
+
+  // Note C has no outgoing links so it doesn't appear as a backlink for others
+  assert(!aBacklinks.some(b => b.path === 'cold/c.md'), 'BacklinkGraph: Note C does not backlink to Note A');
+}
+
+// ──────────────────────────────────────────────
+// Run all tests
+// ──────────────────────────────────────────────
+
+function runAllTests() {
+  runFrontmatterParserTests();
+  runMarkdownParserXSSTests();
+  runMarkdownParserRenderTests();
+  runWikiLinkResolverTests();
+  runIndexRegeneratorTests();
+  runBacklinkGraphTests();
+  renderResults();
+}
+
+// Boot: load modules from index.html, then run tests
+loadModulesAndRunTests();
+
+</script>
+</body>
+</html>
