@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "3108d13f35b09f4eea9c6ff1c2b10ce6ba0de28e",
-    "short": "3108d13",
-    "subject": "docs: add tier READMEs for bedrock, warm, cold",
+    "hash": "56a211a8ee495c51a02efbe22ed6f23bc828524a",
+    "short": "56a211a",
+    "subject": "docs: add top-level README.md (setup, GenAI.mil loop, how-to guides)",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "feat/phase-2a-scaffold-folders-prompts",
-    "committed_at": "2026-04-21T06:14:24+00:00",
-    "files_changed": 6
+    "committed_at": "2026-04-21T06:20:42+00:00",
+    "files_changed": 1
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
