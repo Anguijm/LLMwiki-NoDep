@@ -35,7 +35,7 @@ Post a Teams message (or send an email) when a new note is created in any tier f
 4. **Add filtering conditions** (important — prevents false notifications):
    - **Condition 1:** file name ends with `.md` — skip non-markdown files.
    - **Condition 2:** file name does NOT start with `~$` — skip Office temp files.
-   - **Condition 3:** file name does NOT match the SharePoint conflict pattern (` (N).md` or ` (conflict from DEVICE).md` at the end) — skip conflict copies. A simple check: the name does not match `* (*).md`. Note: this may also skip legitimate files with trailing parentheses; prefer checking for the specific numeric pattern ` (\d+).md$` if your Power Automate version supports regex.
+   - **Condition 3:** file name does NOT end with a SharePoint conflict suffix. Use an expression: `not(or(endsWith(triggerOutputs()?['body/{FilenameWithExtension}'], ' (1).md'), endsWith(triggerOutputs()?['body/{FilenameWithExtension}'], ' (2).md'), endsWith(triggerOutputs()?['body/{FilenameWithExtension}'], ' (3).md')))`. This checks the three most common conflict suffixes without rejecting legitimate files that contain parentheses in their names.
 5. If all conditions pass → **Microsoft Teams — Post message in a chat or channel** (or **Send an email (V2)**).
    - Message body: `New note in bedrock: @{triggerOutputs()?['body/{FilenameWithExtension}']}`
 6. **Save** and **Turn on**.
