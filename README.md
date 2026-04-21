@@ -4,32 +4,133 @@ A zero-dependency, static-file personal study wiki. Runs from a SharePoint-synce
 
 Built for a specific workflow: a locked-down work laptop, a single engineer-user, SharePoint sync as the storage layer, manual prompts as the AI layer.
 
-## Status
+---
 
-- **Phase 1** (council harness): merged.
-- **Phase 2a** (folder structure + prompt templates + schema docs + empty SRS folder): merged.
-- **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): merged.
-- **Phase 2c** (SRS review mode + outline view): merged.
-- **Phase 2d** (Power Automate flow docs): this branch.
+## Quick start (no git required)
 
-The app is fully usable: open `index.html` in Edge, grant folder access, and your wiki renders with linked notes, backlinks, SRS review, and a knowledge-graph outline. The prompt templates under `/_prompts/` continue to work via the GenAI.mil copy/paste loop.
+**You do NOT need git, npm, Python, or any developer tools.** The entire app is files in a folder. Here's how to get it running on a locked-down work laptop:
 
-## Setup
+### Step 1: Download the files
 
-1. **Clone into a SharePoint-synced folder** on your work laptop. The app's "filesystem" IS the SharePoint-synced folder; there is no database, no server-side storage.
+**Option A — Download ZIP from GitHub (easiest, no git needed):**
 
-   ```
-   cd ~/OneDrive\ -\ YourOrg/documents
-   git clone <repo-url> study-wiki
-   ```
+1. Go to this repository's GitHub page.
+2. Click the green **Code** button near the top right.
+3. Click **Download ZIP**.
+4. Save the ZIP file somewhere temporary (e.g., your Desktop or Downloads folder).
+5. **Right-click the ZIP** → **Extract All** → choose your target folder (see Step 2).
 
-   Any folder that SharePoint (or OneDrive for Business) keeps in sync will work. Personal OneDrive works too if your org permits it.
+**Option B — Copy from a USB drive or shared folder:**
 
-2. **Open `index.html` in Microsoft Edge** (or any Chromium browser). Right-click the file → Open with → Edge, or navigate to `file:///path/to/study-wiki/index.html`.
+If someone has already set up LLMwiki-NoDep, they can send you the folder. Just copy the entire folder to your target location (Step 2).
 
-3. **Grant folder access.** The app will prompt you to select your wiki folder via a directory picker. This gives the app read/write access to scan notes and regenerate `_index.md`. If you prefer not to grant write access (or your browser doesn't support the File System Access API), drag your wiki folder onto the drop zone for read-only mode — `_index.md` regeneration is skipped in this mode.
+**Option C — Git clone (if git is available):**
 
-4. **That's it for setup.** No `npm install`, no `pip install`, no package manager of any kind. The entire runtime lives in files that git and SharePoint already know how to handle.
+```
+cd ~/OneDrive\ -\ YourOrg/documents
+git clone https://github.com/Anguijm/LLMwiki-NoDep.git study-wiki
+```
+
+### Step 2: Put the folder in a SharePoint-synced location
+
+The wiki's "database" is the folder itself. For your notes to sync across devices and survive laptop reimages, the folder must live in a location that SharePoint (or OneDrive for Business) syncs.
+
+**Where to put it:**
+
+| Location | Works? | Notes |
+|---|---|---|
+| `C:\Users\you\OneDrive - YourOrg\Documents\study-wiki\` | Yes (best) | Standard OneDrive for Business sync path |
+| `C:\Users\you\OneDrive\Documents\study-wiki\` | Yes | Personal OneDrive (if your org permits) |
+| Any SharePoint-synced library folder | Yes | Right-click in SharePoint → "Sync" adds it to File Explorer |
+| `C:\Users\you\Desktop\study-wiki\` | Partial | Works locally but won't sync unless Desktop is in OneDrive |
+| A network drive (`\\server\share\`) | No | File System Access API doesn't work over UNC paths |
+
+**How to verify sync is working:** after you place the folder, wait 30 seconds. You should see the OneDrive sync icon (blue cloud or green checkmark) appear on the folder in File Explorer.
+
+### Step 3: Open the app
+
+1. Navigate to your wiki folder in File Explorer.
+2. **Double-click `index.html`** — it should open in Microsoft Edge. If it opens in a different app, right-click → **Open with** → **Microsoft Edge**.
+3. You'll see a landing page with a **"Choose wiki folder"** button.
+
+### Step 4: Grant folder access
+
+1. Click **"Choose wiki folder"**.
+2. Edge will show a system dialog asking you to select a folder. **Navigate to and select the wiki folder itself** (the folder containing `index.html`, `bedrock/`, `warm/`, `cold/`, etc.).
+3. Edge will ask **"View files"** permission — click **Allow**.
+4. After scanning, Edge may ask **"Save changes"** permission (for `_index.md` regeneration) — click **Allow**. If you decline, the app works in read-only mode.
+
+**That's it.** You should see your wiki rendered with the note list on the left, content in the center, and backlinks on the right.
+
+### Step 5: Add your first note
+
+1. Open your text editor (Notepad, VS Code, whatever you have).
+2. Create a new file in the `warm/` folder called `my-first-note.md`.
+3. Paste this content:
+
+```markdown
+---
+title: My First Note
+tier: warm
+created: 2026-04-22T12:00:00Z
+updated: 2026-04-22T12:00:00Z
+tags: [getting-started]
+---
+
+This is my first wiki note. I can link to other notes using [[wiki link syntax]].
+
+Key concepts:
+- Notes live in tier folders: bedrock (permanent), warm (active), cold (archived)
+- The app parses markdown and resolves [[wiki links]] by title
+- SRS flashcards go in the /srs/ folder as individual YAML files
+```
+
+4. Save the file.
+5. In the wiki app, click **Rescan** (or reload the page). Your note appears.
+
+---
+
+## What you need vs. what you don't
+
+| You need | You don't need |
+|---|---|
+| Microsoft Edge (or any Chromium browser) | Node.js, npm, Python, or any runtime |
+| A SharePoint-synced folder (OneDrive for Business) | Git (nice to have, not required) |
+| A text editor (even Notepad works) | A terminal or command line |
+| Access to GenAI.mil (for the AI-assisted prompts) | An internet connection while using the app |
+
+**The app works completely offline.** Once the files are on your laptop, Wi-Fi can be off. The only network dependency is SharePoint sync (which happens in the background) and GenAI.mil (which you use in a separate browser tab, not inside the app).
+
+---
+
+## Folder structure
+
+After download/extraction, your wiki folder looks like this:
+
+```
+study-wiki/
+├── index.html          ← THE APP — open this in Edge
+├── _index.md            ← auto-generated note index (don't edit by hand)
+├── bedrock/             ← permanent reference notes
+├── warm/                ← active learning notes
+├── cold/                ← archived notes
+├── srs/                 ← SRS flashcard YAML files (one per card)
+├── _prompts/            ← GenAI.mil prompt templates
+│   ├── ingest.md
+│   ├── linker.md
+│   ├── flashcards.md
+│   ├── review-packet.md
+│   └── gap-analysis.md
+├── docs/                ← schema documentation
+├── power-automate/      ← optional Power Automate flow docs
+└── (dev files)          ← package.json, tests/, etc. (ignore these)
+```
+
+**Files you interact with:** `index.html` (open it), the tier folders (add notes), `srs/` (flashcards), `_prompts/` (copy/paste templates).
+
+**Files you ignore:** everything else. The dev files (`package.json`, `test.html`, `tests/`, `.github/`, `.harness/`, `eslint.config.js`, etc.) are for contributors, not users.
+
+---
 
 ## The manual GenAI.mil loop
 
@@ -67,7 +168,7 @@ Every template declares a `human_turn_budget` in its frontmatter: the number of 
    - Open `/_prompts/linker.md`, paste into GenAI.mil with your new note body + a narrow title slice of `/_index.md`.
    - Paste the returned version back over your file.
 
-5. Commit with a conventional-commits message (`feat:` for new notes, `docs:` for revisions).
+5. If you have git: commit with a conventional-commits message (`feat:` for new notes, `docs:` for revisions). If you don't have git, that's fine — SharePoint versioning is your backup.
 
 ## How to review SRS cards
 
@@ -103,6 +204,30 @@ Usage pattern for each is identical:
 
 **Context discipline:** `linker.md` and `gap-analysis.md` explicitly warn against pasting wide context. Paste narrow, targeted inputs — not your whole wiki. More context ≠ better output; it usually means silent truncation.
 
+## Troubleshooting
+
+**"index.html opens as code, not as an app":**
+- You're probably opening it in a text editor. Right-click → **Open with** → **Microsoft Edge**.
+
+**"Choose wiki folder" button does nothing:**
+- Your browser may not support the File System Access API (Firefox, Safari). Use Edge or Chrome. Alternatively, drag your wiki folder onto the drop zone for read-only mode.
+
+**"No notes found" after granting folder access:**
+- Make sure you selected the **wiki root folder** (the one containing `index.html`), not a subfolder like `warm/`.
+- Make sure your notes have `.md` extension and valid frontmatter (starts with `---`).
+
+**Notes aren't showing after I add a new file:**
+- Click **Rescan** in the header, or reload the page (F5).
+
+**"Folder access was revoked":**
+- Edge's File System Access API permission expires when you close the tab. Reload and re-grant.
+
+**The app looks broken / CSS is wrong:**
+- Make sure you're opening `index.html` directly from `file://`, not from a web server. The app is designed for `file://` only.
+
+**SharePoint sync conflict files (`note (1).md`) appearing:**
+- Two devices edited the same file. The app shows these in the "Sync conflicts" panel. Open both files in your text editor, merge manually, delete the conflict copy.
+
 ## Schemas and conventions
 
 All on-disk contracts live in **one place**: `/docs/data_schemas.md`. Includes:
@@ -111,7 +236,7 @@ All on-disk contracts live in **one place**: `/docs/data_schemas.md`. Includes:
 - SRS per-card YAML schema (one file per card under `/srs/`).
 - Filename slugging rules.
 - Encoding conventions (UTF-8, LF, no BOM) + parser tolerance.
-- `/_index.md` pinned structure (Phase 2b regenerator contract).
+- `/_index.md` pinned structure (regenerator contract).
 - SharePoint-sync conflict-file handling requirements.
 - Security considerations.
 
@@ -123,7 +248,8 @@ This repo's development discipline lives in `CLAUDE.md` (for Claude Code session
 
 - Every non-trivial change follows: plan → council → approve → execute → reflect.
 - The Gemini-powered council in `.github/workflows/council.yml` reviews every PR automatically.
-- No runtime dependencies. Ever. Dev-time deps (lint, test) allowed under a future `devDependencies` block, but the shipped folder must work with network off.
+- CI runs ESLint, Prettier, and Vitest on every PR.
+- No runtime dependencies. Ever. Dev-time deps (lint, test) are in `devDependencies` only.
 
 See `CONTRIBUTING.md` for the contribution workflow and `CLAUDE.md` for the operating manual.
 
