@@ -1,346 +1,345 @@
-# Active plan — Phase 2b: index.html + markdown parser + wiki-link resolver + _index.md regenerator
+# Active plan — Phase 2c: SRS review mode + knowledge graph
 
 **Status:** draft — awaiting council round 1 + human approval. Not yet executing.
-**Branch:** `feat/phase-2b-index-html`
-**Base:** `main` @ `573be91` (Phase 2a merged).
-**Prior context:** Phase 2a (folder scaffold, prompt templates, data schemas) is merged. Phase 2b is the first phase that ships executable code — HTML, CSS, and JavaScript in a single `index.html`. The highest-leverage security review of the entire app happens on this PR.
+**Branch:** `feat/phase-2c-srs-graph`
+**Base:** `main` @ `ec16377` (Phase 2b merged).
+**Prior context:** Phase 2b shipped `index.html` with the read path: folder scanning, markdown parsing (escape-by-default), wiki-link resolution, backlinks, `_index.md` regeneration, tier filter. Phase 2c adds the first write path (SRS card updates) and the knowledge graph visualization.
 
-## Scope of Phase 2b
+## Scope of Phase 2c
 
-The four product loops — add, link, review, find-contradictions — all require the user to open `index.html` and see their wiki rendered. This phase delivers the read path: open the folder, parse every note, render markdown, resolve wiki links, display backlinks, and regenerate `_index.md`. The write path (SRS review mode, in-app note editing) is Phase 2c.
+Two features that serve two of the four product loops:
 
-**Deliverables:**
+1. **SRS review mode** — serves the **review** loop. Read per-card YAML from `/srs/`, present due cards, accept ratings, run SM-2, write updated cards back via atomic write-to-temp-and-rename.
+2. **Knowledge graph** — serves the **link** loop. Visual graph of notes and their `[[wiki link]]` connections, plus a keyboard-navigable outline alternative (per Phase 2a council carry-forward).
 
-1. **`index.html`** — a single file containing all HTML, CSS (inline `<style>`), and JavaScript (inline `<script>`). No external assets, no `<script src>`, no `<link rel="stylesheet" href>`. Opens from `file://` in Edge with Wi-Fi off.
-2. **Folder access via File System Access API** — `showDirectoryPicker()` to get a read-only directory handle on the wiki root. Drag-drop fallback for browsers that don't support the API or when the user declines.
-3. **Frontmatter parser** — parses YAML frontmatter from note markdown per `/docs/data_schemas.md`. Returns structured errors (not booleans) for validation failures. Tolerates BOM, CRLF, mixed line endings.
-4. **Inline markdown parser** — converts markdown body to DOM. Escape-by-default: all content goes through `document.createTextNode` / `createElement` / `appendChild`. No `.innerHTML` on untrusted strings. Supports: headings, paragraphs, bold, italic, inline code, code fences, blockquotes, ordered/unordered lists, horizontal rules, links, images, and `[[wiki links]]`.
-5. **Wiki-link resolver** — resolves `[[Title]]` to the matching note by Unicode NFKD case-fold title match against the in-memory index. Path-traversal guards per `/docs/data_schemas.md` security considerations. Unresolved links render as visually-distinct broken-link text, not clickable `<a>` tags.
-6. **Backlinks panel** — for each rendered note, a sidebar/section showing all notes that link TO this note via `[[wiki links]]`. Computed from the in-memory link graph.
-7. **`_index.md` regenerator** — on each folder scan, regenerates `/_index.md` from scratch per the pinned structure in `/docs/data_schemas.md`. Idempotent. Does not read the previous `_index.md` as input. Writes via atomic temp-and-rename.
-8. **Broken-notes panel** — notes with parse/validation errors are excluded from the index and rendered in a dedicated "Broken notes" section with the specific error message visible.
-9. **SharePoint-sync conflict detection** — files matching `<stem> (1).<ext>` or `<stem> (conflict from <device>).<ext>` patterns are surfaced in UI as "sync conflict — resolve by hand." Not included in the index.
-10. **Tier filter** — UI control to filter displayed notes by tier (bedrock / warm / cold / all).
+Both features build on the Phase 2b infrastructure (folder scanner, File System Access API handle, title index, backlink graph).
 
-**What Phase 2b explicitly does NOT deliver:**
-- No SRS review mode (Phase 2c).
-- No SRS card reader/writer (Phase 2c).
-- No graph canvas visualization (Phase 2c).
-- No in-app note editing or creation (Phase 2c or later).
-- No Power Automate flow docs (Phase 2d).
-- No `package.json` or dev tooling — tests are manual for this PR. Dev tooling decision deferred to a follow-up.
+## Deliverables
+
+### SRS review mode
+
+1. **SRS card parser (`SRSCardParser`)** — reads `/srs/*.yaml` files, parses per-card YAML per `/docs/data_schemas.md` § SRS per-card YAML. Returns structured errors for validation failures. Validates `id` matches filename stem, `ease >= 1.3`, `interval >= 0`, `next_review` is `YYYY-MM-DD` local date, `last_reviewed` is ISO 8601 UTC or absent.
+
+2. **SM-2 scheduler (`SM2Scheduler`)** — pure function implementing the SM-2 algorithm:
+   - Input: current `ease`, current `interval`, rating (0–5 scale: Again=0, Hard=3, Good=4, Easy=5).
+   - Output: new `ease`, new `interval`, new `next_review` (local calendar date).
+   - Clamps `ease` to minimum 1.3.
+   - Clamps `interval` to minimum 0.
+   - `next_review` computed as today's local date + new interval days. **No UTC conversion.**
+   - `last_reviewed` set to current UTC timestamp (`new Date().toISOString()` truncated to seconds + `Z`).
+
+3. **Review queue builder** — filters cards where `next_review <= today` (local date comparison, no timezone conversion). Shuffles due cards. Excludes broken cards and SharePoint conflict files.
+
+4. **Review UI** — accessible from a "Review" button in the app header:
+   - Shows card count: "N cards due today."
+   - Presents one card at a time: question visible, answer hidden behind a "Show answer" button.
+   - After reveal: four rating buttons (Again / Hard / Good / Easy) with keyboard shortcuts (1/2/3/4).
+   - After rating: SM-2 runs, card is written atomically, next card appears.
+   - During write: all rating buttons disabled (prevents double-click stale-math bug per `/docs/data_schemas.md` § UI concurrency).
+   - Session summary at end: "Reviewed N cards. N again, N hard, N good, N easy."
+   - "End review" button available at any time to exit early.
+
+5. **SRS card writer (`SRSCardWriter`)** — writes updated card YAML via atomic write-to-temp-and-rename through the `/srs/` directory handle.
+   - Uses the same atomic write pattern as Phase 2b's `_index.md` writer.
+   - `try...finally` for writable stream cleanup.
+   - Stale-write detection: checks `lastModified` before write to detect SharePoint-synced changes.
+   - Preserves unknown top-level keys on round-trip.
+   - Emits canonical YAML: UTF-8, LF, no BOM.
+
+6. **Broken-cards panel** — cards with parse/validation errors appear in a dedicated "Broken cards" section (separate from the broken-notes panel). Not included in the review queue.
+
+### Knowledge graph
+
+7. **Graph renderer (`GraphRenderer`)** — visual graph of notes as nodes, `[[wiki links]]` as edges.
+   - Renders to a `<canvas>` element using the Canvas 2D API (no WebGL, no runtime dep).
+   - Force-directed layout: simple spring-embedder algorithm. Nodes repel, edges attract.
+   - Nodes labeled with note title (truncated to 30 chars). Colored by tier (bedrock=blue, warm=orange, cold=gray).
+   - Edges drawn as lines between linked nodes.
+   - Click a node → navigate to that note in the main view.
+   - Pan (drag on background) and zoom (scroll wheel).
+   - `prefers-reduced-motion: reduce` → disable animation, show static final layout.
+
+8. **Outline alternative** — keyboard-navigable, non-visual alternative to the graph (per Phase 2a accessibility carry-forward):
+   - A nested list view: each note as a list item, sub-items are its outgoing `[[wiki links]]`.
+   - Fully keyboard-navigable (arrow keys, Enter to select).
+   - Toggle between graph and outline via a button.
+   - Screen-reader friendly: the outline is the default for `prefers-reduced-motion: reduce` or when a screen reader is detected.
+
+9. **Graph/outline panel** — accessible from a "Graph" button in the app header. Replaces the main content area when active. "Back to notes" button returns to the note view.
+
+### Infrastructure additions
+
+10. **Orphan temp cleanup** — on app start, scan `/srs/` (and root) for `.<stem>.<ext>.tmp` files older than 1 hour. Delete each, log count to console (no PII).
+
+11. **SRS conflict detection** — during `/srs/` scan, flag files matching SharePoint conflict patterns. Surface in the broken-cards panel as "sync conflict — resolve by hand."
 
 ## Architecture
 
-### Single-file constraint
-
-Everything lives in `index.html`. No ES module imports, no dynamic `import()`, no `<script type="module">` (which has CORS-like restrictions under `file://` in some Chromium builds). All JavaScript is in a single inline `<script>` block at the end of `<body>`.
-
-Logical separation is by named functions and objects, not files:
-
-- `FrontmatterParser` — parse YAML frontmatter, return structured result or structured error.
-- `MarkdownParser` — convert markdown string to DOM fragment. Escape-by-default.
-- `WikiLinkResolver` — resolve `[[Title]]` tokens during markdown parsing.
-- `IndexRegenerator` — produce `_index.md` content from the note array.
-- `FolderScanner` — walk the directory handle, read files, coordinate parsing.
-- `BacklinkGraph` — compute reverse link index from the parsed notes.
-- `UI` — render the note list, note view, broken-notes panel, tier filter, folder-picker.
-
-### Rendering pipeline
+### SRS data flow
 
 ```
-User grants folder handle
+App start / Rescan
        ↓
-FolderScanner walks /bedrock/, /warm/, /cold/
+FolderScanner walks /srs/ (new)
        ↓
-For each .md file:
-  → FrontmatterParser.parse(content) → { frontmatter, body, errors[] }
-  → if errors: push to brokenNotes[]
-  → else: push to notes[]
+For each .yaml file:
+  → SRSCardParser.parse(content, filename) → { card, errors[] }
+  → if errors: push to brokenCards[]
+  → else: push to cards[]
        ↓
-Build title→note lookup (Unicode NFKD case-fold)
+ReviewQueueBuilder.build(cards, todayLocalDate) → dueCards[]
        ↓
-For each note body:
-  → MarkdownParser.parse(body, resolver) → DOM fragment
-  → WikiLinkResolver resolves [[links]] during parse
+User enters Review mode
        ↓
-BacklinkGraph.build(notes) → Map<noteId, backlinks[]>
+For each due card:
+  → Show question → user clicks "Show answer" → show answer
+  → User rates (Again/Hard/Good/Easy)
+  → SM2Scheduler.compute(card, rating) → updatedCard
+  → SRSCardWriter.write(dirHandle, updatedCard) → atomic write
+  → Disable buttons during write → re-enable on success
        ↓
-IndexRegenerator.generate(notes) → _index.md content
-  → atomic write via directory handle
-       ↓
-UI.render(notes, brokenNotes, conflictFiles)
+Review complete → summary
 ```
 
-### File System Access API flow
+### SM-2 algorithm (exact specification)
 
-**Primary path (File System Access API):**
-1. On page load, show a "Choose wiki folder" button.
-2. `showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' })` — readwrite needed for `_index.md` regeneration. The permission prompt is explicit.
-3. Store the handle in a page-scoped variable (not `IndexedDB` — no persistent handle without written rationale per security checklist).
-4. If the user revokes permission mid-session or navigates away, surface a "re-grant access" prompt. No crash, no silent failure, no `fetch` fallback.
+The SM-2 algorithm as originally defined by Piotr Wozniak:
 
-**Drag-drop fallback:**
-1. If `showDirectoryPicker` is unavailable or the user cancels, show a drag-drop zone: "Drag your wiki folder here."
-2. Read files from the `DataTransferItemList` via `webkitGetAsEntry()` / `getAsFileSystemHandle()`.
-3. Drag-drop is **read-only** — `_index.md` regeneration is skipped (the user must regenerate manually or use a browser that supports the full API). Surface this limitation in UI copy.
-4. Drag-drop does NOT get a writable handle, so no SRS writes either (that's Phase 2c anyway).
+```
+Input: ease (float >= 1.3), interval (int >= 0), repetitions (int >= 0), rating (0-5)
 
-### Frontmatter parser
+If rating >= 3 (correct response):
+  If repetitions == 0: interval = 1
+  Else if repetitions == 1: interval = 6
+  Else: interval = round(interval * ease)
+  repetitions += 1
+Else (incorrect — rating < 3):
+  repetitions = 0
+  interval = 1
 
-Parses the first `---` block at byte offset 0 (after optional BOM strip) per `/docs/data_schemas.md` § "Important parser rule."
+ease = ease + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02))
+ease = max(ease, 1.3)
 
-- Minimal YAML subset — only needs: string scalars, arrays (flow `[a, b]` and block `- a`), and the exact field set from the schema. No anchors, no aliases, no multi-document, no tags. A full YAML parser is overkill and adds attack surface.
-- Returns `{ frontmatter: {...}, body: string, errors: Error[] }`.
-- Each error is a structured object per `/docs/data_schemas.md` § "Parser behavior on violations."
-- Unknown top-level keys are preserved in the returned frontmatter (for round-trip fidelity in future write paths) but ignored in rendering.
+next_review = today_local + interval days
+last_reviewed = now_utc
+```
 
-### Markdown parser (escape-by-default)
+The `repetitions` field is not in the current card schema. We'll track it in-memory during the review session and derive it from the card's `interval` on load:
+- `interval == 0` → `repetitions = 0`
+- `interval == 1` → `repetitions = 1`
+- `interval > 1` → `repetitions = 2` (any value >= 2 produces the same `interval * ease` formula)
 
-This is the single highest-risk component. Every code path that turns on-disk content into DOM flows through this parser.
+This avoids a schema change while preserving SM-2 correctness.
 
-**Supported tokens:**
-- Headings (`#` through `######`)
-- Paragraphs
-- Bold (`**text**`), italic (`*text*`), bold-italic (`***text***`)
-- Inline code (`` `code` ``)
-- Code fences (` ``` `) — content rendered as preformatted text via `textContent`, never interpreted
-- Blockquotes (`> `)
-- Ordered lists (`1. `)
-- Unordered lists (`- `, `* `, `+ `)
-- Horizontal rules (`---`, `***`, `___`)
-- Links (`[text](url)`) — URL scheme allowlisted to `http`, `https`, `mailto`, and relative paths. `javascript:`, `data:`, `vbscript:`, `file://` absolute are stripped.
-- Images (`![alt](url)`) — same URL scheme allowlist. `data:` blocked.
-- Wiki links (`[[Title]]`) — resolved by `WikiLinkResolver`
-- Strikethrough (`~~text~~`)
+### Rating mapping
 
-**Explicitly NOT supported (attack-surface reduction):**
-- Inline HTML — all `<tags>` in note body render as escaped text. No HTML passthrough.
-- HTML entities — rendered literally (e.g., `&amp;` shows as `&amp;`, not `&`). Prevents double-decode XSS.
-- Footnotes, definition lists, task lists, tables — deferred. Tables are the most-requested; can be added in a follow-up PR with its own security review.
+| Button | SM-2 rating | Meaning |
+|---|---|---|
+| Again | 0 | Complete failure; reset interval |
+| Hard | 3 | Correct but with difficulty |
+| Good | 4 | Correct with moderate effort |
+| Easy | 5 | Effortless recall |
 
-**DOM construction rules:**
-- Every text segment goes through `document.createTextNode()`.
-- Every element is built via `document.createElement()` + `appendChild()`.
-- No `.innerHTML`, `.outerHTML`, `insertAdjacentHTML`, or `createContextualFragment` on any string derived from note content.
-- Link `href` values are set via `element.setAttribute('href', sanitizedUrl)` after scheme allowlist check.
-- Image `src` values follow the same rule.
+### Graph layout algorithm
 
-### Wiki-link resolver
+Simple force-directed layout (no dependency):
 
-- Resolution is by **title match**, not filename match. Titles are compared using Unicode NFKD normalization + case-fold.
-- The resolver receives the in-memory title→note map; it never touches the filesystem directly.
-- **Path-traversal guards:** targets containing `..`, `/`, `\`, NUL bytes (`\0`), URL-encoded traversal (`%2e%2e`, `%2f`, `%5c`), or absolute-path prefixes (`/`, `C:\`, `~`) are rejected. The `[[link]]` renders as broken-link text.
-- **Conflicting titles (two notes with the same case-folded title):** render as a broken link with the message "ambiguous — N notes match this title." The user resolves by renaming one note. No auto-pick by tier or path — that would silently break when the user renames the other note.
-- **Self-links:** `[[Title]]` in a note whose own title matches renders as plain text (not a link to self).
-- Resolved links are constructed via `document.createElement('a')` — never string-concatenated into HTML.
+```
+For N iterations (default 300, or until energy < threshold):
+  For each pair of nodes:
+    Repulsive force = C_repel / distance^2 (capped to prevent explosion)
+  For each edge:
+    Attractive force = C_attract * (distance - ideal_length)
+  Apply forces to node positions (with damping)
+```
 
-### Backlinks panel
+For `prefers-reduced-motion`, compute the layout to completion in one frame (no animation), then render the static result.
 
-- After all notes are parsed and wiki links resolved, `BacklinkGraph` inverts the link map: for each note, which other notes link to it?
-- The backlinks panel appears below the note body (or in a sidebar — layout TBD in CSS, not an architectural decision).
-- Each backlink entry shows the linking note's title as a clickable link.
-- Notes with zero backlinks show "No backlinks" (not an empty panel).
+### Canvas rendering rules
 
-### `_index.md` regenerator
+- All text rendered via `ctx.fillText()` — no `.innerHTML`, no DOM injection from note content.
+- Node labels are note titles passed through a truncation function, never interpreted as HTML/markup.
+- Click detection via coordinate math on the node position array — no DOM event delegation on canvas-internal elements.
+- Canvas is focusable (`tabindex="0"`) with keyboard hints overlay ("Click nodes to navigate. Scroll to zoom.").
 
-- Pure projection: reads the `notes[]` array (already parsed and validated), produces the pinned markdown-table structure per `/docs/data_schemas.md`.
-- Rows sorted by `Title` (Unicode case-fold); ties broken by `Path` (ASCII order).
-- Broken notes are excluded.
-- Idempotent: same input → byte-identical output. No timestamps, no run counters, no randomness.
-- Writes via atomic temp-and-rename through the directory handle's writable file handle.
-- If the directory handle is read-only (drag-drop fallback), skip regeneration and log a warning to console (no PII in the log — just "skipped _index.md regeneration: read-only handle").
+### SRS YAML serializer
 
-### SharePoint-sync conflict detection
+Emits canonical YAML matching the schema exactly:
 
-- During folder scan, files matching `<stem> (\d+).<ext>` or `<stem> (conflict from [^)]+).<ext>` are flagged as conflicts.
-- Conflict files are NOT parsed as notes. They appear in a "Sync conflicts" UI section with the message "resolve by hand."
-- The UI shows the original file and all its conflict siblings together so the user can compare.
+```yaml
+---
+id: <id>
+question: "<question>"
+answer: "<answer>"
+ease: <ease>
+interval: <interval>
+next_review: <YYYY-MM-DD>
+last_reviewed: <YYYY-MM-DDTHH:mm:ssZ>
+tier: <tier>
+source_note: <path>
+---
+```
 
-### Tier filter
-
-- Three toggle buttons (Bedrock / Warm / Cold) plus an "All" default.
-- Filter state is held in a page-scoped variable. No URL hash, no `localStorage`, no persistent state. Refreshing the page resets to "All."
-- Filtering hides/shows note entries in the list; it does not re-parse or re-scan.
-
-## CSS / visual design
-
-- Inline `<style>` in `<head>`. No external stylesheet.
-- System font stack (`system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`) — no web fonts, no CDN.
-- Light theme only (dark theme is a follow-up; `prefers-color-scheme` media query can be added later without architectural changes).
-- WCAG AA contrast ratios (4.5:1 body text, 3:1 large text/UI). Specific colors TBD during implementation but the plan commits to AA compliance.
-- `prefers-reduced-motion: reduce` — disable any transitions/animations.
-- Focus rings visible on all interactive elements (buttons, links, filter toggles). No custom focus style that removes the browser default without replacing it.
-- Responsive layout — usable on laptop screens (1024px+). No mobile-first rewrite, but no hard-coded widths that break below 1024px.
-- Touch targets ≥ 44×44px for all interactive elements.
-
-## Accessibility
-
-- **Semantic HTML:** `<nav>` for note list, `<main>` for note content, `<aside>` for backlinks, `<button>` for all clickable controls (never `<div onClick>`), `<h1>`–`<h6>` for headings in rendered notes.
-- **Keyboard navigation:** all interactive elements reachable via Tab. Logical tab order: folder picker → tier filter → note list → note content → backlinks. No keyboard traps.
-- **ARIA live region:** the note content area is an `aria-live="polite"` region so screen readers announce when the displayed note changes.
-- **Broken-notes and conflict announcements:** when the broken-notes or sync-conflict panel is non-empty, an `aria-live="assertive"` region announces the count on initial load.
-- **Skip link:** a "Skip to content" link as the first focusable element, jumping past the nav/filter to `<main>`.
-- **Labels:** the folder-picker button, tier-filter buttons, and any future form inputs all have visible labels or `aria-label`.
+- Strings containing special YAML characters (`"`, `\`, `:`, `#`, `{`, `}`, `[`, `]`, `,`) are double-quoted with internal `"` escaped as `\"` and `\` as `\\`.
+- `last_reviewed` key is omitted entirely when the card has never been reviewed (not `null`, not empty string).
+- `source_note` key is omitted when absent.
+- Unknown keys from the original parse are preserved and re-emitted.
 
 ## Security
 
-This section restates the security-critical decisions for the council's Security persona. All derive from `/docs/data_schemas.md` and `.harness/scripts/security_checklist.md`.
+- **No `.innerHTML` on SRS card content.** Question and answer text rendered via `textContent` only.
+- **No `.innerHTML` on graph labels.** Canvas `fillText()` does not interpret HTML.
+- **Atomic writes with stale-detection.** SRS card writer checks `lastModified` before writing. Stale writes surface an error, never silently overwrite.
+- **UI concurrency lock.** Rating buttons disabled during in-flight writes. Prevents stale-math double-click bug.
+- **No PII in logs.** Console logs card IDs only, never question/answer text.
+- **Local date for `next_review`.** No UTC conversion. `new Date().toISOString().slice(0, 10)` gives the local date when run in the user's browser.
 
-- **No `.innerHTML` on untrusted strings.** The markdown parser, wiki-link resolver, backlinks panel, broken-notes panel, and index regenerator all construct DOM via `createElement` + `createTextNode` + `appendChild`. This is the single most important invariant in the entire app.
-- **URL scheme allowlist.** Links and images: `http`, `https`, `mailto`, relative paths only. `javascript:`, `data:`, `vbscript:`, `file://` absolute → stripped, rendered as plain text.
-- **Inline HTML disabled.** Any `<tag>` in markdown body content renders as escaped text. No HTML passthrough in the parser.
-- **Wiki-link path-traversal guards.** Resolution by title match only, never by filesystem path. Targets with `..`, `/`, `\`, NUL, URL-encoded traversal, absolute prefixes → rejected.
-- **File System Access API scope.** One directory handle for the wiki root. Permission prompt is explicit (`showDirectoryPicker`). No persistent handle in `IndexedDB`. Revocation → graceful re-prompt.
-- **No PII in logs.** Console output logs note IDs and error kinds only. No titles, no bodies, no frontmatter values, no file paths containing user identifiers.
-- **Atomic writes.** `_index.md` regeneration uses write-to-temp-and-rename. No truncate-and-rewrite.
-- **Code fences:** fenced content set via `textContent`, never interpreted regardless of language tag.
+**Correction on local date:** `new Date().toISOString().slice(0, 10)` gives UTC date, NOT local date. Must use:
+```javascript
+var today = new Date();
+var localDate = today.getFullYear() + '-' +
+  String(today.getMonth() + 1).padStart(2, '0') + '-' +
+  String(today.getDate()).padStart(2, '0');
+```
+This is load-bearing for SRS correctness. A UTC-based "today" shifts the due date for non-UTC users.
+
+## Accessibility
+
+- **Review mode:** all four rating buttons are keyboard-accessible with visible focus rings. Keyboard shortcuts 1/2/3/4 for Again/Hard/Good/Easy. `aria-live="polite"` announces card transitions.
+- **Graph:** `<canvas>` has `role="img"` and `aria-label="Knowledge graph showing N notes and M connections"`. The outline alternative is the primary accessible path.
+- **Outline:** fully keyboard-navigable nested list. Arrow keys for navigation, Enter to select a note. Default view when `prefers-reduced-motion: reduce` is active.
+- **Graph/outline toggle:** visible button with `aria-pressed` state.
+- **WCAG AA contrast** on all new UI elements (rating buttons, graph legend, outline text).
+- **Touch targets >= 44x44px** on rating buttons and graph toggle.
 
 ## Error handling
 
 | Condition | User-visible behavior |
 |---|---|
-| No folder selected | Landing page with "Choose wiki folder" button and drag-drop zone |
-| Folder selected but empty (no tier folders) | "No notes found. Add markdown files to bedrock/, warm/, or cold/." |
-| Permission denied on `showDirectoryPicker` | "Folder access denied. Click to try again, or drag your wiki folder below." |
-| Permission revoked mid-session | "Folder access was revoked. Click to re-grant." Disable all controls until re-granted. |
-| Note with frontmatter parse error | Note appears in "Broken notes" panel with structured error message. Excluded from index. |
-| Note with validation error (e.g., bad tier) | Same as above — broken-notes panel with field-level error. |
-| `[[wiki link]]` to nonexistent title | Rendered as visually-distinct broken-link text (e.g., red text with `[broken: Title]`). |
-| `[[wiki link]]` with ambiguous match | Rendered as broken-link text: "ambiguous — N notes match." |
-| SharePoint conflict file detected | Appears in "Sync conflicts" panel. Not parsed as a note. |
-| `_index.md` write fails (permission) | Warning in UI: "Could not update _index.md. Check folder permissions." App continues to function — `_index.md` is a convenience, not a runtime dependency. |
-| Very large note (>1MB) | Parse and render. No artificial cap. The parser operates on strings, not streams; a 50MB note may cause a browser jank warning but will not crash. |
-| File disappears during scan (SharePoint sync in flight) | Retry once after 200ms per `/docs/data_schemas.md` I/O spec. If still missing, skip with a console warning (no PII). |
+| No cards in `/srs/` | Review button shows "0 due" badge. Clicking it shows "No cards found. Create cards using the flashcards prompt template." |
+| No cards due today | Review button shows "0 due" badge. Review mode shows "All caught up! No cards due today." |
+| Card with parse error | Appears in "Broken cards" panel. Excluded from review queue. |
+| Card with SharePoint conflict | Appears in "Broken cards" panel as sync conflict. Excluded from review queue. |
+| Write fails (permission denied) | Rating buttons re-enable. Error banner: "Could not save card. Check folder permissions." Card remains in queue at its original state. |
+| Write fails (stale — card updated by sync) | Error banner: "This card was updated on another device. Reloading card." Card is re-read from disk and re-presented. |
+| Handle revoked mid-review | "Folder access was revoked. Click to re-grant." Review paused. |
+| Rating button double-click during write | Buttons disabled; second click has no effect. |
 
 ## Execution order (after council + human approval)
 
-Each step = one commit. All land on `feat/phase-2b-index-html`. Conventional-commits.
+Each step = one commit. All land on `feat/phase-2c-srs-graph`.
 
-1. `feat: add index.html skeleton with folder picker and CSS`
-   - HTML structure: `<header>`, `<nav>`, `<main>`, `<aside>`, skip link.
-   - CSS: system fonts, AA-compliant colors, responsive layout, focus rings, reduced-motion.
-   - Folder picker button + `showDirectoryPicker()` call.
-   - Drag-drop fallback zone.
-   - No parsing yet — just the shell.
+1. `test: add SRS parser, SM-2, and graph test cases to test.html`
+   - SRSCardParser tests: valid/invalid cards, type validation, id-filename mismatch, date parsing
+   - SM2Scheduler tests: all rating paths, ease clamping, interval progression, repetition reset
+   - GraphRenderer: not unit-testable (canvas), but layout algorithm tests (force convergence)
 
-2. `feat: add frontmatter parser`
-   - `FrontmatterParser` object in the `<script>` block.
-   - Parses YAML frontmatter per schema. Returns structured errors.
-   - BOM stripping, CRLF normalization.
-   - Validates all required fields, types, enum values.
+2. `feat: add SRS card parser and review queue builder`
+   - `SRSCardParser` module in `index.html`
+   - `ReviewQueueBuilder` module
+   - FolderScanner extended to walk `/srs/`
 
-3. `feat: add markdown parser with escape-by-default`
-   - `MarkdownParser` object.
-   - All supported tokens (headings, paragraphs, bold, italic, code, fences, blockquotes, lists, HRs, links, images, strikethrough).
-   - Every output path uses `createElement` + `createTextNode`. Zero `.innerHTML`.
-   - URL scheme allowlist for links and images.
-   - Inline HTML → escaped text.
-   - `[[wiki link]]` tokens detected but not yet resolved (placeholder — resolved in step 4).
+3. `feat: add SM-2 scheduler`
+   - `SM2Scheduler` module — pure function, no side effects
 
-4. `feat: add wiki-link resolver with path-traversal guards`
-   - `WikiLinkResolver` object.
-   - Title match via Unicode NFKD case-fold.
-   - Path-traversal rejection.
-   - Ambiguous-match handling.
-   - Self-link handling.
-   - Integration with `MarkdownParser` — wiki-link tokens now resolve to `<a>` elements or broken-link text.
+4. `feat: add SRS card writer with atomic write and stale detection`
+   - `SRSCardWriter` module
+   - YAML serializer with round-trip fidelity
+   - Stale-write detection via `lastModified`
+   - `try...finally` resource cleanup
 
-5. `feat: add folder scanner and note rendering pipeline`
-   - `FolderScanner` walks `/bedrock/`, `/warm/`, `/cold/` via the directory handle.
-   - Reads each `.md` file, passes through `FrontmatterParser` + `MarkdownParser`.
-   - Builds the note list, broken-notes list, and conflict-files list.
-   - `UI.render()` displays notes in the sidebar, renders the first note (or a welcome message if none).
-   - SharePoint-sync conflict detection integrated into the scan.
+5. `feat: add SRS review mode UI`
+   - Review button in header with due-count badge
+   - Card presentation: question → reveal → rate
+   - Keyboard shortcuts (1/2/3/4)
+   - Write-in-progress button disable
+   - Session summary
+   - Broken-cards panel
 
-6. `feat: add backlinks panel`
-   - `BacklinkGraph` object — inverts the wiki-link map.
-   - `<aside>` panel renders backlinks for the currently-displayed note.
-   - "No backlinks" message for notes with none.
+6. `feat: add knowledge graph with force-directed layout`
+   - `GraphRenderer` module
+   - Canvas rendering, pan/zoom, click-to-navigate
+   - `prefers-reduced-motion` static layout
+   - Graph button in header
 
-7. `feat: add _index.md regenerator with atomic write`
-   - `IndexRegenerator` object.
-   - Produces pinned-structure markdown table from the notes array.
-   - Atomic write via temp file + rename through the writable directory handle.
-   - Skipped when handle is read-only (drag-drop fallback).
-   - Idempotency: same notes → byte-identical output.
+7. `feat: add outline alternative for knowledge graph`
+   - Nested list view of notes and their links
+   - Keyboard navigation (arrow keys, Enter)
+   - Toggle button between graph and outline
+   - Default to outline when `prefers-reduced-motion` or screen reader detected
 
-8. `feat: add tier filter and broken-notes panel`
-   - Tier filter buttons (All / Bedrock / Warm / Cold).
-   - Broken-notes panel with structured error display.
-   - Sync-conflicts panel.
-   - ARIA live regions for panel announcements.
+8. `feat: add orphan temp cleanup on app start`
+   - Scans `/srs/` and root for `.<stem>.<ext>.tmp` files older than 1 hour
+   - Deletes each, logs count (no PII)
 
-9. `docs: update README.md for Phase 2b`
-   - Update setup instructions: "Open `index.html` in Edge."
-   - Document the folder-picker flow.
-   - Document the drag-drop fallback and its read-only limitation.
+9. `docs: update README.md for Phase 2c`
+   - Document SRS review workflow
+   - Document knowledge graph and outline toggle
+   - Update status section
 
-10. Reflection block → `.harness/learnings.md` (council-gated per institutional-knowledge rule; posted in a follow-up commit or PR).
+## What Phase 2c explicitly does NOT do
+
+- No in-app note creation or editing (deferred — would require a markdown editor, which is a large surface).
+- No CSV export of SRS data (if added later, must sanitize formula-leading cells per security checklist).
+- No SRS statistics dashboard (cards reviewed per day, streak, etc.) — useful but not in scope.
+- No card creation from within the app — cards are created via the `flashcards.md` prompt template.
+- No multi-device sync conflict auto-resolution — conflicts are surfaced for manual merge only.
+- No `package.json` or dev tooling (separate PR per Phase 2b post-merge cascade).
 
 ## Risks flagged for council round 1
 
-1. **Markdown parser complexity.** A hand-rolled markdown parser is a maintenance risk and a security surface. Mitigation: support a deliberately minimal token set (no tables, no footnotes, no inline HTML). Each token type has a clear code path through `createElement`. The parser is ~300–500 lines, not thousands.
+1. **SM-2 `repetitions` not in schema.** Deriving from `interval` is a lossy approximation: a card that was lapsed and then reviewed once has `interval=1, repetitions=1`, but so does a brand-new card. Both get `interval=6` on next Good rating, which is correct SM-2 behavior, so the approximation is actually exact for the three states that matter (0, 1, 2+).
 
-2. **YAML frontmatter parser subset.** A full YAML parser is a large attack surface. The plan calls for a minimal subset (string scalars, arrays, the exact field set). Risk: a user writes valid YAML that the subset parser can't handle (anchors, multi-line strings with `|` or `>`). Mitigation: document the subset explicitly; surface unparseable frontmatter as a broken note with a clear error, not a silent skip.
+2. **Canvas accessibility.** The `<canvas>` element is inherently inaccessible to screen readers. Mitigation: the outline alternative is the primary accessible path and the default when `prefers-reduced-motion` is active. The canvas has `role="img"` with a descriptive label.
 
-3. **File System Access API browser support.** The API is Chromium-only (Chrome, Edge, Opera). Firefox and Safari don't support it. Mitigation: drag-drop fallback covers read-only use. The target browser is Edge (per the locked-down laptop constraint), so full API support is guaranteed for the primary user.
+3. **Force-directed layout performance.** O(N^2) per iteration for repulsive forces. For 100 notes, 300 iterations = 3M force calculations. Should complete in <1 second on modern hardware. For 500+ notes, may need Barnes-Hut approximation — deferred unless real usage reveals the need.
 
-4. **`file://` CORS restrictions.** Some Chromium builds restrict `fetch()` and ES module imports under `file://`. Mitigation: no `fetch()`, no ES modules. All code is inline. The only filesystem access is through the File System Access API handle, which is explicitly designed for `file://` use.
+4. **SRS write frequency.** Each card review triggers a file write. A 50-card review session = 50 writes. SharePoint sync may batch these, but the user might see 50 sync events in their SharePoint activity. Documented in the README as expected behavior.
 
-5. **Large wikis.** A folder with 1000+ notes will take noticeable time to scan and parse. Mitigation: for Phase 2b, accept the initial scan time (one-time per page load). Progressive rendering or caching is a Phase 2c+ concern if real usage reveals it's needed.
+5. **Local date computation.** The plan explicitly flags the `toISOString().slice(0,10)` anti-pattern and specifies the correct local-date computation. This is the single most critical correctness requirement in the SRS feature.
 
-6. **Atomic write under `file://`.** The File System Access API's `createWritable()` + `write()` + `close()` is the atomic primitive. It's not truly atomic in the POSIX `rename()` sense — a crash between `truncate` and `write` can corrupt. Mitigation: write to a `.tmp` sibling first, then rename. The API supports `keepExistingData: false` on `createWritable()`, and we can use a two-step write: create writable on tmp → write → close → rename via `removeEntry` + `moveEntry` if available, or read-back-verify otherwise. Document the limitation.
+## Open questions for the council
 
-7. **No automated tests in this PR.** Manual testing only. Risk: regressions on future changes. Mitigation: the dev-tooling decision (test runner, linter) is explicitly deferred. The test seams are designed in (each logical module is a named object with a pure-function interface) so that when a test runner arrives, tests can be bolted on without refactoring.
+1. **`repetitions` field:** should we add it to the card schema now (additive, backward-compatible — missing field defaults to derived value), or keep the derived approach?
 
-## Open questions for the council (round 1)
+2. **Graph layout algorithm:** simple spring-embedder vs. a more sophisticated algorithm? Spring-embedder is ~50 lines, works for <200 nodes, and has no dependencies.
 
-1. **YAML multi-line scalars (`|`, `>`):** should the frontmatter parser support block-scalar syntax for `question` / `answer` fields (relevant when notes have long source lists)? Or is flow-style (`[a, b]`) sufficient and block-scalars are deferred?
+3. **Review session persistence:** if the user closes the tab mid-review, should in-progress state be saved (e.g., to `sessionStorage`)? Or is it acceptable to lose the position and re-derive the queue on next load?
 
-2. **Table support in the markdown parser:** tables are useful for study notes but add parser complexity and XSS surface (cell content). Defer to a follow-up PR with its own council review, or include in Phase 2b?
-
-3. **`_index.md` write strategy under the File System Access API:** the API's `createWritable()` truncates on open. Two-step via a `.tmp` file requires either (a) `FileSystemDirectoryHandle.resolve()` + manual rename dance, or (b) writing to the target directly (not truly atomic). Which approach does the council prefer?
-
-4. **Persistent directory handle in `IndexedDB`:** the plan says no (per security checklist). But re-picking the folder on every page load is friction. Should we allow `IndexedDB` handle persistence with a written rationale and a visible "forget this folder" button?
-
-5. **Dev tooling timing:** should Phase 2b include a `package.json` with ESLint + a test runner (e.g., `vitest` or plain Node `assert`) so the parser can be tested before merge? Or is that a separate council-gated PR?
+4. **Card ordering in review:** shuffle? Sort by overdue-ness (most overdue first)? Random?
 
 ## Success criteria
 
-- `index.html` opens from `file://` in Edge with Wi-Fi off and renders a wiki folder.
-- `git grep -n 'innerHTML\|outerHTML\|insertAdjacentHTML\|createContextualFragment'` returns zero matches in `index.html` (except in comments documenting why these are banned).
-- Every supported markdown token type renders via DOM construction, not HTML string assembly.
-- URL scheme allowlist is enforced: `javascript:`, `data:`, `vbscript:` links render as plain text.
-- `[[wiki links]]` resolve by title match; path-traversal payloads render as broken links.
-- Backlinks panel shows incoming links for each note.
-- `_index.md` is regenerated and byte-identical on repeated runs with the same input.
-- Broken notes appear in the broken-notes panel with field-level structured error messages.
-- SharePoint conflict files appear in the sync-conflicts panel.
-- Tier filter works (All / Bedrock / Warm / Cold).
-- Keyboard navigation reaches all interactive elements. Tab order is logical.
-- WCAG AA contrast ratios on all text.
-- `prefers-reduced-motion` is respected.
-- No PII in `console.log` / `console.error` output.
-- Council synthesis approves the plan before any implementation commit lands.
-- Human types explicit approval after seeing the synthesis.
+- SRS cards in `/srs/*.yaml` are parsed and validated per the schema.
+- Due cards (where `next_review <= today`) appear in the review queue.
+- Rating a card runs SM-2 and writes the updated card atomically.
+- Rating buttons are disabled during writes (no double-click stale-math bug).
+- `next_review` is computed as a local calendar date, never through UTC.
+- Broken cards and conflict files are surfaced, not silently skipped.
+- Knowledge graph renders notes and links visually on canvas.
+- Outline alternative is fully keyboard-navigable.
+- Outline is the default when `prefers-reduced-motion` is active.
+- All new UI elements pass WCAG AA contrast and have 44x44px touch targets.
+- Zero `.innerHTML` on card content or graph labels.
+- No PII in console logs.
+- Council synthesis approves the plan before implementation.
+- Human types explicit approval.
 
 ## Anti-plan (what failure looks like)
 
-- Assigning untrusted content to `.innerHTML` anywhere — instant security veto.
-- Adding a `<script src>` or `<link href>` to an external resource — runtime-dep violation.
-- Adding `fetch()` or any network call — architecture violation.
-- Shipping SRS review mode or card writer — out of scope for Phase 2b.
-- Shipping a full YAML parser (js-yaml, etc.) — runtime dep.
-- Shipping a full markdown parser (marked, markdown-it, etc.) — runtime dep.
-- Storing a persistent `IndexedDB` handle without council approval.
-- Skipping the drag-drop fallback — accessibility regression for non-Chromium testers.
-- Writing `_index.md` via `innerHTML` string assembly instead of the File System Access API write path.
-- Logging note titles, bodies, or frontmatter values to console.
+- Using `.innerHTML` to render card question/answer text.
+- Converting `next_review` through UTC at any point.
+- Using `toISOString().slice(0,10)` for "today's local date."
+- Consolidating cards into a bulk file.
+- Writing cards without atomic temp-and-rename.
+- Allowing double-click during an in-flight write.
+- Shipping the graph without the outline alternative.
+- Adding a runtime dependency for the graph (D3, vis.js, etc.).
+- Logging card question/answer text to console.
+- Auto-deleting SharePoint conflict files.
 
 ## Post-merge cascade
 
-On approval + merge of Phase 2b:
-- **Phase 2c** plan (new session, new branch, new PR). Scope: SRS review mode (read + write per-card YAML via File System Access API with atomic write), SM-2 scheduler, graph canvas visualization with keyboard-navigable outline alternative, in-app note editing (optional, council-gated).
-- **Phase 2d** plan: Power Automate flow documentation.
-- **Dev tooling PR** (separate from Phase 2c): `package.json` with ESLint, Prettier, test runner. Retroactive test coverage for the Phase 2b parser, resolver, and scanner.
+On approval + merge of Phase 2c:
+- **Phase 2d** plan (new session, new branch, new PR): Power Automate flow documentation.
+- **Dev tooling PR** (separate): `package.json` with ESLint, Prettier, test runner. Retroactive test coverage for all Phase 2b + 2c modules.
