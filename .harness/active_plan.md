@@ -1,6 +1,6 @@
 # Active plan — Phase 2d: Power Automate flow documentation
 
-**Status:** draft — awaiting council round 1 + human approval. Not yet executing.
+**Status:** revised after council round 1 — executing with all blocker fixes applied.
 **Branch:** `feat/phase-2d-power-automate-docs`
 **Base:** `main` @ `c8557b6` (Phase 2c merged).
 **Prior context:** Phases 2a–2c shipped the full read/write wiki app. Phase 2d is the final sub-plan in the Phase 2 series: documentation for Power Automate flows the user can click-build on their locked-down work laptop.
