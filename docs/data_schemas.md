@@ -17,6 +17,8 @@ Any change to this file is a council-gated schema change per `CLAUDE.md`'s "When
 
 Every markdown file under `/bedrock/`, `/warm/`, or `/cold/` carries this YAML frontmatter at the top of the file, delimited by `---` lines.
 
+**Important parser rule:** only the **first** `---` block at the start of the file is treated as frontmatter. A `---` line anywhere else in the body (e.g., a horizontal rule, the start of a markdown subsection, a YAML-ish block quoted in prose) is NOT a frontmatter terminator and must be preserved as body content. The parser detects frontmatter only when the file begins with a `---` line at byte offset 0 (after optional UTF-8 BOM), and closes the block on the next line containing only `---`.
+
 ```yaml
 ---
 title: Laplace transform pair — sine                     # REQUIRED, non-null, non-empty string
@@ -90,7 +92,7 @@ question: "What is the Laplace transform of sin(at)?"    # REQUIRED, non-empty s
 answer: "a / (s^2 + a^2)"                                # REQUIRED, non-empty string
 ease: 2.5                                                # REQUIRED, float; SM-2 initial 2.5
 interval: 0                                              # REQUIRED, integer days; initial 0
-next_review: 2026-04-22                                  # REQUIRED, YYYY-MM-DD LOCAL CALENDAR DATE (not UTC)
+next_review: 2026-04-22                                  # REQUIRED, YYYY-MM-DD LOCAL CALENDAR DATE (not UTC) — WARNING: parse as literal local date; DO NOT convert through UTC (shifts due date for non-UTC users)
 last_reviewed: 2026-04-21T14:22:00Z                      # OPTIONAL, ISO 8601 UTC timestamp; omit key when never reviewed
 tier: warm                                               # REQUIRED, one of: bedrock | warm | cold
 source_note: warm/laplace-transforms.md                  # OPTIONAL, repo-relative path to originating note
@@ -143,13 +145,48 @@ The atomic write-to-temp-and-rename requirement is **global to every future writ
 Minimum pattern (pseudocode):
 
 ```
-def atomic_write(path, content):
+def atomic_write(path, content, expected_mtime):
+    # 1. Read-before-write: prevent overwriting a newer version that arrived
+    #    via SharePoint sync between our initial read and this write.
+    current_mtime = path.stat().mtime if path.exists() else None
+    if current_mtime is not None and expected_mtime is not None:
+        if current_mtime > expected_mtime:
+            raise StaleWriteError(path, current_mtime, expected_mtime)
+            # UI surfaces: "this file was updated on another device while you
+            # were editing. Reload to see the newer version, or discard your
+            # changes." Never overwrite silently.
+
+    # 2. Write to temp with canonical encoding/newlines.
     tmp = path.parent / ("." + path.name + ".tmp")
-    tmp.write_text(content, encoding="utf-8", newline="\n")    # LF, no BOM
-    tmp.rename(path)                                            # atomic on same fs
+    try:
+        tmp.write_text(content, encoding="utf-8", newline="\n")  # LF, no BOM
+        tmp.rename(path)                                         # atomic on same fs
+    except PermissionError:
+        cleanup_temp(tmp)
+        raise WritePermissionError(path)    # surface "check folder permissions"
+    except FileNotFoundError:
+        cleanup_temp(tmp)
+        raise WriteTargetDeletedError(path) # surface "file was deleted; save as new?"
+    except OSError as e:
+        cleanup_temp(tmp)
+        if is_stale_handle(e):
+            raise HandleRevokedError()      # surface "re-grant folder access"
+        raise                               # bubble the OS message
 ```
 
-Orphan cleanup on app start scans every tracked folder, not just `/srs/`, for `.<stem>.<ext>.tmp` files. Logged deletions, not silent.
+Error-handling contract (every writer must distinguish these, not collapse to a generic "save failed"):
+
+| Condition | Specific error | UI response |
+|---|---|---|
+| File was updated by a sync client since our read | `StaleWriteError` | "This file was updated on another device. Reload to see the newer version, or discard your changes." Offer reload / discard / side-by-side diff. |
+| Rename fails (e.g., permission denied on target) | `WritePermissionError` | "Can't save — check folder permissions." Clean up the temp file. |
+| Target file was deleted between read and write | `WriteTargetDeletedError` | "File was deleted elsewhere. Save as a new note?" |
+| File System Access API handle is stale (user revoked permission mid-session) | `HandleRevokedError` | "Folder access was revoked. Click to re-grant." Do not surface as a generic I/O error. |
+| Any other `OSError` | pass through with the raw OS message | "Save failed: `<OS message>`". Do not swallow. |
+
+Orphan cleanup on app start scans every tracked folder (not just `/srs/`) for `.<stem>.<ext>.tmp` files. Log each deletion; never silent. Temp files older than a configurable threshold (default 1 hour) are assumed orphaned from a prior crash.
+
+**UI concurrency (Phase 2c review mode):** the UI must disable interactive controls (review-rating buttons, save buttons) during any in-flight atomic write. A user double-clicking a review button must not queue a second SM-2 update computed against the pre-write in-memory state, as that would overwrite the first update's result with stale math.
 
 ## Filename slugging
 
@@ -176,6 +213,12 @@ If the slugged filename already exists in the target folder:
 - The slug's collision counter is scoped to the folder, not the tier or repo.
 - If a human hand-renames a file later, the collision counter does not re-renumber — the parser surfaces a warning if slug-from-title no longer matches the filename but continues to render.
 
+**Interaction with SharePoint-sync conflict files.** SharePoint's sync client generates filenames like `foo (1).md` when two devices edit the same file. These are NOT slug-collision suffixes and must not be treated as such.
+
+- Before computing a slug-collision suffix, the slugger skips over any existing files matching the SharePoint conflict-pattern regex (`<stem> \(\d+\)\.<ext>`, or the device-name variant `<stem> \(conflict from [^)]+\)\.<ext>`). Those files are treated as "sibling conflicts to resolve," not as existing slots.
+- Result: if `foo.md` exists and SharePoint has also produced `foo (1).md`, a user creating another note titled "Foo" gets `foo-2.md` (the next collision suffix), not `foo (2).md` (which would look like another sync conflict) and not `foo (1)-2.md` (confusing).
+- The parser's SharePoint-conflict detector still surfaces `foo (1).md` for manual resolution regardless of what the slugger does.
+
 ### Examples
 
 | Title | Slug |
@@ -183,7 +226,10 @@ If the slugged filename already exists in the target folder:
 | `Laplace Transform Pair — Sine` | `laplace-transform-pair-sine` |
 | `Fourier Series & Parseval's Theorem` | `fourier-series-parsevals-theorem` |
 | `CON` | `_con` |
+| `Con` (mixed-case reserved name) | `_con` (reserved-name detection is case-insensitive) |
 | `Notes 1/2` | `notes-1-2` |
+| `<script>alert('xss')</script>` (malicious) | `script-alert-xss-script` — safe as a filename. **Phase 2b parser must also render the `title:` field as escaped text**, never as HTML, so a title like this shows literally in the UI rather than executing. |
+| `🤔✅` (all-emoji) | empty stem → fall through to `untitled-<unix-timestamp>` (timestamp supplied by app/human, not LLM) |
 | `日本語タイトル` (Japanese title) | (NFKD strips to katakana then filter drops all — result empty; parser falls back to `untitled-<unix-timestamp>`, where the timestamp is generated by the **app / human at save time**, never by an LLM — LLMs have no clock and will hallucinate) |
 | `a-very-long-title-that-goes-on-and-on-and-continues-past-the-eighty-character-limit-for-sure` | `a-very-long-title-that-goes-on-and-on-and-continues-past-the-eighty` (truncated at hyphen) |
 
