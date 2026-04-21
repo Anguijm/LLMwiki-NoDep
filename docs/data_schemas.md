@@ -41,15 +41,43 @@ sources: [https://example.edu/laplace.pdf, /cold/dsp-review.md]   # OPTIONAL, ar
 
 ### Parser behavior on violations
 
-| Violation | Parser response |
-|---|---|
-| Required field missing | Surface as a broken note in UI; do not include in `_index.md`; do not include in graph or SRS outputs. |
-| `tier` value not in enum | Broken note, as above. |
-| `created` / `updated` not parseable as ISO 8601 UTC | Broken note. Do NOT attempt local-time fallback. |
-| `tags` / `sources` value not an array | Broken note. Do NOT attempt split-on-comma fallback. |
-| `tags` contains whitespace-only entries | Drop those entries silently; surface the note. |
-| Unknown top-level keys | Preserve on round-trip but ignore in rendering / indexing. |
-| File name does not match slug-from-`title` | Surface a visible warning; still render. (Human may have hand-renamed.) |
+Parse violations produce a **structured error** (not a boolean "broken" flag) so the UI can tell the human exactly what's wrong and which field to fix. Minimum error shape the parser returns per broken note or card:
+
+```json
+{
+  "path": "warm/laplace-transforms.md",
+  "kind": "validation",
+  "field": "tier",
+  "message": "value 'hot' not in enum [bedrock, warm, cold]",
+  "recoverable": true
+}
+```
+
+| Violation | `field` | `kind` | `message` example | `recoverable` |
+|---|---|---|---|---|
+| Required field missing | name of the missing field | `validation` | `missing required field 'title'` | `true` |
+| `tier` value not in enum | `tier` | `validation` | `value 'hot' not in enum [bedrock, warm, cold]` | `true` |
+| `created` / `updated` not parseable as ISO 8601 UTC | `created` or `updated` | `validation` | `not parseable as ISO 8601 UTC: '2026-04-21'` | `true` |
+| `tags` / `sources` value not an array | `tags` or `sources` | `validation` | `expected array, got string: 'foo, bar'` | `true` |
+| Frontmatter YAML itself unparseable (malformed block) | `(frontmatter)` | `parse` | `YAML parse error at line N: ...` | `true` |
+| Body contains LLM-generated timestamp placeholder (`<TIMESTAMP MISSING — human must fill in before save>`) | `created` / `updated` / `next_review` | `validation` | `unfilled LLM placeholder — human must set timestamp` | `true` |
+| `tags` contains whitespace-only entries | (none) | `(warning, not error)` | drop silently; surface note | `true` |
+| Unknown top-level keys | (none) | `(warning, not error)` | preserve on round-trip; ignore in rendering | `true` |
+| File name does not match slug-from-`title` | `title` | `warning` | `filename 'foo.md' does not match slug 'bar' from title` | `true` (still render) |
+
+Notes in validation-error state are **excluded from `/_index.md`, the graph, and SRS outputs** until fixed. They appear in a "Broken notes" section of the UI with the error message visible so the human can edit the offending field. The human decides whether to fix or delete.
+
+### Parser behavior on I/O failures
+
+Distinct from parse/validation errors: I/O errors happen when the filesystem itself refuses to cooperate. The parser must distinguish these cases and return a matching error shape with `kind: "io"`:
+
+| I/O condition | `message` | Recovery action |
+|---|---|---|
+| File not found | `file not found` | (transient during SharePoint sync; retry once after ~200ms, then surface as broken) |
+| Permission denied | `permission denied (check file read permissions)` | surface; require human intervention |
+| File locked by another process | `file locked (another application may have it open)` | surface; retry on next user refresh |
+| SharePoint-sync conflict file detected (sibling `note (1).md`) | `sync conflict — see also: <sibling path>` | surface both files as "sync conflict — resolve by hand"; do not auto-merge or auto-delete |
+| I/O error, unspecified | `io error: <OS message>` | surface with the raw OS message for debugging |
 
 ## SRS per-card YAML
 
@@ -108,6 +136,21 @@ source_note: warm/laplace-transforms.md                  # OPTIONAL, repo-relati
 - **No bulk file.** Never consolidate cards into a single `srs.csv`, `srs.yaml`, or equivalent bulk file. That's what the one-file-per-card architecture exists to prevent.
 - **CSV-export sanitization (if any CSV export ever exists).** Every cell that starts with `=`, `+`, `-`, `@`, `\t`, or `\r` must be prefixed with `'`. Non-negotiable per `.harness/scripts/security_checklist.md`.
 
+### Global atomic-write requirement (all future writers, not just SRS)
+
+The atomic write-to-temp-and-rename requirement is **global to every future writer in this repo**, not just SRS cards. Any code path that writes a tracked file — note markdown, `/_index.md` regeneration, tier README edits done in-app, Power Automate flow outputs — must use the same write-to-temp-and-rename discipline. Rationale: every tracked file sits in a SharePoint-synced folder, and every in-place truncate-then-write is a crash window that can corrupt the file as far as the sync client sees.
+
+Minimum pattern (pseudocode):
+
+```
+def atomic_write(path, content):
+    tmp = path.parent / ("." + path.name + ".tmp")
+    tmp.write_text(content, encoding="utf-8", newline="\n")    # LF, no BOM
+    tmp.rename(path)                                            # atomic on same fs
+```
+
+Orphan cleanup on app start scans every tracked folder, not just `/srs/`, for `.<stem>.<ext>.tmp` files. Logged deletions, not silent.
+
 ## Filename slugging
 
 Applied to both note filenames (from frontmatter `title:`) and SRS card filenames (from YAML `id:` stem).
@@ -119,9 +162,10 @@ Applied to both note filenames (from frontmatter `title:`) and SRS card filename
 3. **ASCII-only filter.** Any character outside `[a-z0-9]` becomes a hyphen `-`.
 4. **Collapse.** Collapse runs of consecutive hyphens to a single hyphen.
 5. **Trim.** Strip leading and trailing hyphens.
-6. **Truncate.** If stem length > 80 characters, truncate at the nearest prior hyphen boundary; if no hyphen within the last 20 chars of the truncation point, hard-cut at 80.
-7. **Reserved-name escape.** If the resulting stem matches a Windows reserved name (case-insensitive — `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`), prefix with `_`.
-8. **Extension.** `.md` for notes, `.yaml` for SRS cards.
+6. **Empty-stem fallback.** If the stem is empty after step 5 (input was all non-alphanumeric, e.g., `!!?*` or a Japanese title that NFKD-filters to nothing), the caller supplies a Unix timestamp and the stem becomes `untitled-<unix-ts>`. The timestamp is provided by the Phase 2b app from the OS clock OR typed by the human when hand-saving — **never generated by an LLM** (LLMs have no clock and will hallucinate). LLM-emitted notes containing the literal token `<TIMESTAMP MISSING — human must fill in before save>` MUST be rejected by the parser.
+7. **Truncate.** If stem length > 80 characters, truncate at the nearest prior hyphen boundary; if no hyphen within the last 20 chars of the truncation point, hard-cut at 80.
+8. **Reserved-name escape.** If the resulting stem matches a Windows reserved name (case-insensitive — `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`), prefix with `_`.
+9. **Extension.** `.md` for notes, `.yaml` for SRS cards.
 
 ### Collision handling
 
@@ -140,7 +184,7 @@ If the slugged filename already exists in the target folder:
 | `Fourier Series & Parseval's Theorem` | `fourier-series-parsevals-theorem` |
 | `CON` | `_con` |
 | `Notes 1/2` | `notes-1-2` |
-| `日本語タイトル` (Japanese title) | (NFKD strips to katakana then filter drops all — result empty; parser falls back to `untitled-<timestamp>`) |
+| `日本語タイトル` (Japanese title) | (NFKD strips to katakana then filter drops all — result empty; parser falls back to `untitled-<unix-timestamp>`, where the timestamp is generated by the **app / human at save time**, never by an LLM — LLMs have no clock and will hallucinate) |
 | `a-very-long-title-that-goes-on-and-on-and-continues-past-the-eighty-character-limit-for-sure` | `a-very-long-title-that-goes-on-and-on-and-continues-past-the-eighty` (truncated at hyphen) |
 
 ## Encoding and line endings

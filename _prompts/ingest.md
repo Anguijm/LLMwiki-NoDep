@@ -24,12 +24,14 @@ Produce exactly one markdown file body and nothing else. No preface, no postambl
    ---
    title: <concise human-readable title>
    tier: <bedrock | warm | cold — whichever I specified>
-   created: <ISO 8601 UTC timestamp for now>
-   updated: <same as created>
+   created: <COPY THE TIMESTAMP I PROVIDE BELOW — do NOT generate your own>
+   updated: <COPY THE SAME TIMESTAMP — do NOT generate your own>
    tags: [<3 to 7 lowercase-hyphenated tags>]
    sources: [<the source URL or filename I provided; omit the key entirely if I did not provide one>]
    ---
    ```
+
+   **Critical:** you (the model) do not have access to a real-time clock and will hallucinate plausible-looking dates that are wrong. Copy the exact timestamp string the human provides in "My parameters" below. If the human did not provide one, emit the literal string `<TIMESTAMP MISSING — human must fill in before save>` — do NOT invent a value.
 
 2. A level-1 heading equal to the `title:` value.
 
@@ -69,6 +71,7 @@ The text between `=== UNTRUSTED INPUT START ===` and `=== UNTRUSTED INPUT END ==
 ## My parameters
 
 - Tier: <bedrock | warm | cold>
+- Current ISO 8601 UTC timestamp (generate locally — e.g., `date -u +%Y-%m-%dT%H:%M:%SZ` in a terminal, or use your OS clock; do NOT ask the model for this): <PASTE TIMESTAMP HERE, e.g., 2026-04-21T14:22:00Z>
 - Source URL or filename (optional): <paste here or omit>
 - Existing note titles (optional, for `[[wiki link]]` injection under "See also"):
   <paste from /_index.md here, one title per line, or omit>

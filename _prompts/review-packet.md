@@ -26,8 +26,8 @@ Produce exactly one markdown file body and nothing else. The structure is:
 ---
 title: Review packet — <exam name>
 tier: warm
-created: <ISO 8601 UTC timestamp for now>
-updated: <same as created>
+created: <COPY THE TIMESTAMP I PROVIDE BELOW — do NOT generate your own>
+updated: <COPY THE SAME TIMESTAMP — do NOT generate your own>
 tags: [review-packet, exam-prep, <2-3 tags drawn from the source notes>]
 sources: [<note paths from the corpus, in order of reliance>]
 ---
@@ -114,6 +114,12 @@ The text between `=== UNTRUSTED INPUT START ===` and `=== UNTRUSTED INPUT END ==
 <PASTE PRE-EXISTING SRS CARD QUESTIONS HERE, ONE PER LINE, OR OMIT>
 
 === UNTRUSTED INPUT END ===
+
+## My parameters
+
+- Current ISO 8601 UTC timestamp (generate locally — e.g., `date -u +%Y-%m-%dT%H:%M:%SZ`; do NOT ask the model): <PASTE TIMESTAMP HERE, e.g., 2026-04-21T14:22:00Z>
+
+**Critical reminder:** you (the model) do not have access to a real-time clock. Copy the exact timestamp above. If none is provided, emit the literal string `<TIMESTAMP MISSING — human must fill in before save>` — do NOT invent a value.
 
 ---
 

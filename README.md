@@ -122,6 +122,8 @@ The target deployment reality:
 
 Every architectural decision cascades from these constraints. The constraints are not obstacles to work around — they are the design.
 
+**One thing to know about the SharePoint layer:** every file modification — every flashcard review, every note edit, every `_index.md` regeneration — is visible in the SharePoint folder's version history to anyone with access to that folder. The one-file-per-card SRS architecture means individual review actions appear as discrete sync events. If your study-wiki folder is shared (even just with an IT admin), those events are visible. If that's not the audience you want, make sure the folder's SharePoint permissions match your expectations before you start adding content.
+
 ## License
 
 See `LICENSE`.

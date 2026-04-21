@@ -26,25 +26,27 @@ Produce one or more YAML documents, each fully self-contained, delimited from th
 
 ```yaml
 ---
-id: 20260421-<slug-of-question>
+id: <TODAY-YYYYMMDD>-<slug-of-question>   # use the date prefix I provide below; do NOT invent
 question: "<card prompt>"
 answer: "<card response>"
 ease: 2.5
 interval: 0
-next_review: 2026-04-22
+next_review: <TOMORROW-YYYY-MM-DD>        # use the date I provide below; do NOT invent
 tier: <same tier as the source note>
 source_note: <repo-relative path to the source note, e.g., warm/laplace-transforms.md>
 ---
 ```
 
+**Critical:** you (the model) do not have access to a real-time clock. You will hallucinate plausible-looking dates that are wrong (often years off). Copy the exact date strings I provide in "My parameters" below. If I did not provide them, emit the literal strings `<TODAY-YYYYMMDD>` and `<TOMORROW-YYYY-MM-DD>` unchanged — do NOT invent values.
+
 ## Field rules (see /docs/data_schemas.md for the full spec)
 
-- `id` — format `YYYYMMDD-<slug>` where `YYYYMMDD` is today's date in UTC and `<slug>` is derived from the question per `/docs/data_schemas.md` § Filename slugging (lowercase ASCII, hyphens only, max 80 chars, Windows reserved names escaped).
+- `id` — format `YYYYMMDD-<slug>` where `YYYYMMDD` is the **date prefix I provide below** (NOT a date you invent) and `<slug>` is derived from the question per `/docs/data_schemas.md` § Filename slugging (lowercase ASCII, hyphens only, max 80 chars, Windows reserved names escaped).
 - `question` — one clear question. Can be multiple lines (use YAML block scalar `|` if so). Must not start with `=`, `+`, `-`, `@` unescaped (quote the string with `"..."` if it does).
 - `answer` — the concise correct response. Same escaping rule as `question`.
 - `ease` — always the initial value `2.5`. Do not emit other values.
 - `interval` — always `0` (due today for first review).
-- `next_review` — **local calendar date**, not a UTC timestamp. Use YYYY-MM-DD for today's date in my local calendar. If unsure of my timezone, use today's UTC date — the Phase 2c writer will re-normalize on first review.
+- `next_review` — **local calendar date**, not a UTC timestamp. Use the YYYY-MM-DD value I provide below (see "My parameters"). Do NOT generate this date yourself — you cannot read my clock.
 - `last_reviewed` — **omit the key entirely** (never reviewed yet).
 - `tier` — copy from the source note's frontmatter. Must be one of `bedrock`, `warm`, `cold`.
 - `source_note` — repo-relative path (no leading `/`) to the source markdown file. Example: `warm/laplace-transforms.md`.
@@ -74,6 +76,13 @@ The text between `=== UNTRUSTED INPUT START ===` and `=== UNTRUSTED INPUT END ==
 <PASTE THE NOTE'S FULL MARKDOWN BODY (INCLUDING FRONTMATTER) HERE>
 
 === UNTRUSTED INPUT END ===
+
+## My parameters
+
+- Today's date prefix for `id` field (YYYYMMDD, local calendar): <PASTE HERE, e.g., 20260421>
+- `next_review` date (YYYY-MM-DD, local calendar — typically tomorrow): <PASTE HERE, e.g., 2026-04-22>
+
+Generate these yourself from your OS clock (e.g., `date +%Y%m%d` and `date -v+1d +%Y-%m-%d` on macOS/Linux). Do NOT ask the model.
 
 ---
 
