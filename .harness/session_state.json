@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": "Phase 2c: SRS review mode + outline view",
-  "focus_area": "phase-2c-implementation",
-  "approval_state": "executing",
+  "active_plan": null,
+  "focus_area": "phase-2-complete",
+  "approval_state": "idle",
   "last_council": {
-    "source": "PR #4",
-    "decision": "Revise",
-    "scores": { "accessibility": 8, "architecture": 10, "bugs": 6, "cost": 10, "product": 10, "security": 9 },
-    "run_at": "2026-04-21T18:34:07Z"
+    "source": "PR #6",
+    "decision": "Revise (merged on human approval — approval gate passed)",
+    "scores": { "accessibility": 10, "architecture": 10, "bugs": 5, "cost": 10, "product": 9, "security": 8 },
+    "run_at": "2026-04-21T22:37:40Z"
   },
   "last_commit": {
-    "hash": "d1d81148c7cdcab9b1adea1fafc05c06ff25184c",
-    "short": "d1d8114",
-    "subject": "fix: address council round-3 findings — contrast, atomic write, date parsing",
+    "hash": "801bc85",
+    "short": "801bc85",
+    "subject": "docs: rewrite setup for locked-down laptops that block ZIP downloads",
     "author": "Claude <noreply@anthropic.com>",
-    "branch": "feat/phase-2c-srs-graph",
-    "committed_at": "2026-04-22T00:00:00+00:00",
+    "branch": "main",
+    "committed_at": "2026-04-22T07:35:00+00:00",
     "files_changed": 1
   },
-  "notes": "Phase 2c implementation pushed. Council round-3 fixes applied. Awaiting council round-4 re-review."
+  "notes": "Phase 2 complete (2a-2d + dev tooling). 6 PRs merged (#1-#6). README rewritten for locked-down laptops. No active plan — future work driven by user feedback."
 }
