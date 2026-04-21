@@ -1,203 +1,346 @@
-# Active plan — Phase 2a: scaffold folders + prompt templates + file-per-card SRS
+# Active plan — Phase 2b: index.html + markdown parser + wiki-link resolver + _index.md regenerator
 
-**Status:** revised after council round 1 (2026-04-21); awaiting council round 2 + human approval. Not yet executing.
-**Branch:** `feat/phase-2a-scaffold-folders-prompts`
-**Base:** `main` @ `4b82914` (Phase 1 squash-merge).
-**Prior context:** Phase 1 (council harness bootstrap) is merged. Phase 2 is split into sub-plans per the human's option-B ruling (2026-04-21); this plan covers Phase 2a only.
+**Status:** draft — awaiting council round 1 + human approval. Not yet executing.
+**Branch:** `feat/phase-2b-index-html`
+**Base:** `main` @ `573be91` (Phase 2a merged).
+**Prior context:** Phase 2a (folder scaffold, prompt templates, data schemas) is merged. Phase 2b is the first phase that ships executable code — HTML, CSS, and JavaScript in a single `index.html`. The highest-leverage security review of the entire app happens on this PR.
 
-## Response to council round 1
+## Scope of Phase 2b
 
-**Council decision (round 1):** REVISE. Scores: bugs 5, accessibility 10, architecture 9, cost 9, product 10, security 10. Full synthesis in PR #2's `<!-- council-report -->` comment against commit `1032532`.
+The four product loops — add, link, review, find-contradictions — all require the user to open `index.html` and see their wiki rendered. This phase delivers the read path: open the folder, parse every note, render markdown, resolve wiki links, display backlinks, and regenerate `_index.md`. The write path (SRS review mode, in-app note editing) is Phase 2c.
 
-**Accepted revisions (6):**
-- Switch SRS from single `srs.csv` to one-file-per-card under `/srs/*.yaml`. Avoids last-write-wins data loss on SharePoint-synced concurrent edits. Knock-on: `flashcards.md` emits YAML for one card, not a CSV row.
-- Define filename sanitization (slugging) rules up front in `/docs/data_schemas.md`. Windows reserved names and SharePoint-invalid chars.
-- Explicit per-field nullability in the frontmatter + SRS schema. Parser in 2b has fewer branches.
-- New file `/docs/data_schemas.md` as the single source of truth for frontmatter, SRS card YAML, filename slugging, and line-ending/encoding conventions.
-- Prompt-template context-window discipline: `linker.md` instructs the human to paste only `_index.md` titles + frontmatter (not full bodies); `gap-analysis.md` warns to paste narrow corpus. Exact "untrusted user content" framing wording reviewed in the implementation PR.
-- Carry-forward note: Phase 2c's graph-canvas plan must ship a non-visual, keyboard-navigable alternative (outline view) alongside the visual graph.
+**Deliverables:**
 
-**Principled pushbacks (2), with rationale:**
-- **Dates: hybrid, not all-UTC.** Audit fields (`created`, `updated`, `last_reviewed`) become ISO 8601 UTC timestamps (`YYYY-MM-DDTHH:mm:ssZ`) — correct for timezone-agnostic audit trails. But `next_review` stays **local calendar date** (`YYYY-MM-DD`, documented as local). SRS semantics are "this card is due on day X in the user's calendar" — a day concept, not a timestamp. A UTC timestamp of `2026-05-01T00:00:00Z` makes the card appear due at 5pm April 30 for a UTC-7 user, which is wrong. Council round 1 conflated audit-trail timezone hygiene (real concern) with SRS day-semantics (not a timezone bug).
-- **Keep `_index.md`, rigidly pinned; do not fork to `_index.json`.** Council suggested JSON as canonical with MD regenerated from it. That doubles artifacts and doubles regenerator complexity for a solo-user app. Simpler: one `_index.md` with a pinned structure (deterministic markdown table, fixed columns, sorted deterministically) that is unambiguously both machine-parseable and human-readable. YAGNI on the second format; convert if machine consumers ever outgrow MD parsing.
+1. **`index.html`** — a single file containing all HTML, CSS (inline `<style>`), and JavaScript (inline `<script>`). No external assets, no `<script src>`, no `<link rel="stylesheet" href>`. Opens from `file://` in Edge with Wi-Fi off.
+2. **Folder access via File System Access API** — `showDirectoryPicker()` to get a read-only directory handle on the wiki root. Drag-drop fallback for browsers that don't support the API or when the user declines.
+3. **Frontmatter parser** — parses YAML frontmatter from note markdown per `/docs/data_schemas.md`. Returns structured errors (not booleans) for validation failures. Tolerates BOM, CRLF, mixed line endings.
+4. **Inline markdown parser** — converts markdown body to DOM. Escape-by-default: all content goes through `document.createTextNode` / `createElement` / `appendChild`. No `.innerHTML` on untrusted strings. Supports: headings, paragraphs, bold, italic, inline code, code fences, blockquotes, ordered/unordered lists, horizontal rules, links, images, and `[[wiki links]]`.
+5. **Wiki-link resolver** — resolves `[[Title]]` to the matching note by Unicode NFKD case-fold title match against the in-memory index. Path-traversal guards per `/docs/data_schemas.md` security considerations. Unresolved links render as visually-distinct broken-link text, not clickable `<a>` tags.
+6. **Backlinks panel** — for each rendered note, a sidebar/section showing all notes that link TO this note via `[[wiki links]]`. Computed from the in-memory link graph.
+7. **`_index.md` regenerator** — on each folder scan, regenerates `/_index.md` from scratch per the pinned structure in `/docs/data_schemas.md`. Idempotent. Does not read the previous `_index.md` as input. Writes via atomic temp-and-rename.
+8. **Broken-notes panel** — notes with parse/validation errors are excluded from the index and rendered in a dedicated "Broken notes" section with the specific error message visible.
+9. **SharePoint-sync conflict detection** — files matching `<stem> (1).<ext>` or `<stem> (conflict from <device>).<ext>` patterns are surfaced in UI as "sync conflict — resolve by hand." Not included in the index.
+10. **Tier filter** — UI control to filter displayed notes by tier (bedrock / warm / cold / all).
 
-**Approval-gate answers (asked by council):**
-- **Q1 — defer wiki-link conflicting-title resolution to Phase 2b?** Yes. Parser-layer decision; belongs with the parser plan, not the scaffold plan.
-- **Q2 — which phase owns the `_index.md` regenerator?** Phase 2b. The parser in 2b depends on `_index.md` being current; deferring the regenerator to 2d means the parser ships against a stale or empty index.
+**What Phase 2b explicitly does NOT deliver:**
+- No SRS review mode (Phase 2c).
+- No SRS card reader/writer (Phase 2c).
+- No graph canvas visualization (Phase 2c).
+- No in-app note editing or creation (Phase 2c or later).
+- No Power Automate flow docs (Phase 2d).
+- No `package.json` or dev tooling — tests are manual for this PR. Dev tooling decision deferred to a follow-up.
 
-## Scope of Phase 2a
+## Architecture
 
-No JavaScript. No `index.html`. No DOM, no parser, no File System Access API code. Purely file-layout + prose-template + schema-doc work. The council reviews a low-risk diff; Phase 2b (the parser + DOM boundary, plus the `_index.md` regenerator) ships in its own PR with its own council review.
+### Single-file constraint
 
-**Deliverables (in execution order):**
+Everything lives in `index.html`. No ES module imports, no dynamic `import()`, no `<script type="module">` (which has CORS-like restrictions under `file://` in some Chromium builds). All JavaScript is in a single inline `<script>` block at the end of `<body>`.
 
-1. **Folder structure + `.gitkeep` files:** `/bedrock/.gitkeep`, `/warm/.gitkeep`, `/cold/.gitkeep`, `/_prompts/.gitkeep`, `/srs/.gitkeep`, `/docs/.gitkeep`. Lands the directories in git before any README is written.
-2. **`/docs/data_schemas.md`** — single source of truth. Defines:
-   - Frontmatter schema for tier-folder notes (fields, types, required/optional, nullability, examples).
-   - SRS per-card YAML schema (fields, types, required/optional, date-field semantics).
-   - Filename slugging rules (lowercase, alphanumerics + hyphens, max length, reserved-name escape).
-   - Line-ending / encoding conventions (UTF-8, LF, no BOM) and parser tolerance requirements (Phase 2b parser must tolerate CRLF and BOM defensively).
-   - `_index.md` pinned structure spec (see `_index.md` section below).
-3. **Three tier folder READMEs:** `/bedrock/README.md`, `/warm/README.md`, `/cold/README.md`. Each defines the tier's purpose, frontmatter `tier:` value, lifecycle (when notes move in / out), and links to `/docs/data_schemas.md`.
-4. **`/srs/README.md`** — documents the one-file-per-card architecture, the YAML schema (by reference to `/docs/data_schemas.md`), and future-writer requirements: atomic write via write-to-temp-and-rename; no single bulk file; no CSV export without formula-injection sanitization (carried forward to Phase 2c).
-5. **`/_index.md` stub** — empty placeholder with a header comment reading `<!-- regenerated by index.html in Phase 2b; pinned structure per /docs/data_schemas.md; do not hand-edit -->`. Pinned structure (deterministic markdown table, fixed columns: title | tier | path | updated) is specified in `/docs/data_schemas.md` so the Phase 2b regenerator has a contract to satisfy.
-6. **Five `/_prompts/*.md` templates**, in this order (most-load-bearing first):
-   - `ingest.md` — normalize any pasted source to a linked markdown note with frontmatter; simplified to undergraduate mechanical-engineering level.
-   - `linker.md` — given a new note plus `_index.md`, return the note with `[[links]]` injected. **Context discipline:** instructs the human to paste only the titles + frontmatter slice of `_index.md`, never full note bodies.
-   - `flashcards.md` — generate YAML for a **single** SRS card file (not a CSV row). Output matches `/docs/data_schemas.md`'s per-card schema exactly.
-   - `review-packet.md` — compile a targeted review for a named exam.
-   - `gap-analysis.md` — find contradictions / missing concepts across a pasted corpus. **Context discipline:** explicit warning to paste narrow, targeted corpus only.
+Logical separation is by named functions and objects, not files:
 
-   Every template's frontmatter: `purpose`, `inputs`, `outputs`, `human_turn_budget`, `version`. Every template contains an identical, clearly-delimited "untrusted user content" framing block around the human-pasted material (exact wording approved in this PR's implementation commits before any template ships).
-7. **Top-level `/README.md`** — setup (clone into a SharePoint-synced folder, `index.html` lands in Phase 2b), the GenAI.mil copy/paste loop, how to add a note, how to use a prompt template. Links to `/docs/data_schemas.md` and the five templates. ~150 lines.
-8. **Nothing else.** No `index.html` stub (Phase 2b). No Power Automate docs (Phase 2d or later). No `/power-automate/` folder. No `package.json` (deferred; first decision point is whether dev tooling ships with Phase 2b's JS or later). No `_index.json` (rejected in round 1 — see Response to council round 1).
+- `FrontmatterParser` — parse YAML frontmatter, return structured result or structured error.
+- `MarkdownParser` — convert markdown string to DOM fragment. Escape-by-default.
+- `WikiLinkResolver` — resolve `[[Title]]` tokens during markdown parsing.
+- `IndexRegenerator` — produce `_index.md` content from the note array.
+- `FolderScanner` — walk the directory handle, read files, coordinate parsing.
+- `BacklinkGraph` — compute reverse link index from the parsed notes.
+- `UI` — render the note list, note view, broken-notes panel, tier filter, folder-picker.
 
-## Note frontmatter schema (locked by Phase 2a; later edits are council-gated)
+### Rendering pipeline
 
-Canonical schema (full spec + examples in `/docs/data_schemas.md`):
-
-```yaml
----
-title: <human-readable title>                # REQUIRED, non-null, non-empty
-tier: bedrock | warm | cold                  # REQUIRED, non-null, one of three
-created: 2026-04-21T14:22:00Z                # REQUIRED, ISO 8601 UTC timestamp
-updated: 2026-04-21T14:22:00Z                # REQUIRED, ISO 8601 UTC timestamp
-tags: [<tag>, ...]                           # REQUIRED, always an array (empty [] if none)
-sources: [<url-or-path>, ...]                # OPTIONAL, array only, omit key entirely if none
----
+```
+User grants folder handle
+       ↓
+FolderScanner walks /bedrock/, /warm/, /cold/
+       ↓
+For each .md file:
+  → FrontmatterParser.parse(content) → { frontmatter, body, errors[] }
+  → if errors: push to brokenNotes[]
+  → else: push to notes[]
+       ↓
+Build title→note lookup (Unicode NFKD case-fold)
+       ↓
+For each note body:
+  → MarkdownParser.parse(body, resolver) → DOM fragment
+  → WikiLinkResolver resolves [[links]] during parse
+       ↓
+BacklinkGraph.build(notes) → Map<noteId, backlinks[]>
+       ↓
+IndexRegenerator.generate(notes) → _index.md content
+  → atomic write via directory handle
+       ↓
+UI.render(notes, brokenNotes, conflictFiles)
 ```
 
-Nullability is explicit per field. The Phase 2b parser treats a missing required field as a validation error (surfaced in UI as "broken note"); a missing optional field is silently absent. This prevents silent corruption where a half-parsed note sneaks into the graph view.
+### File System Access API flow
 
-Rationale:
-- `title` drives `[[wiki link]]` resolution (title match, not filename match; Unicode case-fold per Security checklist).
-- `tier` drives filter state in 2b's UI.
-- `created` / `updated` are ISO 8601 UTC timestamps so audit trails are timezone-unambiguous across devices and DST transitions.
-- `tags` always present as an array (even empty) → parser has no "missing vs empty" branch.
-- `sources` omitted entirely when empty → one shape when present, absent key when not.
+**Primary path (File System Access API):**
+1. On page load, show a "Choose wiki folder" button.
+2. `showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' })` — readwrite needed for `_index.md` regeneration. The permission prompt is explicit.
+3. Store the handle in a page-scoped variable (not `IndexedDB` — no persistent handle without written rationale per security checklist).
+4. If the user revokes permission mid-session or navigates away, surface a "re-grant access" prompt. No crash, no silent failure, no `fetch` fallback.
 
-The `/_prompts/ingest.md` template emits exactly this shape so hand-written and LLM-generated notes are indistinguishable to the parser.
+**Drag-drop fallback:**
+1. If `showDirectoryPicker` is unavailable or the user cancels, show a drag-drop zone: "Drag your wiki folder here."
+2. Read files from the `DataTransferItemList` via `webkitGetAsEntry()` / `getAsFileSystemHandle()`.
+3. Drag-drop is **read-only** — `_index.md` regeneration is skipped (the user must regenerate manually or use a browser that supports the full API). Surface this limitation in UI copy.
+4. Drag-drop does NOT get a writable handle, so no SRS writes either (that's Phase 2c anyway).
 
-## SRS per-card schema (one file per card, YAML; replaces former `srs.csv`)
+### Frontmatter parser
 
-Per council round 1: a single `srs.csv` shared across SharePoint-synced devices = guaranteed last-write-wins data loss on concurrent adds. One file per card lets the sync client's file-level conflict handling save us, and SM-2 updates happen in-place on a single card's file.
+Parses the first `---` block at byte offset 0 (after optional BOM strip) per `/docs/data_schemas.md` § "Important parser rule."
 
-One file per card at `/srs/<slug>.yaml`. Filename slug rules in `/docs/data_schemas.md` (see below).
+- Minimal YAML subset — only needs: string scalars, arrays (flow `[a, b]` and block `- a`), and the exact field set from the schema. No anchors, no aliases, no multi-document, no tags. A full YAML parser is overkill and adds attack surface.
+- Returns `{ frontmatter: {...}, body: string, errors: Error[] }`.
+- Each error is a structured object per `/docs/data_schemas.md` § "Parser behavior on violations."
+- Unknown top-level keys are preserved in the returned frontmatter (for round-trip fidelity in future write paths) but ignored in rendering.
 
-Canonical card schema (full spec + examples in `/docs/data_schemas.md`):
+### Markdown parser (escape-by-default)
 
-```yaml
----
-id: 20260421-laplace-transform-pair-sine          # REQUIRED, matches filename stem
-question: "What is the Laplace transform of sin(at)?"   # REQUIRED, non-empty
-answer: "a / (s^2 + a^2)"                               # REQUIRED, non-empty
-ease: 2.5                                               # REQUIRED, float, SM-2 initial 2.5
-interval: 0                                             # REQUIRED, integer days, initial 0
-next_review: 2026-04-22                                 # REQUIRED, YYYY-MM-DD LOCAL CALENDAR DATE
-last_reviewed: 2026-04-21T14:22:00Z                     # OPTIONAL, ISO 8601 UTC timestamp or omit key
-tier: warm                                              # REQUIRED, bedrock | warm | cold
-source_note: warm/laplace-transforms.md                 # OPTIONAL, path to originating note
----
-```
+This is the single highest-risk component. Every code path that turns on-disk content into DOM flows through this parser.
 
-**Date-field semantics (this is the round-1 pushback, explicitly documented):**
-- `next_review` is a **local calendar date**, not a UTC timestamp. SRS semantics are "this card is due on day X in the user's local calendar." Storing UTC would make a card nominally due `2026-05-01` appear at 5pm April 30 for a UTC-7 user, which is wrong for SRS.
-- `last_reviewed` is a **UTC timestamp** — it's an audit field recording when the human pressed the review button, and should be timezone-unambiguous.
-- All other dates (`created`, `updated` in note frontmatter) are UTC timestamps.
-- `/docs/data_schemas.md` states this rule explicitly so the Phase 2c writer doesn't accidentally convert `next_review` to UTC.
+**Supported tokens:**
+- Headings (`#` through `######`)
+- Paragraphs
+- Bold (`**text**`), italic (`*text*`), bold-italic (`***text***`)
+- Inline code (`` `code` ``)
+- Code fences (` ``` `) — content rendered as preformatted text via `textContent`, never interpreted
+- Blockquotes (`> `)
+- Ordered lists (`1. `)
+- Unordered lists (`- `, `* `, `+ `)
+- Horizontal rules (`---`, `***`, `___`)
+- Links (`[text](url)`) — URL scheme allowlisted to `http`, `https`, `mailto`, and relative paths. `javascript:`, `data:`, `vbscript:`, `file://` absolute are stripped.
+- Images (`![alt](url)`) — same URL scheme allowlist. `data:` blocked.
+- Wiki links (`[[Title]]`) — resolved by `WikiLinkResolver`
+- Strikethrough (`~~text~~`)
 
-Atomic-write requirement for future writers (Phase 2c): write-to-temp-and-rename; never truncate-and-rewrite in place. Documented in `/srs/README.md`.
+**Explicitly NOT supported (attack-surface reduction):**
+- Inline HTML — all `<tags>` in note body render as escaped text. No HTML passthrough.
+- HTML entities — rendered literally (e.g., `&amp;` shows as `&amp;`, not `&`). Prevents double-decode XSS.
+- Footnotes, definition lists, task lists, tables — deferred. Tables are the most-requested; can be added in a follow-up PR with its own security review.
 
-Encoding / line-ending conventions (both note markdown and SRS YAML): UTF-8, LF endings, no BOM. Parser in 2b tolerates CRLF and BOM defensively (SharePoint OneDrive sometimes rewrites).
+**DOM construction rules:**
+- Every text segment goes through `document.createTextNode()`.
+- Every element is built via `document.createElement()` + `appendChild()`.
+- No `.innerHTML`, `.outerHTML`, `insertAdjacentHTML`, or `createContextualFragment` on any string derived from note content.
+- Link `href` values are set via `element.setAttribute('href', sanitizedUrl)` after scheme allowlist check.
+- Image `src` values follow the same rule.
 
-## Filename slugging rules (per `/docs/data_schemas.md`)
+### Wiki-link resolver
 
-For both note filenames (from `title:`) and SRS card filenames (from `id:`):
-- Lowercase ASCII; Unicode accents stripped via NFKD + ASCII-only filter.
-- Alphanumerics + ASCII hyphens only; all other chars → hyphen; collapse runs of hyphens; trim leading/trailing hyphens.
-- Windows reserved names (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`) are prefixed with a leading underscore.
-- Max stem length 80 chars; truncate at a hyphen boundary when possible.
-- Extension: `.md` for notes, `.yaml` for SRS cards.
+- Resolution is by **title match**, not filename match. Titles are compared using Unicode NFKD normalization + case-fold.
+- The resolver receives the in-memory title→note map; it never touches the filesystem directly.
+- **Path-traversal guards:** targets containing `..`, `/`, `\`, NUL bytes (`\0`), URL-encoded traversal (`%2e%2e`, `%2f`, `%5c`), or absolute-path prefixes (`/`, `C:\`, `~`) are rejected. The `[[link]]` renders as broken-link text.
+- **Conflicting titles (two notes with the same case-folded title):** render as a broken link with the message "ambiguous — N notes match this title." The user resolves by renaming one note. No auto-pick by tier or path — that would silently break when the user renames the other note.
+- **Self-links:** `[[Title]]` in a note whose own title matches renders as plain text (not a link to self).
+- Resolved links are constructed via `document.createElement('a')` — never string-concatenated into HTML.
 
-Collision handling: if two notes would slug to the same filename, the second appends `-2`, `-3`, etc. Authorship-order stable. Full algorithm spec + worked examples in `/docs/data_schemas.md`.
+### Backlinks panel
 
-## Execution order (after round-2 council + human approval)
+- After all notes are parsed and wiki links resolved, `BacklinkGraph` inverts the link map: for each note, which other notes link to it?
+- The backlinks panel appears below the note body (or in a sidebar — layout TBD in CSS, not an architectural decision).
+- Each backlink entry shows the linking note's title as a clickable link.
+- Notes with zero backlinks show "No backlinks" (not an empty panel).
 
-Each step = one commit. All land on this branch; one PR. Conventional-commits `feat:` except as noted.
+### `_index.md` regenerator
 
-1. `chore: scaffold tier + prompts + srs + docs folders` — create `/bedrock/`, `/warm/`, `/cold/`, `/_prompts/`, `/srs/`, `/docs/` with `.gitkeep` each.
-2. `docs: add data_schemas.md` — `/docs/data_schemas.md` (note frontmatter, SRS card YAML, filename slugging, encoding + line-ending conventions, `_index.md` pinned structure spec). This lands **before** any README or template that references it.
-3. `docs: add tier READMEs` — `/bedrock/README.md`, `/warm/README.md`, `/cold/README.md`.
-4. `docs: add srs/README.md` — one-file-per-card architecture, atomic-write requirement for future writers, CSV-injection sanitization carried-forward note.
-5. `feat: add _index.md stub` — pinned-structure placeholder per `/docs/data_schemas.md`.
-6. `feat: add ingest prompt template` — `/_prompts/ingest.md` with untrusted-content framing and `human_turn_budget` declared.
-7. `feat: add linker prompt template` — `/_prompts/linker.md` with context discipline (titles + frontmatter only, not full bodies).
-8. `feat: add flashcards prompt template` — emits YAML for a single `/srs/<slug>.yaml`; schema matches `/docs/data_schemas.md` exactly.
-9. `feat: add review-packet prompt template` — `/_prompts/review-packet.md`.
-10. `feat: add gap-analysis prompt template` — `/_prompts/gap-analysis.md` with narrow-corpus warning.
-11. `docs: add top-level README.md` — setup, GenAI.mil loop, how to add a note, how to use a template. Links to `/docs/data_schemas.md` and the five templates.
-12. Reflection block → `.harness/learnings.md` (council-gated per institutional-knowledge rule; posted in a follow-up PR, not this one).
+- Pure projection: reads the `notes[]` array (already parsed and validated), produces the pinned markdown-table structure per `/docs/data_schemas.md`.
+- Rows sorted by `Title` (Unicode case-fold); ties broken by `Path` (ASCII order).
+- Broken notes are excluded.
+- Idempotent: same input → byte-identical output. No timestamps, no run counters, no randomness.
+- Writes via atomic temp-and-rename through the directory handle's writable file handle.
+- If the directory handle is read-only (drag-drop fallback), skip regeneration and log a warning to console (no PII in the log — just "skipped _index.md regeneration: read-only handle").
 
-Prompt-template order (steps 6–10) is load-bearing-first: `ingest` (generates notes) → `linker` (depends on `_index.md` contract) → `flashcards` (depends on SRS YAML schema) → `review-packet` → `gap-analysis`. If a template can't be written without ambiguity, stop and revise the plan.
+### SharePoint-sync conflict detection
 
-## What this plan explicitly does NOT do
+- During folder scan, files matching `<stem> (\d+).<ext>` or `<stem> (conflict from [^)]+).<ext>` are flagged as conflicts.
+- Conflict files are NOT parsed as notes. They appear in a "Sync conflicts" UI section with the message "resolve by hand."
+- The UI shows the original file and all its conflict siblings together so the user can compare.
 
-- No `index.html`. No HTML, no CSS, no JS.
-- No File System Access API handle code.
-- No SRS reader/writer code. No CSV writer. No YAML parser.
-- No `_index.md` regenerator script — that ships in Phase 2b (per round-1 Q2 answer), because the parser depends on it being current.
-- No Power Automate flow docs.
-- No `package.json` for dev tooling (lint / test). Deferred. First decision point: does dev tooling ship with Phase 2b (which has the first real JS)?
-- No `_index.json` — round-1 pushback, explained above.
+### Tier filter
 
-Any of the above "NOT" items appearing in the diff is a plan-scope violation and grounds for council veto.
+- Three toggle buttons (Bedrock / Warm / Cold) plus an "All" default.
+- Filter state is held in a page-scoped variable. No URL hash, no `localStorage`, no persistent state. Refreshing the page resets to "All."
+- Filtering hides/shows note entries in the list; it does not re-parse or re-scan.
 
-## Risks flagged for council round 2
+## CSS / visual design
 
-1. **Schema lock-in (round 1, carried forward).** Frontmatter + SRS YAML decided now become hard to change. Last low-cost opportunity to add a field if one is missing (e.g., `author`, `license`, `confidence`, `provenance`). Speak now.
-2. **Prompt templates are security surface.** Every `/_prompts/*.md` is read by a human and pasted into GenAI.mil. A prompt-injected note embedded in a template framing could manipulate the human on paste-back. Plan puts an identical, clearly-delimited "untrusted user content" framing block in every template. Exact wording reviewed in the implementation PR — Security persona should confirm the proposed wording resists the standard "ignore previous instructions" / role-flip attacks.
-3. **Human-turn-budget numbers are guesses.** Initial declarations (my best guess): `ingest.md` = 2, `linker.md` = 1, `flashcards.md` = 1, `review-packet.md` = 2, `gap-analysis.md` = 3. Real data comes from the human using them. Numbers are a commitment to revise, not a claim to correctness.
-4. **Encoding / SharePoint drift (round 1, addressed).** Now explicitly documented in `/docs/data_schemas.md`: UTF-8, LF, no BOM; Phase 2b parser must tolerate CRLF and BOM defensively. Round-trip stability test belongs in Phase 2c.
-5. **Filename slug collisions.** `-2` / `-3` suffixing is authorship-order-stable but a user renaming a note later could create a dangling suffix. Acceptable for Phase 2a; Phase 2b's parser surfaces broken-link warnings so the human notices.
-6. **Round-1 pushback: pinned `_index.md` structure only, no JSON twin.** If the council insists on JSON, the counter-ask is: which specific machine consumer in Phase 2b can't consume the pinned markdown structure? If no concrete consumer is named, YAGNI wins.
-7. **Round-1 pushback: hybrid date scheme.** `next_review` stays local date; all other dates UTC. If the council insists on all-UTC for `next_review`, the counter-ask is: how does a UTC timestamp represent "day X in the user's local calendar" without ambiguity at DST transitions?
+- Inline `<style>` in `<head>`. No external stylesheet.
+- System font stack (`system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`) — no web fonts, no CDN.
+- Light theme only (dark theme is a follow-up; `prefers-color-scheme` media query can be added later without architectural changes).
+- WCAG AA contrast ratios (4.5:1 body text, 3:1 large text/UI). Specific colors TBD during implementation but the plan commits to AA compliance.
+- `prefers-reduced-motion: reduce` — disable any transitions/animations.
+- Focus rings visible on all interactive elements (buttons, links, filter toggles). No custom focus style that removes the browser default without replacing it.
+- Responsive layout — usable on laptop screens (1024px+). No mobile-first rewrite, but no hard-coded widths that break below 1024px.
+- Touch targets ≥ 44×44px for all interactive elements.
 
-## Open questions for the council (round 2, answer in the synthesis)
+## Accessibility
 
-1. Schema completeness — any field (`author`, `license`, `confidence`, `provenance`, or similar) that 2b/2c/2d will regret not having?
-2. `human_turn_budget` frontmatter field name — stable choice, or rename before it propagates through five templates + the Cost persona?
-3. Prompt-injection framing wording — identical across all five templates (single source-of-truth block), or tailored per template? Recommendation: identical, so one edit updates all five.
-4. Top-level `/README.md` vs `CONTRIBUTING.md` — where does the SharePoint + file:// + Edge user workflow doc belong? `CONTRIBUTING.md` exists from Phase 1 and is dev-facing; the setup flow here is user-facing. Recommendation: top-level `/README.md`, with `CONTRIBUTING.md` focused on council + PR flow.
-5. Atomic-write requirement for SRS cards — is write-to-temp-and-rename sufficient, or does the council also want a fsync / per-card backup before the rename?
-6. Are the two principled pushbacks (hybrid dates, no JSON twin) acceptable, or does the council counter with stronger arguments?
+- **Semantic HTML:** `<nav>` for note list, `<main>` for note content, `<aside>` for backlinks, `<button>` for all clickable controls (never `<div onClick>`), `<h1>`–`<h6>` for headings in rendered notes.
+- **Keyboard navigation:** all interactive elements reachable via Tab. Logical tab order: folder picker → tier filter → note list → note content → backlinks. No keyboard traps.
+- **ARIA live region:** the note content area is an `aria-live="polite"` region so screen readers announce when the displayed note changes.
+- **Broken-notes and conflict announcements:** when the broken-notes or sync-conflict panel is non-empty, an `aria-live="assertive"` region announces the count on initial load.
+- **Skip link:** a "Skip to content" link as the first focusable element, jumping past the nav/filter to `<main>`.
+- **Labels:** the folder-picker button, tier-filter buttons, and any future form inputs all have visible labels or `aria-label`.
+
+## Security
+
+This section restates the security-critical decisions for the council's Security persona. All derive from `/docs/data_schemas.md` and `.harness/scripts/security_checklist.md`.
+
+- **No `.innerHTML` on untrusted strings.** The markdown parser, wiki-link resolver, backlinks panel, broken-notes panel, and index regenerator all construct DOM via `createElement` + `createTextNode` + `appendChild`. This is the single most important invariant in the entire app.
+- **URL scheme allowlist.** Links and images: `http`, `https`, `mailto`, relative paths only. `javascript:`, `data:`, `vbscript:`, `file://` absolute → stripped, rendered as plain text.
+- **Inline HTML disabled.** Any `<tag>` in markdown body content renders as escaped text. No HTML passthrough in the parser.
+- **Wiki-link path-traversal guards.** Resolution by title match only, never by filesystem path. Targets with `..`, `/`, `\`, NUL, URL-encoded traversal, absolute prefixes → rejected.
+- **File System Access API scope.** One directory handle for the wiki root. Permission prompt is explicit (`showDirectoryPicker`). No persistent handle in `IndexedDB`. Revocation → graceful re-prompt.
+- **No PII in logs.** Console output logs note IDs and error kinds only. No titles, no bodies, no frontmatter values, no file paths containing user identifiers.
+- **Atomic writes.** `_index.md` regeneration uses write-to-temp-and-rename. No truncate-and-rewrite.
+- **Code fences:** fenced content set via `textContent`, never interpreted regardless of language tag.
+
+## Error handling
+
+| Condition | User-visible behavior |
+|---|---|
+| No folder selected | Landing page with "Choose wiki folder" button and drag-drop zone |
+| Folder selected but empty (no tier folders) | "No notes found. Add markdown files to bedrock/, warm/, or cold/." |
+| Permission denied on `showDirectoryPicker` | "Folder access denied. Click to try again, or drag your wiki folder below." |
+| Permission revoked mid-session | "Folder access was revoked. Click to re-grant." Disable all controls until re-granted. |
+| Note with frontmatter parse error | Note appears in "Broken notes" panel with structured error message. Excluded from index. |
+| Note with validation error (e.g., bad tier) | Same as above — broken-notes panel with field-level error. |
+| `[[wiki link]]` to nonexistent title | Rendered as visually-distinct broken-link text (e.g., red text with `[broken: Title]`). |
+| `[[wiki link]]` with ambiguous match | Rendered as broken-link text: "ambiguous — N notes match." |
+| SharePoint conflict file detected | Appears in "Sync conflicts" panel. Not parsed as a note. |
+| `_index.md` write fails (permission) | Warning in UI: "Could not update _index.md. Check folder permissions." App continues to function — `_index.md` is a convenience, not a runtime dependency. |
+| Very large note (>1MB) | Parse and render. No artificial cap. The parser operates on strings, not streams; a 50MB note may cause a browser jank warning but will not crash. |
+| File disappears during scan (SharePoint sync in flight) | Retry once after 200ms per `/docs/data_schemas.md` I/O spec. If still missing, skip with a console warning (no PII). |
+
+## Execution order (after council + human approval)
+
+Each step = one commit. All land on `feat/phase-2b-index-html`. Conventional-commits.
+
+1. `feat: add index.html skeleton with folder picker and CSS`
+   - HTML structure: `<header>`, `<nav>`, `<main>`, `<aside>`, skip link.
+   - CSS: system fonts, AA-compliant colors, responsive layout, focus rings, reduced-motion.
+   - Folder picker button + `showDirectoryPicker()` call.
+   - Drag-drop fallback zone.
+   - No parsing yet — just the shell.
+
+2. `feat: add frontmatter parser`
+   - `FrontmatterParser` object in the `<script>` block.
+   - Parses YAML frontmatter per schema. Returns structured errors.
+   - BOM stripping, CRLF normalization.
+   - Validates all required fields, types, enum values.
+
+3. `feat: add markdown parser with escape-by-default`
+   - `MarkdownParser` object.
+   - All supported tokens (headings, paragraphs, bold, italic, code, fences, blockquotes, lists, HRs, links, images, strikethrough).
+   - Every output path uses `createElement` + `createTextNode`. Zero `.innerHTML`.
+   - URL scheme allowlist for links and images.
+   - Inline HTML → escaped text.
+   - `[[wiki link]]` tokens detected but not yet resolved (placeholder — resolved in step 4).
+
+4. `feat: add wiki-link resolver with path-traversal guards`
+   - `WikiLinkResolver` object.
+   - Title match via Unicode NFKD case-fold.
+   - Path-traversal rejection.
+   - Ambiguous-match handling.
+   - Self-link handling.
+   - Integration with `MarkdownParser` — wiki-link tokens now resolve to `<a>` elements or broken-link text.
+
+5. `feat: add folder scanner and note rendering pipeline`
+   - `FolderScanner` walks `/bedrock/`, `/warm/`, `/cold/` via the directory handle.
+   - Reads each `.md` file, passes through `FrontmatterParser` + `MarkdownParser`.
+   - Builds the note list, broken-notes list, and conflict-files list.
+   - `UI.render()` displays notes in the sidebar, renders the first note (or a welcome message if none).
+   - SharePoint-sync conflict detection integrated into the scan.
+
+6. `feat: add backlinks panel`
+   - `BacklinkGraph` object — inverts the wiki-link map.
+   - `<aside>` panel renders backlinks for the currently-displayed note.
+   - "No backlinks" message for notes with none.
+
+7. `feat: add _index.md regenerator with atomic write`
+   - `IndexRegenerator` object.
+   - Produces pinned-structure markdown table from the notes array.
+   - Atomic write via temp file + rename through the writable directory handle.
+   - Skipped when handle is read-only (drag-drop fallback).
+   - Idempotency: same notes → byte-identical output.
+
+8. `feat: add tier filter and broken-notes panel`
+   - Tier filter buttons (All / Bedrock / Warm / Cold).
+   - Broken-notes panel with structured error display.
+   - Sync-conflicts panel.
+   - ARIA live regions for panel announcements.
+
+9. `docs: update README.md for Phase 2b`
+   - Update setup instructions: "Open `index.html` in Edge."
+   - Document the folder-picker flow.
+   - Document the drag-drop fallback and its read-only limitation.
+
+10. Reflection block → `.harness/learnings.md` (council-gated per institutional-knowledge rule; posted in a follow-up commit or PR).
+
+## Risks flagged for council round 1
+
+1. **Markdown parser complexity.** A hand-rolled markdown parser is a maintenance risk and a security surface. Mitigation: support a deliberately minimal token set (no tables, no footnotes, no inline HTML). Each token type has a clear code path through `createElement`. The parser is ~300–500 lines, not thousands.
+
+2. **YAML frontmatter parser subset.** A full YAML parser is a large attack surface. The plan calls for a minimal subset (string scalars, arrays, the exact field set). Risk: a user writes valid YAML that the subset parser can't handle (anchors, multi-line strings with `|` or `>`). Mitigation: document the subset explicitly; surface unparseable frontmatter as a broken note with a clear error, not a silent skip.
+
+3. **File System Access API browser support.** The API is Chromium-only (Chrome, Edge, Opera). Firefox and Safari don't support it. Mitigation: drag-drop fallback covers read-only use. The target browser is Edge (per the locked-down laptop constraint), so full API support is guaranteed for the primary user.
+
+4. **`file://` CORS restrictions.** Some Chromium builds restrict `fetch()` and ES module imports under `file://`. Mitigation: no `fetch()`, no ES modules. All code is inline. The only filesystem access is through the File System Access API handle, which is explicitly designed for `file://` use.
+
+5. **Large wikis.** A folder with 1000+ notes will take noticeable time to scan and parse. Mitigation: for Phase 2b, accept the initial scan time (one-time per page load). Progressive rendering or caching is a Phase 2c+ concern if real usage reveals it's needed.
+
+6. **Atomic write under `file://`.** The File System Access API's `createWritable()` + `write()` + `close()` is the atomic primitive. It's not truly atomic in the POSIX `rename()` sense — a crash between `truncate` and `write` can corrupt. Mitigation: write to a `.tmp` sibling first, then rename. The API supports `keepExistingData: false` on `createWritable()`, and we can use a two-step write: create writable on tmp → write → close → rename via `removeEntry` + `moveEntry` if available, or read-back-verify otherwise. Document the limitation.
+
+7. **No automated tests in this PR.** Manual testing only. Risk: regressions on future changes. Mitigation: the dev-tooling decision (test runner, linter) is explicitly deferred. The test seams are designed in (each logical module is a named object with a pure-function interface) so that when a test runner arrives, tests can be bolted on without refactoring.
+
+## Open questions for the council (round 1)
+
+1. **YAML multi-line scalars (`|`, `>`):** should the frontmatter parser support block-scalar syntax for `question` / `answer` fields (relevant when notes have long source lists)? Or is flow-style (`[a, b]`) sufficient and block-scalars are deferred?
+
+2. **Table support in the markdown parser:** tables are useful for study notes but add parser complexity and XSS surface (cell content). Defer to a follow-up PR with its own council review, or include in Phase 2b?
+
+3. **`_index.md` write strategy under the File System Access API:** the API's `createWritable()` truncates on open. Two-step via a `.tmp` file requires either (a) `FileSystemDirectoryHandle.resolve()` + manual rename dance, or (b) writing to the target directly (not truly atomic). Which approach does the council prefer?
+
+4. **Persistent directory handle in `IndexedDB`:** the plan says no (per security checklist). But re-picking the folder on every page load is friction. Should we allow `IndexedDB` handle persistence with a written rationale and a visible "forget this folder" button?
+
+5. **Dev tooling timing:** should Phase 2b include a `package.json` with ESLint + a test runner (e.g., `vitest` or plain Node `assert`) so the parser can be tested before merge? Or is that a separate council-gated PR?
 
 ## Success criteria
 
-- Eleven implementation commits land on this branch (per Execution order).
-- `git grep -n 'innerHTML\|<script'` across the working tree returns zero matches (nothing executable shipped in Phase 2a).
-- Every `/_prompts/*.md` has a declared `human_turn_budget` in frontmatter.
-- Every template contains the identical "untrusted user content" framing block, approved in the implementation PR before any template commit lands.
-- `/docs/data_schemas.md` is the only place that specifies frontmatter / SRS YAML / slugging rules; no other file restates them.
-- The `_index.md` stub matches the pinned structure in `/docs/data_schemas.md` exactly (even though empty — the header comment is the contract).
-- Council round-2 synthesis approves this revised plan before any implementation commit lands.
-- Human types explicit approval after seeing the round-2 synthesis.
+- `index.html` opens from `file://` in Edge with Wi-Fi off and renders a wiki folder.
+- `git grep -n 'innerHTML\|outerHTML\|insertAdjacentHTML\|createContextualFragment'` returns zero matches in `index.html` (except in comments documenting why these are banned).
+- Every supported markdown token type renders via DOM construction, not HTML string assembly.
+- URL scheme allowlist is enforced: `javascript:`, `data:`, `vbscript:` links render as plain text.
+- `[[wiki links]]` resolve by title match; path-traversal payloads render as broken links.
+- Backlinks panel shows incoming links for each note.
+- `_index.md` is regenerated and byte-identical on repeated runs with the same input.
+- Broken notes appear in the broken-notes panel with field-level structured error messages.
+- SharePoint conflict files appear in the sync-conflicts panel.
+- Tier filter works (All / Bedrock / Warm / Cold).
+- Keyboard navigation reaches all interactive elements. Tab order is logical.
+- WCAG AA contrast ratios on all text.
+- `prefers-reduced-motion` is respected.
+- No PII in `console.log` / `console.error` output.
+- Council synthesis approves the plan before any implementation commit lands.
+- Human types explicit approval after seeing the synthesis.
 
 ## Anti-plan (what failure looks like)
 
-- Smuggling `index.html` or any JS into this PR — anti-scope violation per the Product persona.
-- Writing an `_index.md` regenerator — that's Phase 2b's job per round-1 Q2.
-- Shipping `srs.csv` despite the round-1 decision to switch to one-file-per-card.
-- Storing `next_review` as a UTC timestamp despite the round-1 pushback being accepted in this revision.
-- Adding a runtime dep (even dev-only) — ask the human first per CLAUDE.md non-negotiables.
-- Skipping a prompt template because "we'll add it later" — the five templates are the whole paste-back loop; partial is worse than none.
-- Hand-editing `.harness/session_state.json` `last_commit` — hook-managed per CLAUDE.md.
-- Reusing `override council:` — Phase 1 consumed the one-time carve-out.
+- Assigning untrusted content to `.innerHTML` anywhere — instant security veto.
+- Adding a `<script src>` or `<link href>` to an external resource — runtime-dep violation.
+- Adding `fetch()` or any network call — architecture violation.
+- Shipping SRS review mode or card writer — out of scope for Phase 2b.
+- Shipping a full YAML parser (js-yaml, etc.) — runtime dep.
+- Shipping a full markdown parser (marked, markdown-it, etc.) — runtime dep.
+- Storing a persistent `IndexedDB` handle without council approval.
+- Skipping the drag-drop fallback — accessibility regression for non-Chromium testers.
+- Writing `_index.md` via `innerHTML` string assembly instead of the File System Access API write path.
+- Logging note titles, bodies, or frontmatter values to console.
 
 ## Post-merge cascade
 
-On approval + merge of this plan's implementation PR:
-- **Phase 2b** plan (new session, new branch, new PR). Scope: `index.html` skeleton + inline markdown parser + wiki-link resolver + backlinks panel + the `_index.md` regenerator (moved here from 2d per round-1 Q2). The highest-leverage security review of the entire app happens on 2b's PR. Wiki-link conflicting-title resolution lives here (per round-1 Q1). Outline/keyboard-navigable alternative for any future graph view is seeded in the 2b plan's "future accessibility" section.
-- **Phase 2c** plan: graph canvas + SRS review mode (File System Access API handle + per-card YAML writer with write-to-temp-and-rename + CSV-export sanitization if any CSV export exists).
-- **Phase 2d** plan: Power Automate flow docs + any remaining glue.
-
-Each sub-plan is its own PR with its own council review. No reuse of `override council:`.
+On approval + merge of Phase 2b:
+- **Phase 2c** plan (new session, new branch, new PR). Scope: SRS review mode (read + write per-card YAML via File System Access API with atomic write), SM-2 scheduler, graph canvas visualization with keyboard-navigable outline alternative, in-app note editing (optional, council-gated).
+- **Phase 2d** plan: Power Automate flow documentation.
+- **Dev tooling PR** (separate from Phase 2c): `package.json` with ESLint, Prettier, test runner. Retroactive test coverage for the Phase 2b parser, resolver, and scanner.
