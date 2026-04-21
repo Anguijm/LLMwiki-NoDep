@@ -6,11 +6,11 @@ Each `*.md` file in this directory (other than this README and `lead-architect.m
 
 | File | Role | Scope |
 |------|------|-------|
-| `security.md` | Security Reviewer | RLS, auth, secrets, prompt injection, XSS, rate limits, PII, supply chain |
-| `architecture.md` | Architecture Reviewer | App Router boundaries, data model, migrations, Inngest idempotency, RAG pipeline, provider abstraction |
-| `product.md` | Product Reviewer | Cohort value, scope, mobile, SRS/wiki loop, anti-scope |
-| `bugs.md` | Bug Hunter | Nulls, races, retries, boundaries, encoding, cleanup, silent failures |
-| `cost.md` | Cost Reviewer | Claude routing, caching, embeddings, transcription, per-user ceiling |
+| `security.md` | Security Reviewer | XSS via ingested markdown, File System Access API permission scope, SharePoint-sync exposure, prompt-injection in the GenAI.mil paste-back loop, wiki-link path traversal, CSV injection, PII in logs, dev-dep supply chain |
+| `architecture.md` | Architecture Reviewer | File-layout contracts (note vs. metadata), the markdown-parser trust boundary, frontmatter schema stability, `srs.csv` schema stability, idempotent `_index.md` regeneration, SharePoint collision handling, backwards-compatible note format, `file://` → DOM invariants |
+| `product.md` | Product Reviewer | Single-user value on a locked-down work laptop, anti-scope (no server, no auth, no telemetry, no build pipeline), "under 2 minutes per action" success bar for the core loop |
+| `bugs.md` | Bug Hunter | Nulls, races, retries, boundaries, encoding, cleanup, silent failures, SharePoint-sync flakiness, File System Access API edge cases |
+| `cost.md` | Cost Reviewer | Human turn budget on GenAI.mil, prompt-template redundancy, context-window discipline in the paste-back loop, any new dev-time API call |
 | `accessibility.md` | Accessibility Reviewer | Keyboard, screen reader, WCAG AA, motion, i18n, touch targets |
 | `lead-architect.md` | Resolver (synthesizes the above into one plan) |
 
@@ -42,7 +42,7 @@ The runner enforces 15 Gemini calls per run (hard). Adding a new angle eats one 
 ## Style invariants for new personas
 
 - No emojis.
-- Opening line: `You are a <Role> examining a development plan for LLMwiki_StudyGroup...`
+- Opening line: `You are a <Role> examining a development plan for LLMwiki-NoDep...`
 - Always include non-negotiables that grant veto power (so the Lead Architect knows when to reject).
 - Keep the checklist actionable — questions, not lectures.
 - Output format must be machine-parseable (fenced block with `Score:` on its own line so the log can extract it).

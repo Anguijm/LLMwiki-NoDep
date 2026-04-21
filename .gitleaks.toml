@@ -1,0 +1,39 @@
+# Gitleaks configuration for LLMwiki-NoDep.
+# Extends the default ruleset (high-entropy + well-known key patterns),
+# then adds repo-specific exceptions.
+#
+# Why: PR diffs get shipped to the Gemini council for review. Anything this
+# scanner misses gets exfiltrated. Tighter is better. The council workflow
+# fails the run if gitleaks flags anything in the diff, so real keys never
+# reach Gemini. Ported from LLMwiki_StudyGroup, which forged this discipline
+# in its 2026-04-17 council round.
+
+title = "LLMwiki-NoDep gitleaks"
+
+[extend]
+# Start from the default ruleset.
+useDefault = true
+
+[allowlist]
+description = "Allowed false positives"
+paths = [
+  # Persona files contain prose that sometimes mentions placeholder keys
+  # and env var names for illustration. Real keys never land here.
+  '''\.harness/council/.*\.md''',
+  '''\.harness/scripts/security_checklist\.md''',
+  # Documentation-style examples.
+  '''\.harness/README\.md''',
+  '''\.harness/model-upgrade-audit\.md''',
+  '''\.harness/halt_instructions\.md''',
+  '''CONTRIBUTING\.md''',
+  '''README\.md''',
+  '''CLAUDE\.md''',
+  # Council-generated artifacts (never contain real secrets).
+  '''\.harness/last_council\.md''',
+  '''\.harness/active_plan\.md''',
+  '''\.harness/learnings\.md''',
+]
+# Placeholder strings used in examples and docs.
+regexes = [
+  '''GEMINI_API_KEY\s*=\s*["']?(your[-_]?key|\.{3}|<.*?>|xxx+|fake)["']?''',
+]

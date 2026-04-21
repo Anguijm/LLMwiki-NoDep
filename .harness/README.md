@@ -1,12 +1,13 @@
 # .harness/
 
-Development framework for LLMwiki_StudyGroup. This directory is methodology-as-code: a Gemini-powered review council, durable session state, a git hook that captures every commit, and operational runbooks.
+Development framework for LLMwiki-NoDep. This directory is methodology-as-code: a Gemini-powered review council, durable session state, a git hook that captures every commit, and operational runbooks.
 
-Not application code. Safe to delete if you want the project without the harness; the Next.js app does not depend on it.
+Not application code. Safe to delete if you want the project without the harness; the static wiki (`index.html` + the `/_prompts/`, `/bedrock/`, `/warm/`, `/cold/`, `/srs.csv` folder structure) does not depend on it. The harness is dev-time only; it never ships to the SharePoint-synced folder when a user opens the wiki in Edge.
 
 Inspired by:
 - **[harness-cli](https://github.com/anguijm/harness-cli)** — multi-persona council pattern.
 - **[yolo-projects](https://github.com/anguijm/yolo-projects)** — durable session state, append-only audit log, circuit breaker, model-upgrade discipline.
+- **[LLMwiki_StudyGroup](https://github.com/anguijm/llmwiki_studygroup)** — sibling repo where the PR-triggered council workflow, `[skip council]` bypass, institutional-knowledge gating, and "tracked plan" approval gate were forged before being ported here.
 
 ## One-time setup
 
@@ -35,11 +36,11 @@ python3 .harness/scripts/council.py -h    # → help text, no import errors
 ├── README.md                # this file
 ├── council/
 │   ├── README.md            # how to add/remove angles
-│   ├── security.md          # persona: RLS, auth, secrets, prompt injection
-│   ├── architecture.md      # persona: boundaries, migrations, idempotency, RAG
-│   ├── product.md           # persona: cohort value, scope, mobile, SRS/wiki
-│   ├── bugs.md              # persona: nulls, races, retries, edges
-│   ├── cost.md              # persona: Haiku/Opus routing, caching, budget
+│   ├── security.md          # persona: XSS, FS API scope, SharePoint exposure, prompt injection, CSV/path traversal
+│   ├── architecture.md      # persona: file-layout contracts, parser boundary, frontmatter/CSV schemas, SharePoint collisions
+│   ├── product.md           # persona: single-user locked-down-laptop value; anti-scope (no server/auth/telemetry)
+│   ├── bugs.md              # persona: nulls, races, retries, edges, SharePoint-sync flakiness, FS API edge cases
+│   ├── cost.md              # persona: human turn budget on GenAI.mil, redundant templates, dev-time API additions
 │   ├── accessibility.md     # persona: WCAG AA, keyboard, screen reader
 │   └── lead-architect.md    # resolver: synthesizes the six into one plan
 ├── scripts/
@@ -54,9 +55,9 @@ python3 .harness/scripts/council.py -h    # → help text, no import errors
 ├── session_state.json       # current state (active plan, focus, last council, last commit)
 ├── yolo_log.jsonl           # append-only audit trail
 ├── learnings.md             # human-readable KB (KEEP / IMPROVE / INSIGHT / COUNCIL)
-├── model-upgrade-audit.md   # 5-layer checklist for model swaps
+├── model-upgrade-audit.md   # checklist for bumping the Gemini council's model version
 ├── halt_instructions.md     # how to use the .harness_halt circuit breaker
-└── last_council.md          # (created by council.py) latest run report
+└── last_council.md          # (created by council.py, gitignored) latest run report
 ```
 
 ## Running the council
@@ -79,11 +80,11 @@ python3 .harness/scripts/council.py --diff --base main      # vs local main
 
 Output:
 - **stdout** — Lead Architect synthesis printed in full.
-- `.harness/last_council.md` — full report (all six critiques + synthesis).
+- `.harness/last_council.md` — full report (all six critiques + synthesis). Gitignored.
 - `.harness/yolo_log.jsonl` — one new line with `{event: "council_run", scores, ...}`.
 - `.harness/session_state.json` — `last_council` block updated.
 
-Cost cap: **15 Gemini calls per run** (hard). With the seven default personas, each run is 7 calls.
+Cost cap: **15 Gemini calls per run** (hard). With the six default personas, each run is 6 calls.
 
 ## Durable session state
 
@@ -123,7 +124,6 @@ Three tiers, each optimized for a different consumer:
 {"ts": "...", "event": "harness_init", "note": "..."}
 {"ts": "...", "event": "commit", "commit": { "hash": "...", "short": "...", "subject": "...", ... }}
 {"ts": "...", "event": "council_run", "source": "...", "model": "...", "scores": { ... }}
-{"ts": "...", "event": "pr_watch_run", "pr": "...", "trigger": "...", "over_budget": false}
 {"ts": "...", "event": "task_complete", "title": "...", "summary": "..."}
 ```
 
@@ -155,12 +155,13 @@ Write `.harness_halt` at repo root (with a reason). The agent and council both s
 
 ## Model discipline
 
-When you swap any model (Claude tier, Gemini version, embedding model, transcription model), walk `.harness/model-upgrade-audit.md` before merging. Five layers, none optional.
+When you bump the Gemini council's model version (or any future dev-time AI integration), walk `.harness/model-upgrade-audit.md` before merging. The runtime has no model — all "AI" is a human copy/paste loop against GenAI.mil — so "model upgrade" here only ever means dev-time tooling. See that file for the layered checklist.
 
 ## What's not here (yet)
 
-- **Quality gates** (`npm run lint` / `typecheck` / `test` wrappers for the council to consume). Deferred until the Next.js scaffolding exists. When they land, they'll live at `.harness/scripts/quality_gates.sh`.
-- **Tick/tock hourly cron.** That's a yolo-projects pattern for generating many small apps; this repo is one complex app, so it's the wrong mode.
+- **Quality gates** (`npm run lint` / `npm run test` wrappers for the council to consume). Deferred until the Phase 2 scaffolding lands a dev `package.json`. When they do, they'll live at `.harness/scripts/quality_gates.sh`.
+- **Tick/tock hourly cron.** That's a yolo-projects pattern for generating many small apps; this repo is one focused static wiki, so it's the wrong mode.
+- **PR watcher (Claude in CI).** The sibling repo has one. We haven't ported it; if we decide we want one, it's a council-gated change, not a silent port.
 
 ## Council action (PR-time, GitHub Actions)
 
@@ -175,41 +176,14 @@ Behavior:
 - Skipped automatically if `[skip council]` appears in the PR title.
 - Skipped automatically for PRs from forks (secrets unavailable to fork PRs by GitHub policy).
 - Skipped if `.harness_halt` exists in the PR branch.
-- Cost: ~7 Gemini-2.5-pro calls per PR (the runner enforces a 15-call per-run cap, and the workflow enforces a 60-run monthly cap via GitHub Actions cache — state lives outside the repo so a PR cannot reset it). At ~10 PRs/month → $1–3/month.
+- Cost: ~6 Gemini-2.5-pro calls per PR (the runner enforces a 15-call per-run cap, and the workflow enforces a 60-run monthly cap via GitHub Actions cache — state lives outside the repo so a PR cannot reset it). At ~10 PRs/month → $1–3/month.
 - Read-only repo permissions: the action does not push state-file updates back to the branch. CI runs are ephemeral; local runs (when you also run `council.py` from your shell) capture state durably.
 
 Relationship to local council:
 - **Local council** (`python3 .harness/scripts/council.py --plan ...`): pre-plan, before you write code.
-- **Action council** (this workflow): post-PR, against the diff. Read on your phone, type "approved" to me, I execute.
+- **Action council** (this workflow): post-PR, against the diff. Read on your phone, type "approved" to the agent, the agent executes.
 
 Both use the same personas in `.harness/council/`. Add a new persona once → it shows up in both.
-
-## PR watcher (Claude in CI, read-only reviewer)
-
-Separate from the Gemini council: the repo has a **Claude-powered PR watcher** that reacts to events on every open PR — Codex review comments, CI failures, and `@claude` mentions. The watcher is a **read-only reviewer**; it writes GitHub suggestion blocks in review comments that the human can accept with one tap.
-
-Demoted from its original "autonomous committer" design after the 2026-04-17 council flagged the write-permission as unacceptable prompt-injection surface. See `.harness/learnings.md` for the decision trail.
-
-Files:
-- `.github/workflows/pr-watch.yml` — workflow (budget state kept in GitHub Actions cache; cap: 150 runs/month).
-- `.github/claude-pr-watcher-prompt.md` — system prompt (scope policy lives here).
-
-One-time setup (required):
-- Add `ANTHROPIC_API_KEY` as a repo secret.
-- Set repository *variable* `PR_WATCHER_ENABLED=true` (Settings → Secrets and variables → Actions → Variables). The workflow skips all jobs when this is unset — visible, explicit toggle.
-
-Scope (enforced by both the workflow's `permissions:` block and the prompt):
-- Watcher **cannot push** — `contents: read`, no `Edit`/`Write`/`Bash(git:*)` tools.
-- Watcher writes review comments only. Single-file fixes use GitHub suggestion blocks you tap to accept; multi-file fixes are written prose.
-- Watcher asks the human for: migrations, RLS changes, dep bumps, auth/secret/CSP edits, workflow edits, any diff > 50 lines, Codex P0/`critical` comments, changes to `CLAUDE.md`/`.harness/council/*`/`council.py`/`.github/workflows/*`.
-- Action pinned to a specific commit SHA (not `@v1` floating tag) for supply-chain safety.
-- Uses Claude Haiku 4.5; ~$3–6/month expected.
-
-Relationship to the council:
-- **Council (Gemini)** — reviews plans and diffs. Runs locally *and* on every PR.
-- **Watcher (Claude)** — responds to PR-time events with suggestions. Never runs locally. Never commits.
-
-They don't overlap. Council critiques; watcher suggests.
 
 ## Troubleshooting
 

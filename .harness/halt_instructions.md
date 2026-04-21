@@ -38,4 +38,4 @@ That's it. No state to reset — `.harness_halt` is purely a trigger file. Nothi
 
 ## Not committed
 
-`.harness_halt` is a local trigger file — do not commit it. It should be added to `.gitignore` when the Next.js scaffolding creates one. In the meantime, don't `git add` it.
+`.harness_halt` is a local trigger file — do not commit it. It's already listed in the repo's `.gitignore`, so a stray `git add .` will not pick it up. If you ever regenerate `.gitignore`, re-add the `.harness_halt` line.
