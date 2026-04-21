@@ -16,15 +16,15 @@
   --color-text: #1a1a1a;
   --color-text-muted: #555555;
   --color-border: #d4d4d4;
-  --color-primary: #1a56db;
-  --color-primary-hover: #1340a8;
+  --color-primary: #0b43a5;
+  --color-primary-hover: #0a3584;
   --color-focus: #4f8ff7;
   --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
   --color-warning-bg: #fffbeb;
   --color-warning-text: #92400e;
   --color-success-bg: #f0fdf4;
-  --color-link: #1a56db;
+  --color-link: #0b43a5;
   --color-link-broken: #b91c1c;
   --color-tag-bg: #e5e7eb;
   --radius: 6px;
@@ -589,16 +589,33 @@ const FrontmatterParser = {
       }
     }
 
-    // Validate title non-empty
-    if (typeof frontmatter.title === 'string' && frontmatter.title.trim() === '') {
-      errors.push({ path: '', kind: 'validation', field: 'title', message: 'title must be non-empty', recoverable: true });
+    // Validate title is string and non-empty
+    if (frontmatter.title !== undefined && frontmatter.title !== null) {
+      if (typeof frontmatter.title !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: 'title', message: "expected string, got " + typeof frontmatter.title + ": '" + frontmatter.title + "'", recoverable: true });
+      } else if (frontmatter.title.trim() === '') {
+        errors.push({ path: '', kind: 'validation', field: 'title', message: 'title must be non-empty', recoverable: true });
+      }
     }
 
-    // Validate tier enum
+    // Validate tier is string and in enum
     if (frontmatter.tier !== undefined && frontmatter.tier !== null) {
-      var validTiers = ['bedrock', 'warm', 'cold'];
-      if (validTiers.indexOf(frontmatter.tier) === -1) {
-        errors.push({ path: '', kind: 'validation', field: 'tier', message: "value '" + frontmatter.tier + "' not in enum [bedrock, warm, cold]", recoverable: true });
+      if (typeof frontmatter.tier !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: 'tier', message: "expected string, got " + typeof frontmatter.tier + ": '" + frontmatter.tier + "'", recoverable: true });
+      } else {
+        var validTiers = ['bedrock', 'warm', 'cold'];
+        if (validTiers.indexOf(frontmatter.tier) === -1) {
+          errors.push({ path: '', kind: 'validation', field: 'tier', message: "value '" + frontmatter.tier + "' not in enum [bedrock, warm, cold]", recoverable: true });
+        }
+      }
+    }
+
+    // Validate created/updated are strings
+    var stringFields = ['created', 'updated'];
+    for (var sf = 0; sf < stringFields.length; sf++) {
+      var sfVal = frontmatter[stringFields[sf]];
+      if (sfVal !== undefined && sfVal !== null && typeof sfVal !== 'string') {
+        errors.push({ path: '', kind: 'validation', field: stringFields[sf], message: "expected string, got " + typeof sfVal + ": '" + sfVal + "'", recoverable: true });
       }
     }
 
@@ -1174,7 +1191,7 @@ const FolderScanner = {
   _isScanning: false,
   _conflictPattern: /^(.+)\s+\((\d+|conflict from [^)]+)\)\.(\w+)$/,
 
-  scan: async function(dirHandle, isWritable) {
+  scan: async function(dirHandle) {
     if (FolderScanner._isScanning) {
       App.announce(STRINGS.scanInProgress);
       return null;
@@ -1214,12 +1231,33 @@ const FolderScanner = {
             var file = await entry.getFile();
             content = await file.text();
           } catch (ioErr) {
-            // File locked, permission denied, or disappeared
-            brokenNotes.push({
-              path: filePath,
-              errors: [{ path: filePath, kind: 'io', field: '', message: ioErr.message || 'io error', recoverable: true }]
-            });
-            continue;
+            // Retry once after 200ms for transient sync issues
+            var retrySuccess = false;
+            try {
+              await new Promise(function(r) { setTimeout(r, 200); });
+              var retryFile = await entry.getFile();
+              content = await retryFile.text();
+              retrySuccess = true;
+            } catch (retryErr) {
+              // Differentiate error types
+              var ioMessage;
+              var errName = (retryErr.name || ioErr.name || '');
+              if (errName === 'NotFoundError') {
+                ioMessage = 'file not found';
+              } else if (errName === 'NotAllowedError') {
+                ioMessage = 'permission denied (check file read permissions)';
+              } else if (errName === 'NotReadableError' || errName === 'InvalidStateError') {
+                ioMessage = 'file locked (another application may have it open)';
+              } else {
+                ioMessage = 'io error: ' + (retryErr.message || ioErr.message || 'unknown');
+              }
+              brokenNotes.push({
+                path: filePath,
+                errors: [{ path: filePath, kind: 'io', field: '', message: ioMessage, recoverable: true }]
+              });
+              continue;
+            }
+            if (!retrySuccess) continue;
           }
 
           var parsed = FrontmatterParser.parse(content);
@@ -1250,16 +1288,6 @@ const FolderScanner = {
         }
       }
 
-      // Regenerate _index.md if writable
-      if (isWritable) {
-        try {
-          var indexContent = IndexRegenerator.generate(notes);
-          await FolderScanner._atomicWrite(dirHandle, '_index.md', indexContent);
-        } catch (writeErr) {
-          App.announce(STRINGS.indexWriteFail);
-        }
-      }
-
     } finally {
       FolderScanner._isScanning = false;
     }
@@ -1269,29 +1297,65 @@ const FolderScanner = {
 
   _atomicWrite: async function(dirHandle, filename, content) {
     var tmpName = '.' + filename + '.tmp';
+    var writable = null;
 
-    // Write to temp file
-    var tmpHandle = await dirHandle.getFileHandle(tmpName, { create: true });
-    var writable = await tmpHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
-
-    // Attempt rename by removing old and creating new
-    // File System Access API doesn't have a direct rename,
-    // so we write to final, then clean up temp
     try {
-      var finalHandle = await dirHandle.getFileHandle(filename, { create: true });
-      var finalWritable = await finalHandle.createWritable();
-      await finalWritable.write(content);
-      await finalWritable.close();
+      // Step 1: Write content to temp file (safe — if this fails, original is untouched)
+      var tmpHandle = await dirHandle.getFileHandle(tmpName, { create: true });
+      writable = await tmpHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      writable = null; // closed successfully
 
-      // Clean up temp
+      // Step 2: Write content to final file
+      // File System Access API has no rename() — we must write to the target directly.
+      // The temp file serves as a backup: if step 2 fails, the temp file is still intact
+      // and can be recovered on next app load.
+      var finalWritable = null;
+      try {
+        var finalHandle = await dirHandle.getFileHandle(filename, { create: true });
+        finalWritable = await finalHandle.createWritable();
+        await finalWritable.write(content);
+        await finalWritable.close();
+        finalWritable = null;
+      } catch (finalErr) {
+        // Ensure final writable is closed on error
+        if (finalWritable) {
+          try { await finalWritable.close(); } catch (e) { /* best effort */ }
+        }
+        throw finalErr;
+      }
+
+      // Step 3: Clean up temp file
       try { await dirHandle.removeEntry(tmpName); } catch (e) { /* orphan — cleaned on next scan */ }
-    } catch (e) {
-      // Clean up temp on failure
-      try { await dirHandle.removeEntry(tmpName); } catch (e2) { /* best effort */ }
-      throw e;
+
+    } catch (outerErr) {
+      // Ensure temp writable is closed if step 1 failed mid-write
+      if (writable) {
+        try { await writable.close(); } catch (e) { /* best effort */ }
+      }
+      // Attempt temp cleanup on any failure
+      try { await dirHandle.removeEntry(tmpName); } catch (e) { /* best effort */ }
+      throw outerErr;
     }
+  },
+
+  _cleanupOrphanTemps: async function(dirHandle) {
+    // Scan root for orphaned .*.tmp files from failed writes
+    try {
+      for await (var entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.startsWith('.') && entry.name.endsWith('.tmp')) {
+          try {
+            var file = await entry.getFile();
+            var age = Date.now() - file.lastModified;
+            // Only remove temps older than 1 hour
+            if (age > 3600000) {
+              await dirHandle.removeEntry(entry.name);
+            }
+          } catch (e) { /* skip unreadable temps */ }
+        }
+      }
+    } catch (e) { /* scan failure is non-fatal */ }
   }
 };
 
@@ -1357,17 +1421,38 @@ const App = {
       App._onDrop(e);
     });
 
-    // Clean up orphan temp files message
-    App._cleanupOrphans();
   },
 
   _onPickFolder: async function() {
     try {
-      var handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      // Request read-only first (principle of least privilege)
+      var handle = await window.showDirectoryPicker({ mode: 'read', startIn: 'documents' });
       App._dirHandle = handle;
-      App._isWritable = true;
+      App._isWritable = false;
       App._showApp();
       await App._scanAndRender();
+
+      // After scan, attempt to escalate to readwrite for _index.md regeneration
+      try {
+        var writePerm = await handle.requestPermission({ mode: 'readwrite' });
+        if (writePerm === 'granted') {
+          App._isWritable = true;
+          // Regenerate _index.md now that we have write access
+          try {
+            var indexContent = IndexRegenerator.generate(App._notes);
+            await FolderScanner._atomicWrite(handle, '_index.md', indexContent);
+          } catch (writeErr) {
+            App.announce(STRINGS.indexWriteFail);
+          }
+          // Clean up orphan temps
+          await FolderScanner._cleanupOrphanTemps(handle);
+        } else {
+          App.announce(STRINGS.indexSkipped);
+        }
+      } catch (escalateErr) {
+        // User declined write access — read-only mode
+        App.announce(STRINGS.indexSkipped);
+      }
     } catch (e) {
       if (e.name === 'AbortError') return; // user cancelled
       App.announce(STRINGS.permDenied);
@@ -1416,6 +1501,16 @@ const App = {
     }
 
     await App._scanAndRender();
+
+    // Regenerate _index.md if writable
+    if (App._isWritable && App._dirHandle) {
+      try {
+        var indexContent = IndexRegenerator.generate(App._notes);
+        await FolderScanner._atomicWrite(App._dirHandle, '_index.md', indexContent);
+      } catch (writeErr) {
+        App.announce(STRINGS.indexWriteFail);
+      }
+    }
   },
 
   _showApp: function() {
@@ -1431,7 +1526,7 @@ const App = {
     loadingP.textContent = STRINGS.loading;
     noteView.appendChild(loadingP);
 
-    var result = await FolderScanner.scan(App._dirHandle, App._isWritable);
+    var result = await FolderScanner.scan(App._dirHandle);
     if (!result) return;
 
     App._notes = result.notes;
@@ -1554,7 +1649,12 @@ const App = {
 
     var dateSpan = document.createElement('span');
     dateSpan.className = 'meta-date';
-    dateSpan.textContent = 'Updated: ' + (note.frontmatter.updated || '').substring(0, 10);
+    var updatedStr = note.frontmatter.updated || '';
+    try {
+      dateSpan.textContent = 'Updated: ' + new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(updatedStr));
+    } catch (e) {
+      dateSpan.textContent = 'Updated: ' + updatedStr.substring(0, 10);
+    }
     metaDiv.appendChild(dateSpan);
 
     noteView.appendChild(metaDiv);
@@ -1673,11 +1773,6 @@ const App = {
   announce: function(msg) {
     var el = document.getElementById('announcements');
     el.textContent = msg;
-  },
-
-  _cleanupOrphans: async function() {
-    // Cleanup runs after scan — look for .*.tmp files
-    // Deferred until we have a directory handle
   }
 };
 
