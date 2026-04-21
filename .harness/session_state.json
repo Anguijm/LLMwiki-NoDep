@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "635a7a87c797040f809aadb23131fa4005a43e17",
-    "short": "635a7a8",
-    "subject": "plan: revise Phase 2a per council round 1 (6 accepts + 2 principled pushbacks)",
+    "hash": "884fda8fe7aded632fbfc181803ba0b25b7e6792",
+    "short": "884fda8",
+    "subject": "chore: scaffold tier + prompts + srs + docs folders",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "feat/phase-2a-scaffold-folders-prompts",
-    "committed_at": "2026-04-21T05:47:22+00:00",
-    "files_changed": 3
+    "committed_at": "2026-04-21T05:59:18+00:00",
+    "files_changed": 6
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
