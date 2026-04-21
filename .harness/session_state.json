@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "104a167aa49fa5b94d0416982d95486fe9ae041f",
-    "short": "104a167",
-    "subject": "fix: address council round-3 blockers on Phase 2a implementation",
+    "hash": "be0fe203e1b6698a333beb8c4135869a91547b81",
+    "short": "be0fe20",
+    "subject": "chore: refresh harness state",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "feat/phase-2a-scaffold-folders-prompts",
-    "committed_at": "2026-04-21T06:27:35+00:00",
-    "files_changed": 5
+    "committed_at": "2026-04-21T06:27:40+00:00",
+    "files_changed": 2
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
