@@ -10,26 +10,47 @@ Built for a specific workflow: a locked-down work laptop, a single engineer-user
 
 **You do NOT need git, npm, Python, or any developer tools.** The entire app is files in a folder. Here's how to get it running on a locked-down work laptop:
 
-### Step 1: Download the files
+### Step 1: Get the files onto your laptop
 
-**Option A — Download ZIP from GitHub (easiest, no git needed):**
+Your work laptop likely blocks ZIP downloads and doesn't have git. That's fine — the app is just files. Pick whichever method works in your environment:
 
-1. Go to this repository's GitHub page.
-2. Click the green **Code** button near the top right.
-3. Click **Download ZIP**.
-4. Save the ZIP file somewhere temporary (e.g., your Desktop or Downloads folder).
-5. **Right-click the ZIP** → **Extract All** → choose your target folder (see Step 2).
+**Option A — Copy file contents from GitHub (works on any locked-down laptop):**
 
-**Option B — Copy from a USB drive or shared folder:**
+You only need **one file** to run the app: `index.html`. Everything else (folders, prompt templates) you create by hand.
 
-If someone has already set up LLMwiki-NoDep, they can send you the folder. Just copy the entire folder to your target location (Step 2).
+1. Go to this repository on GitHub and click on **`index.html`** to view it.
+2. Click the **Raw** button (top-right of the file view) to see the plain text.
+3. **Select all** (Ctrl+A) and **Copy** (Ctrl+C).
+4. On your laptop, open **Notepad** (not Word — it must be a plain text editor).
+5. **Paste** (Ctrl+V) the content into Notepad.
+6. **Save As** → navigate to your target folder (see Step 2) → filename: `index.html` → Save as type: **All Files (\*.\*)** (important — don't let Notepad save it as `index.html.txt`).
+7. Create these empty folders inside the same folder: `bedrock`, `warm`, `cold`, `srs`.
 
-**Option C — Git clone (if git is available):**
+That's the minimum. The prompt templates (`_prompts/` folder) are optional but useful — repeat the Raw → Copy → Paste → Save process for each one you want:
+- `_prompts/ingest.md`
+- `_prompts/linker.md`
+- `_prompts/flashcards.md`
+- `_prompts/review-packet.md`
+- `_prompts/gap-analysis.md`
+
+**Option B — Copy from a colleague's USB drive or shared folder:**
+
+If someone has already set up LLMwiki-NoDep, they can put the folder on a USB drive or a shared network location. Copy the entire folder to your target location (Step 2).
+
+**Option C — Email the files to yourself:**
+
+Have someone with a less restricted machine email you the individual files as attachments (`.html` and `.md` files are rarely blocked by email scanners). Save them to your target folder.
+
+**Option D — Git clone (if git is available):**
 
 ```
 cd ~/OneDrive\ -\ YourOrg/documents
 git clone https://github.com/Anguijm/LLMwiki-NoDep.git study-wiki
 ```
+
+**Option E — Download ZIP (if your security scanner permits):**
+
+Click the green **Code** button on GitHub → **Download ZIP** → extract to your target folder.
 
 ### Step 2: Put the folder in a SharePoint-synced location
 
@@ -95,8 +116,9 @@ Key concepts:
 | You need | You don't need |
 |---|---|
 | Microsoft Edge (or any Chromium browser) | Node.js, npm, Python, or any runtime |
-| A SharePoint-synced folder (OneDrive for Business) | Git (nice to have, not required) |
+| A SharePoint-synced folder (OneDrive for Business) | Git |
 | A text editor (even Notepad works) | A terminal or command line |
+| Access to GitHub (to copy the `index.html` source once) | The ability to download ZIP files |
 | Access to GenAI.mil (for the AI-assisted prompts) | An internet connection while using the app |
 
 **The app works completely offline.** Once the files are on your laptop, Wi-Fi can be off. The only network dependency is SharePoint sync (which happens in the background) and GenAI.mil (which you use in a separate browser tab, not inside the app).
@@ -105,7 +127,20 @@ Key concepts:
 
 ## Folder structure
 
-After download/extraction, your wiki folder looks like this:
+**Minimum viable setup** (if you only copied `index.html`):
+
+```
+study-wiki/
+├── index.html          ← THE APP — open this in Edge
+├── bedrock/             ← create this empty folder
+├── warm/                ← create this empty folder
+├── cold/                ← create this empty folder
+└── srs/                 ← create this empty folder
+```
+
+That's enough to run the app. Everything else is optional.
+
+**Full setup** (after copying all files from GitHub):
 
 ```
 study-wiki/
