@@ -39,13 +39,14 @@ Example: `"Wiki summary (Apr 15–22): 4 notes modified, 12 cards reviewed."`
 5. **For each tier folder** (bedrock, warm, cold):
    a. **Action: SharePoint — Get files (properties only)** in the tier folder.
       - Filter by last modified date >= `week_ago`.
-   b. **Filter array:** keep only files where the name ends with `.md` AND does not start with `~$` AND does not contain ` (` (excludes non-markdown files, Office temp files, and SharePoint conflict copies).
+      - Enable pagination in Settings if you have >100 files in any tier folder.
+   b. **Filter array:** keep only files where the name ends with `.md` AND does not start with `~$` AND does not match the SharePoint conflict pattern `* (*).ext` (excludes non-markdown files, Office temp files, and SharePoint conflict copies).
    c. **Increment** `notes_modified` by the count of filtered files.
 
 6. **For the srs/ folder:**
    a. **Action: SharePoint — Get files (properties only)** in `/srs/`.
       - Filter by last modified date >= `week_ago`.
-   b. **Filter array:** keep only files where the name ends with `.yaml` AND does not start with `.` AND does not contain ` (` (excludes temp files, non-YAML files, and conflict copies).
+   b. **Filter array:** keep only files where the name ends with `.yaml` AND does not start with `.` AND does not match the SharePoint conflict pattern `* (*).ext` (excludes temp files, non-YAML files, and conflict copies).
    c. **Set** `cards_modified` to the count of filtered files.
 
 7. **Action: Microsoft Teams — Post message:**

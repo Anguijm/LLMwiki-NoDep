@@ -13,7 +13,7 @@ The files in `/power-automate/` are instruction documents, not wiki notes. The w
 Key principles for every flow documented here:
 
 - **Read-only / notification-only.** No flow writes to wiki files. A flow that modifies files would bypass the app's atomic-write and stale-detection safeguards.
-- **No PII in outputs.** Flows surface metadata only: filenames, tier, counts, dates. Never note body text, SRS card question/answer content, tags, or source URLs.
+- **No PII in notification outputs.** Teams messages and emails contain metadata only: filenames, tier, counts, dates. Never note body text, SRS card question/answer content, tags, or source URLs. **However:** the daily review reminder flow loads full card file contents into memory during processing. This content is visible in Power Automate run history to anyone who can view your flows. See `daily-review-reminder.md` for details.
 - **No secrets.** Flows use the SharePoint connector (authenticated via your org account) and the Teams connector (same). No API keys stored in the flow.
 - **No external API calls.** No GenAI.mil, no Anthropic, no OpenAI. No AI Builder actions.
 

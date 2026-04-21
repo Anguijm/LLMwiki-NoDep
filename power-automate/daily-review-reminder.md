@@ -79,6 +79,7 @@ Specifically, after extracting the `next_review` value from the file content:
    - Library: your document library.
    - Folder: `/path/to/your/wiki/srs`
    - Filter: `substringof('.yaml', FileLeafRef)` (only YAML files)
+   - **Important: enable pagination.** In the action's Settings (click `...` → Settings), turn on **Pagination** and set the threshold to at least 500 (or your maximum card count). Without this, the action returns only the first ~100 files, silently missing cards beyond that limit.
 
 6. **Apply to each** file returned:
    a. **Condition:** file name does not start with `.` (skip temp files) AND does not match the SharePoint conflict pattern (no spaces followed by `(` in the filename).
@@ -90,8 +91,12 @@ Specifically, after extracting the `next_review` value from the file content:
       - Then filter for the line containing `next_review:`: use a **Filter array** action where the item `contains(item(), 'next_review:')`.
       - Then extract the date value: `trim(last(split(first(body('Filter_array')), 'next_review:')))`
       - Finally, take only the first 10 characters (the YYYY-MM-DD portion): `substring(outputs('Compose_extract'), 0, 10)`
-   e. **Condition:** `@lessOrEquals(outputs('Compose_date'), variables('today_local'))`
+   e. **Validate the extracted date** before comparing. Add a condition:
+      - `@and(not(empty(outputs('Compose_date'))), equals(length(outputs('Compose_date')), 10))`
+      - This ensures the extracted value is non-empty and exactly 10 characters (YYYY-MM-DD). An empty or malformed `next_review:` field would otherwise cause a false-positive match.
+   f. **If valid — Condition:** `@lessOrEquals(outputs('Compose_date'), variables('today_local'))`
       - If yes: increment `due_count` by 1.
+      - If no (date is in the future): do nothing.
 
 7. **After the loop — Condition:** `due_count` > 0.
    - If yes: **Microsoft Teams — Post message**: `"You have @{variables('due_count')} cards due for review today (@{variables('today_local')})."`
