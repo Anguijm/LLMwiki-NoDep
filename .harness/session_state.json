@@ -1,17 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": null,
-  "focus_area": "bootstrap",
-  "approval_state": "idle",
-  "last_council": null,
+  "active_plan": "Phase 2c: SRS review mode + outline view",
+  "focus_area": "phase-2c-implementation",
+  "approval_state": "executing",
+  "last_council": {
+    "source": "PR #4",
+    "decision": "Revise",
+    "scores": { "accessibility": 8, "architecture": 10, "bugs": 6, "cost": 10, "product": 10, "security": 9 },
+    "run_at": "2026-04-21T18:34:07Z"
+  },
   "last_commit": {
-    "hash": "b9b6f28a4c02619b2dfd8a03dab3eaf5e43a3b29",
-    "short": "b9b6f28",
-    "subject": "fix: address council round-4 spec-hardening findings",
+    "hash": "d1d81148c7cdcab9b1adea1fafc05c06ff25184c",
+    "short": "d1d8114",
+    "subject": "fix: address council round-3 findings — contrast, atomic write, date parsing",
     "author": "Claude <noreply@anthropic.com>",
-    "branch": "feat/phase-2a-scaffold-folders-prompts",
-    "committed_at": "2026-04-21T06:33:54+00:00",
+    "branch": "feat/phase-2c-srs-graph",
+    "committed_at": "2026-04-22T00:00:00+00:00",
     "files_changed": 1
   },
-  "notes": "Harness bootstrapped; scaffolding plan pending."
+  "notes": "Phase 2c implementation pushed. Council round-3 fixes applied. Awaiting council round-4 re-review."
 }

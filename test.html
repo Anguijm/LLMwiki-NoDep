@@ -49,6 +49,10 @@ function loadModulesAndRunTests() {
       window.IndexRegenerator = win.IndexRegenerator;
       window.BacklinkGraph = win.BacklinkGraph;
       window.STRINGS = win.STRINGS;
+      window.SRSCardParser = win.SRSCardParser;
+      window.SM2Scheduler = win.SM2Scheduler;
+      window.SRSCardWriter = win.SRSCardWriter;
+      window.ReviewQueueBuilder = win.ReviewQueueBuilder;
     } catch (e) {
       // Cross-origin or unavailable — tests will report "module not found"
     }
@@ -601,6 +605,302 @@ function runBacklinkGraphTests() {
 }
 
 // ──────────────────────────────────────────────
+// SRSCardParser tests
+// ──────────────────────────────────────────────
+
+function runSRSCardParserTests() {
+  if (typeof SRSCardParser === 'undefined') {
+    assert(false, 'SRSCardParser: module exists');
+    return;
+  }
+  assert(true, 'SRSCardParser: module exists');
+
+  // Valid card
+  const validCard = `---
+id: 20260421-test-card
+question: "What is 2+2?"
+answer: "4"
+ease: 2.5
+interval: 0
+next_review: 2026-04-22
+tier: warm
+---`;
+  const r1 = SRSCardParser.parse(validCard, 'srs/20260421-test-card.yaml');
+  assertEqual(r1.errors.length, 0, 'SRSCardParser: valid card has no errors');
+  assertEqual(r1.card.id, '20260421-test-card', 'SRSCardParser: parses id');
+  assertEqual(r1.card.ease, 2.5, 'SRSCardParser: parses ease as float');
+  assertEqual(r1.card.interval, 0, 'SRSCardParser: parses interval as int');
+
+  // Missing required field
+  const missingQ = `---
+id: test
+answer: "4"
+ease: 2.5
+interval: 0
+next_review: 2026-04-22
+tier: warm
+---`;
+  const r2 = SRSCardParser.parse(missingQ, 'srs/test.yaml');
+  assert(r2.errors.some(e => e.field === 'question'), 'SRSCardParser: missing question produces error');
+
+  // id-filename mismatch
+  const mismatch = `---
+id: wrong-name
+question: "Q"
+answer: "A"
+ease: 2.5
+interval: 0
+next_review: 2026-04-22
+tier: warm
+---`;
+  const r3 = SRSCardParser.parse(mismatch, 'srs/correct-name.yaml');
+  assert(r3.errors.some(e => e.field === 'id'), 'SRSCardParser: id-filename mismatch produces error');
+
+  // Invalid next_review format
+  const badDate = `---
+id: test
+question: "Q"
+answer: "A"
+ease: 2.5
+interval: 0
+next_review: 2026-04-22T14:00:00Z
+tier: warm
+---`;
+  const r4 = SRSCardParser.parse(badDate, 'srs/test.yaml');
+  assert(r4.errors.some(e => e.field === 'next_review'), 'SRSCardParser: UTC timestamp rejected for next_review');
+
+  // Invalid tier
+  const badTier = `---
+id: test
+question: "Q"
+answer: "A"
+ease: 2.5
+interval: 0
+next_review: 2026-04-22
+tier: hot
+---`;
+  const r5 = SRSCardParser.parse(badTier, 'srs/test.yaml');
+  assert(r5.errors.some(e => e.field === 'tier'), 'SRSCardParser: invalid tier produces error');
+
+  // Optional last_reviewed present
+  const withLastReviewed = `---
+id: test
+question: "Q"
+answer: "A"
+ease: 2.5
+interval: 1
+next_review: 2026-04-23
+last_reviewed: 2026-04-22T10:00:00Z
+tier: warm
+---`;
+  const r6 = SRSCardParser.parse(withLastReviewed, 'srs/test.yaml');
+  assertEqual(r6.errors.length, 0, 'SRSCardParser: valid last_reviewed accepted');
+}
+
+// ──────────────────────────────────────────────
+// SM2Scheduler tests
+// ──────────────────────────────────────────────
+
+function runSM2SchedulerTests() {
+  if (typeof SM2Scheduler === 'undefined') {
+    assert(false, 'SM2Scheduler: module exists');
+    return;
+  }
+  assert(true, 'SM2Scheduler: module exists');
+
+  // New card rated Good (4) → interval=1
+  const r1 = SM2Scheduler.compute({ ease: 2.5, interval: 0 }, 4);
+  assertEqual(r1.interval, 1, 'SM2Scheduler: new card Good → interval 1');
+  assert(r1.ease >= 2.3 && r1.ease <= 2.7, 'SM2Scheduler: ease stays reasonable after Good');
+
+  // interval=1 rated Good → interval=6
+  const r2 = SM2Scheduler.compute({ ease: 2.5, interval: 1 }, 4);
+  assertEqual(r2.interval, 6, 'SM2Scheduler: second review Good → interval 6');
+
+  // interval=6 rated Good → interval=round(6*ease)
+  const r3 = SM2Scheduler.compute({ ease: 2.5, interval: 6 }, 4);
+  assertEqual(r3.interval, 15, 'SM2Scheduler: third review Good → interval 15');
+
+  // Again (0) → reset to interval 1
+  const r4 = SM2Scheduler.compute({ ease: 2.5, interval: 15 }, 0);
+  assertEqual(r4.interval, 1, 'SM2Scheduler: Again resets interval to 1');
+
+  // Ease clamped to 1.3 minimum
+  const r5 = SM2Scheduler.compute({ ease: 1.3, interval: 1 }, 0);
+  assertEqual(r5.ease, 1.3, 'SM2Scheduler: ease floor at 1.3');
+
+  // Easy (5) → ease increases
+  const r6 = SM2Scheduler.compute({ ease: 2.5, interval: 0 }, 5);
+  assert(r6.ease > 2.5, 'SM2Scheduler: Easy increases ease');
+
+  // Hard (3) → ease decreases
+  const r7 = SM2Scheduler.compute({ ease: 2.5, interval: 6 }, 3);
+  assert(r7.ease < 2.5, 'SM2Scheduler: Hard decreases ease');
+
+  // next_review is a local date (YYYY-MM-DD), not UTC
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(r1.next_review), 'SM2Scheduler: next_review is YYYY-MM-DD format');
+  assert(!/T/.test(r1.next_review), 'SM2Scheduler: next_review has no T (not UTC)');
+
+  // last_reviewed is UTC
+  assert(/Z$/.test(r1.last_reviewed), 'SM2Scheduler: last_reviewed ends with Z (UTC)');
+}
+
+// ──────────────────────────────────────────────
+// SRSCardWriter tests
+// ──────────────────────────────────────────────
+
+function runSRSCardWriterTests() {
+  if (typeof SRSCardWriter === 'undefined') {
+    assert(false, 'SRSCardWriter: module exists');
+    return;
+  }
+  assert(true, 'SRSCardWriter: module exists');
+
+  // Basic serialization
+  const card1 = {
+    id: 'test-card',
+    question: 'What is 2+2?',
+    answer: '4',
+    ease: 2.5,
+    interval: 1,
+    next_review: '2026-04-23',
+    last_reviewed: '2026-04-22T10:00:00Z',
+    tier: 'warm'
+  };
+  const yaml1 = SRSCardWriter.serialize(card1);
+  assert(yaml1.startsWith('---\n'), 'SRSCardWriter: output starts with ---');
+  assert(yaml1.includes('id: test-card'), 'SRSCardWriter: serializes id');
+  assert(yaml1.includes('ease: 2.5'), 'SRSCardWriter: serializes ease');
+
+  // Multiline question uses block scalar
+  const card2 = {
+    id: 'multi',
+    question: 'Line 1\nLine 2\nLine 3',
+    answer: 'Simple answer',
+    ease: 2.5,
+    interval: 0,
+    next_review: '2026-04-22',
+    tier: 'warm'
+  };
+  const yaml2 = SRSCardWriter.serialize(card2);
+  assert(yaml2.includes('question: |'), 'SRSCardWriter: multiline uses block scalar');
+
+  // String containing --- uses block scalar
+  const card3 = {
+    id: 'dashes',
+    question: 'What does --- mean in YAML?',
+    answer: 'Document separator\n---\nLike this',
+    ease: 2.5,
+    interval: 0,
+    next_review: '2026-04-22',
+    tier: 'warm'
+  };
+  const yaml3 = SRSCardWriter.serialize(card3);
+  assert(yaml3.includes('answer: |'), 'SRSCardWriter: string with --- uses block scalar');
+
+  // Special characters in string get quoted
+  const card4 = {
+    id: 'special',
+    question: 'What is "hello"?',
+    answer: 'A greeting: hello',
+    ease: 2.5,
+    interval: 0,
+    next_review: '2026-04-22',
+    tier: 'warm'
+  };
+  const yaml4 = SRSCardWriter.serialize(card4);
+  assert(yaml4.includes('question: "'), 'SRSCardWriter: special chars get quoted');
+
+  // Unknown keys preserved
+  const card5 = {
+    id: 'unknown',
+    question: 'Q',
+    answer: 'A',
+    ease: 2.5,
+    interval: 0,
+    next_review: '2026-04-22',
+    tier: 'warm',
+    custom_field: 'preserved'
+  };
+  const yaml5 = SRSCardWriter.serialize(card5);
+  assert(yaml5.includes('custom_field: preserved'), 'SRSCardWriter: unknown keys preserved');
+
+  // Absent optional keys omitted
+  const card6 = {
+    id: 'no-optional',
+    question: 'Q',
+    answer: 'A',
+    ease: 2.5,
+    interval: 0,
+    next_review: '2026-04-22',
+    tier: 'warm'
+  };
+  const yaml6 = SRSCardWriter.serialize(card6);
+  assert(!yaml6.includes('last_reviewed'), 'SRSCardWriter: absent last_reviewed omitted');
+  assert(!yaml6.includes('source_note'), 'SRSCardWriter: absent source_note omitted');
+}
+
+// ──────────────────────────────────────────────
+// ReviewQueueBuilder tests
+// ──────────────────────────────────────────────
+
+function runReviewQueueBuilderTests() {
+  if (typeof ReviewQueueBuilder === 'undefined') {
+    assert(false, 'ReviewQueueBuilder: module exists');
+    return;
+  }
+  assert(true, 'ReviewQueueBuilder: module exists');
+
+  var today = SM2Scheduler._todayLocal();
+
+  // Due card (next_review = today)
+  var cards = [
+    { next_review: today, id: 'due' },
+    { next_review: '2099-01-01', id: 'future' },
+    { next_review: '2020-01-01', id: 'overdue' }
+  ];
+  var queue = ReviewQueueBuilder.build(cards);
+  assertEqual(queue.length, 2, 'ReviewQueueBuilder: 2 due cards (today + overdue)');
+  assert(queue.some(c => c.id === 'due'), 'ReviewQueueBuilder: today card is due');
+  assert(queue.some(c => c.id === 'overdue'), 'ReviewQueueBuilder: overdue card is due');
+  assert(!queue.some(c => c.id === 'future'), 'ReviewQueueBuilder: future card not due');
+
+  // Empty input
+  var emptyQueue = ReviewQueueBuilder.build([]);
+  assertEqual(emptyQueue.length, 0, 'ReviewQueueBuilder: empty input returns empty queue');
+}
+
+// ──────────────────────────────────────────────
+// Local date utility test
+// ──────────────────────────────────────────────
+
+function runLocalDateTests() {
+  if (typeof SM2Scheduler === 'undefined') {
+    assert(false, 'LocalDate: SM2Scheduler exists');
+    return;
+  }
+
+  // Verify _todayLocal returns YYYY-MM-DD local date
+  var today = SM2Scheduler._todayLocal();
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(today), 'LocalDate: _todayLocal returns YYYY-MM-DD');
+
+  // Verify it matches JS Date local date
+  var d = new Date();
+  var expected = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+  assertEqual(today, expected, 'LocalDate: _todayLocal matches local Date components');
+
+  // Verify _addDays works
+  var plus7 = SM2Scheduler._addDays('2026-04-22', 7);
+  assertEqual(plus7, '2026-04-29', 'LocalDate: addDays adds 7 days correctly');
+
+  // Month boundary
+  var monthBoundary = SM2Scheduler._addDays('2026-04-29', 3);
+  assertEqual(monthBoundary, '2026-05-02', 'LocalDate: addDays crosses month boundary');
+}
+
+// ──────────────────────────────────────────────
 // Run all tests
 // ──────────────────────────────────────────────
 
@@ -611,6 +911,11 @@ function runAllTests() {
   runWikiLinkResolverTests();
   runIndexRegeneratorTests();
   runBacklinkGraphTests();
+  runSRSCardParserTests();
+  runSM2SchedulerTests();
+  runSRSCardWriterTests();
+  runReviewQueueBuilderTests();
+  runLocalDateTests();
   renderResults();
 }
 

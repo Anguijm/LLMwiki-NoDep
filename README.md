@@ -8,11 +8,11 @@ Built for a specific workflow: a locked-down work laptop, a single engineer-user
 
 - **Phase 1** (council harness): merged.
 - **Phase 2a** (folder structure + prompt templates + schema docs + empty SRS folder): merged.
-- **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): this branch.
-- **Phase 2c** (graph canvas + SRS review mode): not yet started.
+- **Phase 2b** (`index.html` + inline markdown parser + wiki-link resolver + `_index.md` regenerator): merged.
+- **Phase 2c** (SRS review mode + outline view): this branch.
 - **Phase 2d** (Power Automate flow docs): not yet started.
 
-The app is now usable: open `index.html` in Edge, grant folder access, and your wiki renders with linked notes and backlinks. The prompt templates under `/_prompts/` continue to work via the GenAI.mil copy/paste loop.
+The app is fully usable: open `index.html` in Edge, grant folder access, and your wiki renders with linked notes, backlinks, SRS review, and a knowledge-graph outline. The prompt templates under `/_prompts/` continue to work via the GenAI.mil copy/paste loop.
 
 ## Setup
 
@@ -68,6 +68,20 @@ Every template declares a `human_turn_budget` in its frontmatter: the number of 
    - Paste the returned version back over your file.
 
 5. Commit with a conventional-commits message (`feat:` for new notes, `docs:` for revisions).
+
+## How to review SRS cards
+
+1. Create flashcards using `/_prompts/flashcards.md` — paste a note into GenAI.mil, save each returned YAML block as `/srs/<id>.yaml`.
+2. Open `index.html`. The **Review** button in the header shows how many cards are due today.
+3. Click **Review** to enter review mode. You'll see one card at a time: question first, then click **Show answer**.
+4. Rate each card: **Again** (1), **Hard** (2), **Good** (3), or **Easy** (4). The SM-2 algorithm updates the card's ease, interval, and next review date.
+5. Each rating saves the card to disk immediately. A session summary appears when all due cards are reviewed.
+
+**SharePoint sync note:** each card rating triggers a file write to `/srs/`. If your wiki folder is shared via SharePoint, these writes (and the resulting sync events) are visible to anyone with folder access. This is expected behavior — the app warns you in the review UI.
+
+## How to use the outline view
+
+Click the **Outline** button in the header to see all notes grouped by tier, with their outgoing `[[wiki links]]` listed underneath. Click any note or link to navigate to it. The outline is the default view when `prefers-reduced-motion` is active.
 
 ## How to use a prompt template
 

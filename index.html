@@ -444,6 +444,180 @@ button.active {
   color: var(--color-text-muted);
 }
 
+/* ── SRS review mode ──────────────────────── */
+.review-container {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.review-disclaimer {
+  background: var(--color-warning-bg);
+  border: 1px solid #fde68a;
+  color: var(--color-warning-text);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.review-progress {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.review-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.5rem;
+}
+
+.review-card .question-label,
+.review-card .answer-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.review-card .question-text,
+.review-card .answer-text {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+}
+
+.review-card .answer-section { margin-top: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
+
+.review-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.review-actions button { flex: 1; min-width: 80px; min-height: 44px; }
+.review-actions button.again { border-color: var(--color-danger); color: var(--color-danger); }
+.review-actions button.hard { border-color: #d97706; color: #d97706; }
+.review-actions button.good { border-color: #047857; color: #047857; }
+.review-actions button.easy { border-color: var(--color-primary); color: var(--color-primary); }
+
+.review-summary {
+  text-align: center;
+  padding: 2rem;
+}
+
+.review-summary h2 { margin-bottom: 1rem; }
+
+.review-error {
+  background: var(--color-danger-bg);
+  border: 1px solid #fecaca;
+  color: var(--color-danger);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Outline view ─────────────────────────── */
+.outline-container {
+  max-width: 48rem;
+  padding: 1.5rem 2rem;
+}
+
+.outline-container h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.outline-tier-section {
+  margin-bottom: 1.5rem;
+}
+
+.outline-tier-header {
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  width: 100%;
+  text-align: left;
+}
+
+.outline-tier-header .chevron {
+  display: inline-block;
+  transition: transform 0.15s;
+  font-size: 0.7rem;
+}
+
+.outline-tier-header[aria-expanded="false"] .chevron { transform: rotate(-90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .outline-tier-header .chevron { transition: none; }
+}
+
+.outline-note-list {
+  list-style: none;
+  padding-left: 1rem;
+}
+
+.outline-note-item {
+  padding: 0.35rem 0;
+}
+
+.outline-note-link {
+  color: var(--color-link);
+  text-decoration: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.outline-note-link:hover { text-decoration: underline; }
+
+.outline-sub-links {
+  list-style: none;
+  padding-left: 1.5rem;
+  margin-top: 0.2rem;
+}
+
+.outline-sub-links li {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  padding: 0.15rem 0;
+}
+
+.outline-sub-links a {
+  color: var(--color-link);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.outline-sub-links a:hover { text-decoration: underline; }
+
+/* ── Due badge ────────────────────────────── */
+.due-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  background: var(--color-danger);
+  color: #fff;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.due-badge.none { background: var(--color-tag-bg); color: var(--color-text-muted); }
+
 /* ── Visibility helper ────────────────────── */
 .hidden { display: none !important; }
 </style>
@@ -471,6 +645,8 @@ button.active {
         <button id="filter-warm" type="button" data-tier="warm"></button>
         <button id="filter-cold" type="button" data-tier="cold"></button>
       </div>
+      <button id="btn-review" type="button"></button>
+      <button id="btn-outline" type="button"></button>
       <button id="btn-rescan" type="button"></button>
     </div>
   </header>
@@ -482,8 +658,11 @@ button.active {
 
   <main id="main-content" class="main-content" aria-live="polite">
     <div id="note-view"></div>
+    <div id="review-view" class="hidden"></div>
+    <div id="outline-view" class="hidden"></div>
     <div id="broken-panel" class="status-panel broken hidden" role="region" aria-label="Broken notes"></div>
     <div id="conflict-panel" class="status-panel conflict hidden" role="region" aria-label="Sync conflicts"></div>
+    <div id="broken-cards-panel" class="status-panel broken hidden" role="region" aria-label="Broken cards"></div>
   </main>
 
   <aside class="aside-panel" aria-label="Backlinks">
@@ -529,6 +708,33 @@ const STRINGS = {
   brokenLink: function(title) { return '[broken: ' + title + ']'; },
   notesCount: function(n) { return n + (n === 1 ? ' note' : ' notes'); },
   scanInProgress: 'Scan already in progress.',
+  // SRS strings
+  review: 'Review',
+  dueCount: function(n) { return n + ' due'; },
+  noCardsDue: 'All caught up! No cards due today.',
+  noCards: 'No cards found. Create cards using the flashcards prompt template.',
+  showAnswer: 'Show answer',
+  again: 'Again (1)',
+  hard: 'Hard (2)',
+  good: 'Good (3)',
+  easy: 'Easy (4)',
+  endReview: 'End review',
+  reviewSummary: function(total, again, hard, good, easy) {
+    return 'Reviewed ' + total + ' cards. ' + again + ' again, ' + hard + ' hard, ' + good + ' good, ' + easy + ' easy.';
+  },
+  cardSaveFail: 'Could not save card. Check folder permissions.',
+  cardSavePermDenied: 'Could not save card. File is read-only or locked.',
+  cardStaleWrite: 'This card was updated on another device. Reloading card.',
+  cardStaleReloadFail: 'Card was updated on another device but could not be reloaded. Skipping.',
+  cardWriting: 'Saving\u2026',
+  sharepointDisclaimer: 'Your review progress is saved to files in the /srs/ folder. This data will be visible to everyone who has access to this SharePoint folder.',
+  brokenCards: 'Broken cards',
+  backToNotes: 'Back to notes',
+  // Outline strings
+  outline: 'Outline',
+  outlineTitle: 'Knowledge Graph \u2014 Outline',
+  outlineEmpty: 'No notes to display.',
+  outlineLinks: 'Links to:',
 };
 
 // ══════════════════════════════════════════════
@@ -1360,11 +1566,360 @@ const FolderScanner = {
 };
 
 // ══════════════════════════════════════════════
+// SRSCardParser
+// ══════════════════════════════════════════════
+
+const SRSCardParser = {
+  parse: function(content, filename) {
+    var errors = [];
+    var text = content;
+
+    // Strip BOM
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    // Normalize line endings
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Parse frontmatter (reuse same pattern as FrontmatterParser)
+    if (!text.startsWith('---\n') && text !== '---') {
+      errors.push({ path: filename, kind: 'parse', field: '(frontmatter)', message: 'no frontmatter found', recoverable: true });
+      return { card: null, errors: errors };
+    }
+
+    var closeIdx = text.indexOf('\n---\n', 4);
+    var closeIdxEnd = text.indexOf('\n---', 4);
+    var yamlBlock;
+    if (closeIdx !== -1) {
+      yamlBlock = text.substring(4, closeIdx);
+    } else if (closeIdxEnd !== -1 && closeIdxEnd + 4 >= text.length) {
+      yamlBlock = text.substring(4, closeIdxEnd);
+    } else {
+      errors.push({ path: filename, kind: 'parse', field: '(frontmatter)', message: 'unclosed frontmatter block', recoverable: true });
+      return { card: null, errors: errors };
+    }
+
+    var card;
+    try {
+      card = FrontmatterParser._parseYaml(yamlBlock);
+    } catch (e) {
+      errors.push({ path: filename, kind: 'parse', field: '(frontmatter)', message: 'YAML parse error: ' + e.message, recoverable: true });
+      return { card: null, errors: errors };
+    }
+
+    // Store raw yaml and unknown keys for round-trip
+    card._rawYaml = yamlBlock;
+
+    // Validate required fields
+    var required = ['id', 'question', 'answer', 'ease', 'interval', 'next_review', 'tier'];
+    for (var i = 0; i < required.length; i++) {
+      if (card[required[i]] === undefined || card[required[i]] === null || card[required[i]] === '') {
+        errors.push({ path: filename, kind: 'validation', field: required[i], message: "missing required field '" + required[i] + "'", recoverable: true });
+      }
+    }
+
+    // Validate id matches filename stem (NFKD normalization)
+    if (card.id && filename) {
+      var stem = filename.replace(/\.yaml$/, '');
+      // Strip directory prefix if present
+      var lastSlash = stem.lastIndexOf('/');
+      if (lastSlash !== -1) stem = stem.substring(lastSlash + 1);
+      try {
+        var normId = card.id.normalize('NFKD').toLowerCase();
+        var normStem = stem.normalize('NFKD').toLowerCase();
+        if (normId !== normStem) {
+          errors.push({ path: filename, kind: 'validation', field: 'id', message: "id '" + card.id + "' does not match filename stem '" + stem + "'", recoverable: true });
+        }
+      } catch (e) {
+        if (card.id !== stem) {
+          errors.push({ path: filename, kind: 'validation', field: 'id', message: "id '" + card.id + "' does not match filename stem '" + stem + "'", recoverable: true });
+        }
+      }
+    }
+
+    // Type and range validations
+    if (card.question !== undefined && typeof card.question !== 'string') {
+      errors.push({ path: filename, kind: 'validation', field: 'question', message: 'expected string', recoverable: true });
+    }
+    if (card.answer !== undefined && typeof card.answer !== 'string') {
+      errors.push({ path: filename, kind: 'validation', field: 'answer', message: 'expected string', recoverable: true });
+    }
+
+    // Parse ease as float
+    if (card.ease !== undefined && card.ease !== null) {
+      card.ease = parseFloat(card.ease);
+      if (isNaN(card.ease)) {
+        errors.push({ path: filename, kind: 'validation', field: 'ease', message: 'not a valid number', recoverable: true });
+      }
+    }
+
+    // Parse interval as int
+    if (card.interval !== undefined && card.interval !== null) {
+      card.interval = parseInt(card.interval, 10);
+      if (isNaN(card.interval)) {
+        errors.push({ path: filename, kind: 'validation', field: 'interval', message: 'not a valid integer', recoverable: true });
+      }
+    }
+
+    // Validate next_review is YYYY-MM-DD
+    if (card.next_review && !/^\d{4}-\d{2}-\d{2}$/.test(card.next_review)) {
+      errors.push({ path: filename, kind: 'validation', field: 'next_review', message: "not parseable as YYYY-MM-DD: '" + card.next_review + "'", recoverable: true });
+    }
+
+    // Validate last_reviewed if present
+    if (card.last_reviewed !== undefined && card.last_reviewed !== null && card.last_reviewed !== '') {
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(card.last_reviewed)) {
+        errors.push({ path: filename, kind: 'validation', field: 'last_reviewed', message: "not parseable as ISO 8601 UTC: '" + card.last_reviewed + "'", recoverable: true });
+      }
+    }
+
+    // Validate tier
+    if (card.tier && ['bedrock', 'warm', 'cold'].indexOf(card.tier) === -1) {
+      errors.push({ path: filename, kind: 'validation', field: 'tier', message: "value '" + card.tier + "' not in enum [bedrock, warm, cold]", recoverable: true });
+    }
+
+    return { card: errors.length > 0 ? null : card, errors: errors };
+  }
+};
+
+// ══════════════════════════════════════════════
+// SM2Scheduler — pure function
+// ══════════════════════════════════════════════
+
+const SM2Scheduler = {
+  // Returns today's LOCAL calendar date as YYYY-MM-DD (never UTC)
+  _todayLocal: function() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  },
+
+  // Add days to a YYYY-MM-DD local date string
+  // Uses explicit year/month/day constructor to guarantee local time (never UTC)
+  _addDays: function(dateStr, days) {
+    var parts = dateStr.split('-');
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    var day = parseInt(parts[2], 10);
+    var d = new Date(year, month, day); // local midnight, NOT UTC
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  },
+
+  // Derive repetitions from interval (avoids schema change)
+  _deriveRepetitions: function(interval) {
+    if (interval <= 0) return 0;
+    if (interval === 1) return 1;
+    return 2;
+  },
+
+  compute: function(card, rating) {
+    var ease = parseFloat(card.ease) || 2.5;
+    var interval = parseInt(card.interval) || 0;
+    var reps = SM2Scheduler._deriveRepetitions(interval);
+
+    if (rating >= 3) {
+      if (reps === 0) {
+        interval = 1;
+      } else if (reps === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * ease);
+      }
+      reps += 1;
+    } else {
+      reps = 0;
+      interval = 1;
+    }
+
+    // Update ease factor
+    ease = ease + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
+    if (ease < 1.3) ease = 1.3;
+
+    // Compute next_review as LOCAL date (recalculated NOW, not cached)
+    var today = SM2Scheduler._todayLocal();
+    var nextReview = SM2Scheduler._addDays(today, interval);
+
+    // last_reviewed as UTC timestamp
+    var now = new Date();
+    var lastReviewed = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+    return {
+      ease: Math.round(ease * 100) / 100,
+      interval: interval,
+      next_review: nextReview,
+      last_reviewed: lastReviewed
+    };
+  }
+};
+
+// ══════════════════════════════════════════════
+// ReviewQueueBuilder
+// ══════════════════════════════════════════════
+
+const ReviewQueueBuilder = {
+  build: function(cards) {
+    var today = SM2Scheduler._todayLocal();
+    var due = cards.filter(function(c) {
+      return c.next_review && c.next_review <= today;
+    });
+
+    // Shuffle (Fisher-Yates)
+    for (var i = due.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = due[i]; due[i] = due[j]; due[j] = tmp;
+    }
+
+    return due;
+  }
+};
+
+// ══════════════════════════════════════════════
+// SRSCardWriter — atomic write with stale detection
+// ══════════════════════════════════════════════
+
+const SRSCardWriter = {
+  serialize: function(card) {
+    var lines = ['---'];
+
+    var knownKeys = ['id', 'question', 'answer', 'ease', 'interval', 'next_review', 'last_reviewed', 'tier', 'source_note'];
+
+    for (var i = 0; i < knownKeys.length; i++) {
+      var key = knownKeys[i];
+      var val = card[key];
+      if (val === undefined || val === null) {
+        // Omit optional absent keys
+        if (key === 'last_reviewed' || key === 'source_note') continue;
+        // Required keys still need to be emitted
+        if (val === undefined) continue;
+      }
+      lines.push(key + ': ' + SRSCardWriter._serializeValue(val));
+    }
+
+    // Preserve unknown keys for round-trip fidelity
+    var cardKeys = Object.keys(card);
+    for (var j = 0; j < cardKeys.length; j++) {
+      var ck = cardKeys[j];
+      if (ck.charAt(0) === '_') continue; // skip internal keys
+      if (knownKeys.indexOf(ck) === -1) {
+        lines.push(ck + ': ' + SRSCardWriter._serializeValue(card[ck]));
+      }
+    }
+
+    lines.push('---');
+    return lines.join('\n') + '\n';
+  },
+
+  _serializeValue: function(val) {
+    if (typeof val === 'number') return String(val);
+    if (typeof val !== 'string') return String(val);
+
+    // Use block scalar for multiline strings or strings containing ---
+    if (val.indexOf('\n') !== -1 || val.indexOf('---') !== -1) {
+      return '|\n' + val.split('\n').map(function(line) { return '  ' + line; }).join('\n');
+    }
+
+    // Quote strings with special YAML characters
+    if (/[":#{}\[\],]/.test(val) || val.trim() !== val || val === '' || /^[\d.]+$/.test(val)) {
+      return '"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    }
+
+    return val;
+  },
+
+  write: async function(srsHandle, card, expectedMtime) {
+    var filename = card.id + '.yaml';
+    var tmpName = '.' + filename + '.tmp';
+    var content = SRSCardWriter.serialize(card);
+    var writable = null;
+
+    // Stale-write detection
+    if (expectedMtime !== undefined && expectedMtime !== null) {
+      try {
+        var existingHandle = await srsHandle.getFileHandle(filename);
+        var existingFile = await existingHandle.getFile();
+        if (existingFile.lastModified > expectedMtime) {
+          throw { name: 'StaleWriteError', message: 'file was updated on another device' };
+        }
+      } catch (e) {
+        if (e.name === 'StaleWriteError') throw e;
+        // File might not exist yet or other error — proceed
+      }
+    }
+
+    try {
+      // Step 1: Write to temp file (original untouched if this fails)
+      var tmpHandle = await srsHandle.getFileHandle(tmpName, { create: true });
+      writable = await tmpHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      writable = null;
+
+      // Step 2: Write to final destination
+      var finalWritable = null;
+      try {
+        var finalHandle = await srsHandle.getFileHandle(filename, { create: true });
+        finalWritable = await finalHandle.createWritable();
+        await finalWritable.write(content);
+        await finalWritable.close();
+        finalWritable = null;
+      } catch (e) {
+        if (finalWritable) { try { await finalWritable.close(); } catch (e2) {} }
+        throw e;
+      }
+
+      // Step 3: Verify write integrity — re-read and compare length
+      try {
+        var verifyHandle = await srsHandle.getFileHandle(filename);
+        var verifyFile = await verifyHandle.getFile();
+        var verifyContent = await verifyFile.text();
+        if (verifyContent.length !== content.length) {
+          // Corruption detected — restore from temp
+          var restoreWritable = await (await srsHandle.getFileHandle(filename, { create: true })).createWritable();
+          await restoreWritable.write(content);
+          await restoreWritable.close();
+        }
+      } catch (verifyErr) {
+        // Verify failed — non-fatal, temp file still exists as backup
+      }
+
+      // Step 4: Cleanup temp (log failure instead of silent swallow)
+      try {
+        await srsHandle.removeEntry(tmpName);
+      } catch (cleanupErr) {
+        console.error('orphan temp file not cleaned: ' + tmpName);
+      }
+
+    } catch (outerErr) {
+      if (writable) { try { await writable.close(); } catch (e) {} }
+      try { await srsHandle.removeEntry(tmpName); } catch (e) {
+        console.error('orphan temp file not cleaned: ' + tmpName);
+      }
+
+      // Differentiate error types
+      if (outerErr.name === 'StaleWriteError') throw outerErr;
+      if (outerErr.name === 'NotAllowedError') {
+        throw { name: 'WritePermissionError', message: STRINGS.cardSavePermDenied };
+      }
+      if (outerErr.name === 'QuotaExceededError') {
+        throw { name: 'DiskFullError', message: 'Disk full \u2014 cannot save card.' };
+      }
+      if (outerErr.name === 'InvalidStateError') {
+        throw { name: 'HandleRevokedError', message: STRINGS.permRevoked };
+      }
+      throw outerErr;
+    }
+  }
+};
+
+// ══════════════════════════════════════════════
 // App — UI controller
 // ══════════════════════════════════════════════
 
 const App = {
   _dirHandle: null,
+  _srsHandle: null,
   _isWritable: false,
   _notes: [],
   _brokenNotes: [],
@@ -1373,6 +1928,13 @@ const App = {
   _titleIndex: null,
   _currentNotePath: null,
   _currentFilter: 'all',
+  _currentView: 'notes', // 'notes' | 'review' | 'outline'
+  _cards: [],
+  _brokenCards: [],
+  _reviewQueue: [],
+  _reviewIndex: 0,
+  _reviewStats: { again: 0, hard: 0, good: 0, easy: 0 },
+  _isWritingCard: false,
 
   init: function() {
     // Populate UI strings
@@ -1385,12 +1947,16 @@ const App = {
     document.getElementById('filter-bedrock').textContent = STRINGS.filterBedrock;
     document.getElementById('filter-warm').textContent = STRINGS.filterWarm;
     document.getElementById('filter-cold').textContent = STRINGS.filterCold;
+    document.getElementById('btn-review').textContent = STRINGS.review;
+    document.getElementById('btn-outline').textContent = STRINGS.outline;
     document.getElementById('btn-rescan').textContent = STRINGS.rescan;
     document.getElementById('backlinks-title').textContent = STRINGS.backlinksTitle;
 
     // Event listeners
     document.getElementById('btn-pick-folder').addEventListener('click', App._onPickFolder);
     document.getElementById('btn-rescan').addEventListener('click', App._onRescan);
+    document.getElementById('btn-review').addEventListener('click', function() { App._enterReview(); });
+    document.getElementById('btn-outline').addEventListener('click', function() { App._toggleView('outline'); });
 
     // Tier filter buttons
     var filterButtons = document.querySelectorAll('.tier-filter button');
@@ -1553,6 +2119,9 @@ const App = {
 
     // Build backlink graph
     App._backlinkGraph = BacklinkGraph.build(App._notes);
+
+    // Scan SRS cards
+    await App._scanSRSCards();
 
     // Render
     App._renderNoteList();
@@ -1768,6 +2337,548 @@ const App = {
       ul.appendChild(li);
     }
     panel.appendChild(ul);
+  },
+
+  // ── SRS scanning ─────────────────────────────
+
+  _scanSRSCards: async function() {
+    App._cards = [];
+    App._brokenCards = [];
+
+    try {
+      App._srsHandle = await App._dirHandle.getDirectoryHandle('srs');
+    } catch (e) {
+      // No srs folder
+      App._updateDueBadge();
+      return;
+    }
+
+    // Clean up orphan temps
+    await App._cleanupOrphanTemps(App._srsHandle);
+
+    for await (var entry of App._srsHandle.values()) {
+      if (entry.kind !== 'file' || !entry.name.endsWith('.yaml')) continue;
+      if (entry.name.startsWith('.')) continue;
+
+      var filePath = 'srs/' + entry.name;
+
+      // SharePoint conflict detection
+      if (FolderScanner._conflictPattern.test(entry.name)) {
+        App._brokenCards.push({
+          path: filePath,
+          errors: [{ path: filePath, kind: 'conflict', field: '', message: STRINGS.conflictMsg, recoverable: true }]
+        });
+        continue;
+      }
+
+      var content;
+      try {
+        var file = await entry.getFile();
+        content = await file.text();
+        var parsed = SRSCardParser.parse(content, filePath);
+        if (parsed.errors.length > 0) {
+          App._brokenCards.push({ path: filePath, errors: parsed.errors });
+        } else {
+          parsed.card._mtime = file.lastModified;
+          parsed.card._path = filePath;
+          App._cards.push(parsed.card);
+        }
+      } catch (ioErr) {
+        App._brokenCards.push({
+          path: filePath,
+          errors: [{ path: filePath, kind: 'io', field: '', message: ioErr.message || 'io error', recoverable: true }]
+        });
+      }
+    }
+
+    App._updateDueBadge();
+    App._renderBrokenCardsPanel();
+  },
+
+  _updateDueBadge: function() {
+    var btn = document.getElementById('btn-review');
+    // Remove existing badge
+    var existing = btn.querySelector('.due-badge');
+    if (existing) existing.remove();
+
+    var dueCount = ReviewQueueBuilder.build(App._cards).length;
+    var badge = document.createElement('span');
+    badge.className = 'due-badge' + (dueCount === 0 ? ' none' : '');
+    badge.textContent = STRINGS.dueCount(dueCount);
+    btn.appendChild(badge);
+  },
+
+  _cleanupOrphanTemps: async function(dirHandle) {
+    try {
+      for await (var entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.startsWith('.') && entry.name.endsWith('.tmp')) {
+          try {
+            var file = await entry.getFile();
+            var age = Date.now() - file.lastModified;
+            if (age > 3600000) {
+              await dirHandle.removeEntry(entry.name);
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  },
+
+  // ── View switching ──────────────────────────
+
+  _toggleView: function(view) {
+    if (App._currentView === view) {
+      App._currentView = 'notes';
+    } else {
+      App._currentView = view;
+    }
+    App._syncViewVisibility();
+    if (App._currentView === 'outline') App._renderOutline();
+  },
+
+  _syncViewVisibility: function() {
+    var noteView = document.getElementById('note-view');
+    var reviewView = document.getElementById('review-view');
+    var outlineView = document.getElementById('outline-view');
+    var aside = document.querySelector('.aside-panel');
+
+    noteView.classList.toggle('hidden', App._currentView !== 'notes');
+    reviewView.classList.toggle('hidden', App._currentView !== 'review');
+    outlineView.classList.toggle('hidden', App._currentView !== 'outline');
+    if (aside) aside.classList.toggle('hidden', App._currentView !== 'notes');
+  },
+
+  // ── SRS Review mode ─────────────────────────
+
+  _enterReview: function() {
+    App._reviewQueue = ReviewQueueBuilder.build(App._cards);
+    App._reviewIndex = 0;
+    App._reviewStats = { again: 0, hard: 0, good: 0, easy: 0 };
+    App._currentView = 'review';
+    App._syncViewVisibility();
+    App._renderReviewCard();
+  },
+
+  _renderReviewCard: function() {
+    var view = document.getElementById('review-view');
+    view.textContent = '';
+
+    var container = document.createElement('div');
+    container.className = 'review-container';
+
+    // Disclaimer
+    var disclaimer = document.createElement('div');
+    disclaimer.className = 'review-disclaimer';
+    disclaimer.textContent = STRINGS.sharepointDisclaimer;
+    container.appendChild(disclaimer);
+
+    if (App._reviewQueue.length === 0) {
+      var msg = document.createElement('p');
+      msg.className = 'empty-state';
+      msg.textContent = App._cards.length === 0 ? STRINGS.noCards : STRINGS.noCardsDue;
+      container.appendChild(msg);
+      view.appendChild(container);
+      return;
+    }
+
+    if (App._reviewIndex >= App._reviewQueue.length) {
+      App._renderReviewSummary(container);
+      view.appendChild(container);
+      return;
+    }
+
+    var card = App._reviewQueue[App._reviewIndex];
+
+    // Progress
+    var progress = document.createElement('div');
+    progress.className = 'review-progress';
+    progress.textContent = 'Card ' + (App._reviewIndex + 1) + ' of ' + App._reviewQueue.length;
+    container.appendChild(progress);
+
+    // Card
+    var cardDiv = document.createElement('div');
+    cardDiv.className = 'review-card';
+
+    var qLabel = document.createElement('div');
+    qLabel.className = 'question-label';
+    qLabel.textContent = 'Question';
+    cardDiv.appendChild(qLabel);
+
+    var qText = document.createElement('div');
+    qText.className = 'question-text';
+    qText.textContent = card.question;
+    cardDiv.appendChild(qText);
+
+    // Answer section (hidden initially)
+    var ansSection = document.createElement('div');
+    ansSection.className = 'answer-section hidden';
+    ansSection.id = 'answer-section';
+
+    var aLabel = document.createElement('div');
+    aLabel.className = 'answer-label';
+    aLabel.textContent = 'Answer';
+    ansSection.appendChild(aLabel);
+
+    var aText = document.createElement('div');
+    aText.className = 'answer-text';
+    aText.textContent = card.answer;
+    ansSection.appendChild(aText);
+
+    // Rating buttons
+    var actions = document.createElement('div');
+    actions.className = 'review-actions';
+    actions.id = 'rating-actions';
+
+    var ratings = [
+      { label: STRINGS.again, cls: 'again', value: 0, key: '1', stat: 'again' },
+      { label: STRINGS.hard, cls: 'hard', value: 3, key: '2', stat: 'hard' },
+      { label: STRINGS.good, cls: 'good', value: 4, key: '3', stat: 'good' },
+      { label: STRINGS.easy, cls: 'easy', value: 5, key: '4', stat: 'easy' }
+    ];
+
+    for (var i = 0; i < ratings.length; i++) {
+      var r = ratings[i];
+      var btn = document.createElement('button');
+      btn.className = r.cls;
+      btn.textContent = r.label;
+      btn.type = 'button';
+      (function(rating, statKey) {
+        btn.addEventListener('click', function() { App._rateCard(rating, statKey); });
+      })(r.value, r.stat);
+      actions.appendChild(btn);
+    }
+    ansSection.appendChild(actions);
+    cardDiv.appendChild(ansSection);
+    container.appendChild(cardDiv);
+
+    // Show answer button
+    var showBtn = document.createElement('button');
+    showBtn.className = 'primary';
+    showBtn.textContent = STRINGS.showAnswer;
+    showBtn.type = 'button';
+    showBtn.id = 'btn-show-answer';
+    showBtn.addEventListener('click', function() {
+      ansSection.classList.remove('hidden');
+      showBtn.classList.add('hidden');
+      // Focus first rating button
+      var firstRating = actions.querySelector('button');
+      if (firstRating) firstRating.focus();
+    });
+    container.appendChild(showBtn);
+
+    // Error banner area
+    var errorBanner = document.createElement('div');
+    errorBanner.id = 'review-error';
+    errorBanner.className = 'review-error hidden';
+    errorBanner.setAttribute('role', 'alert');
+    container.appendChild(errorBanner);
+
+    // End review button
+    var endBtn = document.createElement('button');
+    endBtn.textContent = STRINGS.endReview;
+    endBtn.type = 'button';
+    endBtn.style.marginTop = '1rem';
+    endBtn.addEventListener('click', function() {
+      App._reviewIndex = App._reviewQueue.length;
+      App._renderReviewCard();
+    });
+    container.appendChild(endBtn);
+
+    view.appendChild(container);
+
+    // Keyboard shortcuts
+    App._reviewKeyHandler = function(e) {
+      if (ansSection.classList.contains('hidden')) {
+        if (e.key === ' ' || e.key === 'Enter') { showBtn.click(); e.preventDefault(); }
+        return;
+      }
+      if (App._isWritingCard) return;
+      if (e.key === '1') App._rateCard(0, 'again');
+      else if (e.key === '2') App._rateCard(3, 'hard');
+      else if (e.key === '3') App._rateCard(4, 'good');
+      else if (e.key === '4') App._rateCard(5, 'easy');
+    };
+    document.addEventListener('keydown', App._reviewKeyHandler);
+  },
+
+  _rateCard: async function(rating, statKey) {
+    if (App._isWritingCard) return;
+    App._isWritingCard = true;
+
+    // Disable all rating buttons
+    var buttons = document.querySelectorAll('#rating-actions button');
+    buttons.forEach(function(b) { b.disabled = true; });
+
+    var card = App._reviewQueue[App._reviewIndex];
+    var result = SM2Scheduler.compute(card, rating);
+
+    // Update card in-memory
+    card.ease = result.ease;
+    card.interval = result.interval;
+    card.next_review = result.next_review;
+    card.last_reviewed = result.last_reviewed;
+
+    // Write atomically
+    var errorBanner = document.getElementById('review-error');
+    try {
+      if (App._srsHandle && App._isWritable) {
+        await SRSCardWriter.write(App._srsHandle, card, card._mtime);
+        // Update mtime
+        try {
+          var updatedFile = await (await App._srsHandle.getFileHandle(card.id + '.yaml')).getFile();
+          card._mtime = updatedFile.lastModified;
+        } catch (e) {}
+      }
+
+      App._reviewStats[statKey]++;
+      App._reviewIndex++;
+
+      // Remove keyboard handler before re-render
+      if (App._reviewKeyHandler) {
+        document.removeEventListener('keydown', App._reviewKeyHandler);
+      }
+
+      App._isWritingCard = false;
+      App._renderReviewCard();
+
+    } catch (err) {
+      App._isWritingCard = false;
+      buttons.forEach(function(b) { b.disabled = false; });
+
+      if (err.name === 'StaleWriteError') {
+        // Try to re-read
+        errorBanner.textContent = STRINGS.cardStaleWrite;
+        errorBanner.classList.remove('hidden');
+        try {
+          var rereadHandle = await App._srsHandle.getFileHandle(card.id + '.yaml');
+          var rereadFile = await rereadHandle.getFile();
+          var rereadContent = await rereadFile.text();
+          var reparsed = SRSCardParser.parse(rereadContent, card._path);
+          if (reparsed.card) {
+            // Replace in queue
+            reparsed.card._mtime = rereadFile.lastModified;
+            reparsed.card._path = card._path;
+            App._reviewQueue[App._reviewIndex] = reparsed.card;
+            setTimeout(function() {
+              errorBanner.classList.add('hidden');
+              App._renderReviewCard();
+            }, 1500);
+          }
+        } catch (rereadErr) {
+          errorBanner.textContent = STRINGS.cardStaleReloadFail;
+          App._reviewStats[statKey]++;
+          App._reviewIndex++;
+          setTimeout(function() {
+            errorBanner.classList.add('hidden');
+            App._renderReviewCard();
+          }, 2000);
+        }
+      } else {
+        errorBanner.textContent = err.message || STRINGS.cardSaveFail;
+        errorBanner.classList.remove('hidden');
+      }
+    }
+  },
+
+  _renderReviewSummary: function(container) {
+    // Remove keyboard handler
+    if (App._reviewKeyHandler) {
+      document.removeEventListener('keydown', App._reviewKeyHandler);
+    }
+
+    var summary = document.createElement('div');
+    summary.className = 'review-summary';
+
+    var h2 = document.createElement('h2');
+    h2.textContent = 'Review complete';
+    summary.appendChild(h2);
+
+    var total = App._reviewStats.again + App._reviewStats.hard + App._reviewStats.good + App._reviewStats.easy;
+    var p = document.createElement('p');
+    p.textContent = STRINGS.reviewSummary(total, App._reviewStats.again, App._reviewStats.hard, App._reviewStats.good, App._reviewStats.easy);
+    summary.appendChild(p);
+
+    var backBtn = document.createElement('button');
+    backBtn.className = 'primary';
+    backBtn.textContent = STRINGS.backToNotes;
+    backBtn.type = 'button';
+    backBtn.addEventListener('click', function() {
+      App._currentView = 'notes';
+      App._syncViewVisibility();
+      App._updateDueBadge();
+    });
+    summary.appendChild(backBtn);
+
+    container.appendChild(summary);
+  },
+
+  _renderBrokenCardsPanel: function() {
+    var panel = document.getElementById('broken-cards-panel');
+    panel.textContent = '';
+
+    if (App._brokenCards.length === 0) {
+      panel.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+    var h3 = document.createElement('h3');
+    h3.textContent = STRINGS.brokenCards + ' (' + App._brokenCards.length + ')';
+    panel.appendChild(h3);
+
+    var ul = document.createElement('ul');
+    for (var i = 0; i < App._brokenCards.length; i++) {
+      var bc = App._brokenCards[i];
+      var li = document.createElement('li');
+      var pathSpan = document.createElement('strong');
+      pathSpan.textContent = bc.path;
+      li.appendChild(pathSpan);
+      for (var j = 0; j < bc.errors.length; j++) {
+        var errDiv = document.createElement('div');
+        errDiv.className = 'error-detail';
+        errDiv.textContent = bc.errors[j].field ? bc.errors[j].field + ': ' + bc.errors[j].message : bc.errors[j].message;
+        li.appendChild(errDiv);
+      }
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  },
+
+  // ── Outline view ────────────────────────────
+
+  _renderOutline: function() {
+    var view = document.getElementById('outline-view');
+    view.textContent = '';
+
+    var container = document.createElement('div');
+    container.className = 'outline-container';
+
+    var h2 = document.createElement('h2');
+    h2.textContent = STRINGS.outlineTitle;
+    container.appendChild(h2);
+
+    if (App._notes.length === 0) {
+      var empty = document.createElement('p');
+      empty.className = 'empty-state';
+      empty.textContent = STRINGS.outlineEmpty;
+      container.appendChild(empty);
+      view.appendChild(container);
+      return;
+    }
+
+    // Group by tier
+    var tiers = ['bedrock', 'warm', 'cold'];
+    for (var t = 0; t < tiers.length; t++) {
+      var tierName = tiers[t];
+      var tierNotes = App._notes.filter(function(n) { return n.frontmatter.tier === tierName; });
+      if (tierNotes.length === 0) continue;
+
+      var section = document.createElement('div');
+      section.className = 'outline-tier-section';
+
+      // Collapsible header
+      var header = document.createElement('button');
+      header.className = 'outline-tier-header';
+      header.type = 'button';
+      header.setAttribute('aria-expanded', 'true');
+
+      var chevron = document.createElement('span');
+      chevron.className = 'chevron';
+      chevron.textContent = '\u25BC';
+      header.appendChild(chevron);
+
+      var tierLabel = document.createTextNode(tierName.charAt(0).toUpperCase() + tierName.slice(1) + ' (' + tierNotes.length + ')');
+      header.appendChild(tierLabel);
+
+      var noteList = document.createElement('ul');
+      noteList.className = 'outline-note-list';
+
+      header.addEventListener('click', (function(list, hdr) {
+        return function() {
+          var expanded = hdr.getAttribute('aria-expanded') === 'true';
+          hdr.setAttribute('aria-expanded', String(!expanded));
+          list.classList.toggle('hidden', expanded);
+        };
+      })(noteList, header));
+
+      section.appendChild(header);
+
+      // Notes in this tier
+      for (var n = 0; n < tierNotes.length; n++) {
+        var note = tierNotes[n];
+        var li = document.createElement('li');
+        li.className = 'outline-note-item';
+
+        var noteLink = document.createElement('a');
+        noteLink.className = 'outline-note-link';
+        noteLink.href = '#';
+        noteLink.textContent = note.frontmatter.title;
+        (function(path) {
+          noteLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            App._currentView = 'notes';
+            App._syncViewVisibility();
+            App.showNote(path);
+          });
+        })(note.path);
+        li.appendChild(noteLink);
+
+        // Sub-links
+        if (note.wikiLinks && note.wikiLinks.length > 0) {
+          var subUl = document.createElement('ul');
+          subUl.className = 'outline-sub-links';
+          for (var k = 0; k < note.wikiLinks.length; k++) {
+            var subLi = document.createElement('li');
+            var linkTitle = note.wikiLinks[k];
+            var normalizedLink = WikiLinkResolver._normalize(linkTitle);
+
+            // Try to resolve
+            var targetNote = null;
+            if (App._titleIndex) {
+              var found = App._titleIndex.get(normalizedLink);
+              if (found && !Array.isArray(found)) targetNote = found;
+            }
+
+            if (targetNote) {
+              var subA = document.createElement('a');
+              subA.href = '#';
+              subA.textContent = '\u2192 ' + linkTitle;
+              (function(p) {
+                subA.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  App._currentView = 'notes';
+                  App._syncViewVisibility();
+                  App.showNote(p);
+                });
+              })(targetNote.path);
+              subLi.appendChild(subA);
+            } else {
+              subLi.textContent = '\u2192 ' + linkTitle + ' (broken)';
+            }
+            subUl.appendChild(subLi);
+          }
+          li.appendChild(subUl);
+        }
+
+        noteList.appendChild(li);
+      }
+
+      section.appendChild(noteList);
+      container.appendChild(section);
+    }
+
+    // Back button
+    var backBtn = document.createElement('button');
+    backBtn.textContent = STRINGS.backToNotes;
+    backBtn.type = 'button';
+    backBtn.style.marginTop = '1rem';
+    backBtn.addEventListener('click', function() {
+      App._currentView = 'notes';
+      App._syncViewVisibility();
+    });
+    container.appendChild(backBtn);
+
+    view.appendChild(container);
   },
 
   announce: function(msg) {
