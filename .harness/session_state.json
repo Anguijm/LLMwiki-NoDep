@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "371d7bce567e09e10d0dc28b627a45640bb9b087",
-    "short": "371d7bc",
-    "subject": "chore: bootstrap council harness (override council: infrastructure bootstrap)",
+    "hash": "97b54a4367a52748158e3c4be91501ad919e7d02",
+    "short": "97b54a4",
+    "subject": "chore: refresh harness state after bootstrap commit",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "claude/bootstrap-harness-8MB5B",
-    "committed_at": "2026-04-21T03:33:56+00:00",
-    "files_changed": 18
+    "committed_at": "2026-04-21T03:34:11+00:00",
+    "files_changed": 2
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
