@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": "Phase 2b: index.html + markdown parser + wiki-link resolver + _index.md regenerator",
-  "focus_area": "phase-2b-implementation",
+  "active_plan": "Phase 2c: SRS review mode + outline view",
+  "focus_area": "phase-2c-implementation",
   "approval_state": "executing",
   "last_council": {
-    "source": "PR #3",
-    "decision": "Proceed",
-    "scores": { "accessibility": 9, "architecture": 10, "bugs": 7, "cost": 10, "product": 10, "security": 9 },
-    "run_at": "2026-04-21T10:06:36Z"
+    "source": "PR #4",
+    "decision": "Revise",
+    "scores": { "accessibility": 8, "architecture": 10, "bugs": 6, "cost": 10, "product": 10, "security": 9 },
+    "run_at": "2026-04-21T18:34:07Z"
   },
   "last_commit": {
-    "hash": "035751d",
-    "short": "035751d",
-    "subject": "docs: update test harness to load modules from index.html, update README for Phase 2b",
+    "hash": "d1d81148c7cdcab9b1adea1fafc05c06ff25184c",
+    "short": "d1d8114",
+    "subject": "fix: address council round-3 findings — contrast, atomic write, date parsing",
     "author": "Claude <noreply@anthropic.com>",
-    "branch": "feat/phase-2b-index-html",
-    "committed_at": "2026-04-21T19:15:00+00:00",
-    "files_changed": 2
+    "branch": "feat/phase-2c-srs-graph",
+    "committed_at": "2026-04-22T00:00:00+00:00",
+    "files_changed": 1
   },
-  "notes": "Phase 2b implementation complete. 4 commits on branch. PR #3 open. Awaiting council re-review on implementation diff, then merge."
+  "notes": "Phase 2c implementation pushed. Council round-3 fixes applied. Awaiting council round-4 re-review."
 }
