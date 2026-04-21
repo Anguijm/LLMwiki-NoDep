@@ -5,13 +5,13 @@
   "approval_state": "idle",
   "last_council": null,
   "last_commit": {
-    "hash": "8947bcb26cb696302ff9df390d1f11b9be7d358a",
-    "short": "8947bcb",
-    "subject": "plan: Phase 2a scaffold — folders, READMEs, prompt templates, empty srs.csv",
+    "hash": "1032532b1d7bfb3587e5a44ae0e20694bcf0fef5",
+    "short": "1032532",
+    "subject": "chore: refresh harness state after Phase 2a plan commit",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "feat/phase-2a-scaffold-folders-prompts",
-    "committed_at": "2026-04-21T04:29:43+00:00",
-    "files_changed": 1
+    "committed_at": "2026-04-21T04:30:15+00:00",
+    "files_changed": 2
   },
   "notes": "Harness bootstrapped; scaffolding plan pending."
 }
