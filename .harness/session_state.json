@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "active_plan": null,
-  "focus_area": "phase-2-complete",
-  "approval_state": "idle",
+  "active_plan": "refactor/reframe-corpus → PR #7 — course corrections: corpus reframe, dual-mode prompts, chunked ingest (3 milestones)",
+  "focus_area": "phase-3-course-corrections — Milestone 1: personal reference corpus reframe + warm-default",
+  "approval_state": "approved",
   "last_council": {
-    "source": "PR #6",
-    "decision": "Revise (merged on human approval — approval gate passed)",
-    "scores": { "accessibility": 10, "architecture": 10, "bugs": 5, "cost": 10, "product": 9, "security": 8 },
-    "run_at": "2026-04-21T22:37:40Z"
+    "source": "PR #7 round 4",
+    "decision": "Proceed",
+    "scores": { "accessibility": 9, "architecture": 10, "bugs": 9, "cost": 10, "product": 10, "security": 10 },
+    "run_at": "2026-04-22T23:17:15Z"
   },
   "last_commit": {
     "hash": "801bc85",
@@ -18,5 +18,5 @@
     "committed_at": "2026-04-22T07:35:00+00:00",
     "files_changed": 1
   },
-  "notes": "Phase 2 complete (2a-2d + dev tooling). 6 PRs merged (#1-#6). README rewritten for locked-down laptops. No active plan — future work driven by user feedback."
+  "notes": "PR #7 open on refactor/reframe-corpus. Plan rev 4 committed (SHA 57041cc) and council-approved at round 4. Milestone 1 execution in progress: reframe README + prompts + tier READMEs from ME-degree study aid to personal reference corpus; warm documented as default landing tier. Milestones 2 (dual-mode prompts) and 3 (large-doc chunked ingest) will open as separate PRs after Milestone 1 merges."
 }
