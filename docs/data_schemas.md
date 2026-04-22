@@ -35,7 +35,7 @@ sources: [https://example.edu/laplace.pdf, /cold/dsp-review.md]   # OPTIONAL, ar
 | Field | Required | Type | Null/empty policy | Notes |
 |---|---|---|---|---|
 | `title` | yes | string | non-null, non-empty (trimmed) | Drives `[[wiki link]]` resolution by title (Unicode NFKD case-fold); the filename is derived from this via the slugging rules below. |
-| `tier` | yes | enum | non-null; one of `bedrock`, `warm`, `cold` | Drives tier filter state in Phase 2b UI; must match the folder the file lives in (validator surfaces mismatches as broken notes). |
+| `tier` | yes | enum | non-null; one of `bedrock`, `warm`, `cold` | Drives tier filter state in Phase 2b UI; must match the folder the file lives in (validator surfaces mismatches as broken notes). **`warm` is the default tier** for newly ingested material and for prompt-template output when no tier is otherwise specified; `bedrock` and `cold` require explicit justification (see tier READMEs). |
 | `created` | yes | ISO 8601 UTC timestamp | non-null | Format exactly `YYYY-MM-DDTHH:mm:ssZ`. Set on first commit of the note; never edited after. |
 | `updated` | yes | ISO 8601 UTC timestamp | non-null | Format exactly `YYYY-MM-DDTHH:mm:ssZ`. Updated on any content change. |
 | `tags` | yes | array of string | array always present; empty `[]` when no tags | Array form (not comma-string) so the parser never splits. Each entry must be non-empty after trimming; whitespace-only entries are dropped silently by the parser. |
