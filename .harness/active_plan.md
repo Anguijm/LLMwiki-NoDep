@@ -1,9 +1,10 @@
 # Active plan — Course corrections: personal corpus reframe, dual-mode prompts, chunked large-doc ingest
 
-**Status:** revised (rev 2) — awaiting council round 2 + human approval. No implementation yet.
+**Status:** revised (rev 3) — awaiting council round 3 + human approval. No implementation yet.
 **Branch (this milestone):** `refactor/reframe-corpus` (Milestone 1 of 3).
 **Base:** `main` @ `012a383` (Phase 2 complete, session-close commit).
-**Rev 2 changes:** Product persona (PR #7 council round 1) vetoed the "team / shared corpus" framing as an anti-scope violation. Reframe tightened to **single-user personal reference corpus**. Features (dual-mode prompts, large-doc chunked ingest, `warm` default) unchanged. Additional council must-dos folded into Milestones 2 and 3 (security, bugs, accessibility, cost).
+**Rev 2 changes:** Product persona (PR #7 council round 1, score 2 blocker) vetoed the "team / shared corpus" framing as an anti-scope violation. Reframe tightened to **single-user personal reference corpus**. Features (dual-mode prompts, large-doc chunked ingest, `warm` default) unchanged. Additional council must-dos folded into Milestones 2 and 3 (security, bugs, accessibility, cost).
+**Rev 3 changes:** Bugs persona (PR #7 council round 2) surfaced two blockers — (a) UI rendering performance on pastes with thousands of sections, (b) collision-check staleness from SharePoint sync between page-load and commit-click. Both addressed in Milestone 3 below. Security must-dos tightened: prompt-framing test now asserts **position** (framing immediately precedes the untrusted-content placeholder), not just presence. Additional edge-case tests folded in: NUL/control bytes, extremely long titles, invalid-YAML-in-section-frontmatter as a differentiated parse error, zero-valid-sections paste, double-click-on-commit, and pre-commit corpus re-scan. i18n of new UI strings acknowledged as an accessibility nice-to-have and explicitly out of scope.
 **Prior context:** Phase 2 shipped the static `index.html` app (markdown parser + wiki-link resolver), SRS review mode, tier folders, chat-paradigm prompt templates, Power Automate flow docs, and dev tooling (ESLint / Prettier / Vitest / CI). All six Phase-2 PRs merged. `active_plan` is currently `null` in `session_state.json`; this plan repopulates it.
 
 ## Why now — four user-directed course corrections
@@ -69,7 +70,7 @@ Agent-only. No chat-mode sibling: a user without agent access uses the existing 
   - **Per-section normalization** — rewrite each section as a self-contained note body with our frontmatter schema.
   - **Tier recommendation** — default `warm`; `bedrock` or `cold` require explicit justification.
   - **Cross-link suggestion** — emit `[[wiki-link]]` candidates between sections in the same batch; mark each suggestion with low/high confidence.
-- **Untrusted-content framing is present before the input in both the main prompt and every subagent prompt.** Non-negotiable per council rev 1.
+- **Untrusted-content framing is present immediately before the pasted-content placeholder in both the main prompt and every subagent prompt.** The Vitest check in Milestone 2 asserts position — the canonical framing sentence must be the last non-blank line before the `{{untrusted_content}}` placeholder (or the equivalent paste-here marker) in every agent prompt. "Somewhere in the file" is not sufficient. Non-negotiable per council rev 1 + rev 2. [council rev 2 — security must-do.]
 - Output format: each section wrapped in the delimiter spec below.
 - Degradation: if no clear structure is detected, the agent emits a single section with an explanatory caveat and a low-confidence flag. The app's preview pane shows the caveat prominently.
 - Cost-posture note: the agent may burn multiple internal turns; the frontmatter `expected human-turn budget` captures **human paste round-trips**, not internal agent turns.
@@ -92,6 +93,7 @@ tier: warm
 ```
 
 - Parser is a **linear single-pass scanner**, not a regex with alternation or quantifier backtracking risk. Each line is checked with a strict prefix match: `<<<LLMWIKI-SECTION:`, `<<<LLMWIKI-SECTION-END:`, or neither. The slug is validated against the slug regex from `data_schemas.md`. Any line starting with the sentinel prefix but failing slug validation is a parse error; the whole paste is rejected with a diagnostic pointing at line and column. [council rev 1 — security: ReDoS mitigation via no-backtracking scanner + fuzz tests.]
+- **Differentiated parse diagnostics.** A malformed delimiter line and a malformed YAML frontmatter block emit distinct error categories in the diagnostic. Example categories: `delimiter.invalid-slug`, `delimiter.unterminated-section`, `delimiter.orphan-close`, `delimiter.nested-open`, `frontmatter.yaml-parse-error`, `frontmatter.missing-block`, `frontmatter.invalid-title`. [council rev 2 — bugs: differentiated error categories.]
 - Both open and close carry the slug; parser validates pairing and rejects the entire paste on any mismatch.
 - The agent's emitted slug is treated as a **suggestion**. The app re-derives the canonical slug from the frontmatter `title` using the rules in `data_schemas.md`; any mismatch is surfaced in the preview as a **prominent warning** (not a silent override, per council rev 1 security nice-to-have).
 - Text outside sentinel pairs is treated as preamble, shown in the preview, and never written to disk.
@@ -101,17 +103,21 @@ tier: warm
 
 All UI built with safe DOM construction only: `document.createElement`, `.textContent`, `.value`, `setAttribute` with attribute-name allowlist. **Zero `.innerHTML`, `.outerHTML`, `.insertAdjacentHTML`, or string-templated HTML anywhere in the new flow**, including titles in form inputs. Title fields use `<input type="text">` with `.value` set from the (validated) frontmatter title. [council rev 1 — security: XSS in import preview UI.]
 
-1. **Parse.** User pastes or drops the delimited agent output into a new affordance. On parse error, the pane shows the raw paste (rendered via the existing escape-by-default parser, same code path as any other ingested content) plus the parse diagnostic with line/column. No write.
-2. **Preview list.** One row per detected section: editable title (`<input>` with `<label for=…>`), tier dropdown (default `warm`, selectable `bedrock` / `cold`, with `<label for=…>`), auto-derived slug shown read-only, collapsible body preview rendered through the **existing escape-by-default markdown parser** (same code path as the single-note viewer — no new rendering code).
-3. **Collision check.** For each proposed slug in its chosen tier, check against the current corpus. Collisions rendered with icon + text (not color alone), with three options: skip, rename (inline rename field re-derives slug live), overwrite (overwrite gated behind an explicit second confirmation modal). [council rev 1 — accessibility: non-color-only.]
-4. **Empty/invalid-title validation.** Titles that normalize to an empty slug, a slug composed only of stripped characters, or a reserved OS filename (`.`, `..`, `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`, with/without extensions) are flagged in preview with a specific error message and block commit for that row. [council rev 1 — bugs: empty/invalid title edge case.]
-5. **Explicit commit.** The "Commit N sections" button is the only write trigger. Disabled while any row has an unresolved error (empty title, unresolved collision). No auto-write path exists.
-6. **Atomic-per-file writes.** Each file uses the existing atomic temp-and-rename pattern (canonical per `data_schemas.md`). The write function wraps the WritableStream handle in a `try … finally` that explicitly aborts/closes the stream and deletes the `.tmp` file on any failure path, including mid-write exceptions. [council rev 1 — bugs: `.tmp` cleanup in `finally`.]
-7. **Per-file error differentiation.** Write failures are surfaced with their specific cause: permission denied, file already exists (race with SharePoint sync or another write), quota/disk full, handle revoked, or generic I/O error. The UI renders each failure row with the specific error and a per-row **"Retry this file"** action. A **"Retry all failed"** aggregate button re-attempts only the failed rows (successful writes are never re-written). [council rev 1 — bugs: differentiated errors + retry-failed-only.]
-8. **aria-live status region.** A single `aria-live="polite"` region announces: parse started / parse complete (N sections detected) / parse error (with location) / collision detected (N rows) / commit started / commit complete (N success, M failed) / individual retry outcomes. [council rev 1 — accessibility: status-message announcements.]
-9. **Touch-target sizing.** All preview-pane interactive elements (buttons, dropdowns, retry affordances) rendered at ≥44×44 CSS-px minimum target size. [council rev 1 — accessibility: 2.5.5 target size.]
-10. **Contrast.** All new colors verified against WCAG AA (4.5:1 normal, 3:1 large) during implementation, consistent with the Phase-2b link-contrast fix. [council rev 1 — accessibility.]
-11. **Post-commit.** A link/button to trigger `_index.md` regeneration is surfaced; not auto-run.
+1. **Parse.** User pastes or drops the delimited agent output into a new affordance. On parse error, the pane shows the raw paste (rendered via the existing escape-by-default parser, same code path as any other ingested content) plus the parse diagnostic with differentiated error category and line/column. No write.
+2. **Section-count cap.** Hard cap at **200 sections per paste**. A paste that yields >200 parsed sections is rejected at parse time with a specific "too-many-sections" diagnostic: `parsed N sections; per-batch limit is 200. Split the source document or re-prompt the agent to coarsen section boundaries.` The cap is a pragmatic safety bound against pathological inputs (thousands-of-rows UI freeze) and is revisitable as a separate plan if real usage pressures it. [council rev 2 — bugs: UI scale blocker.]
+3. **Preview list — collapsed by default.** Each row renders minimally collapsed: title (`<input>` with `<label for=…>`), tier dropdown (default `warm`, selectable `bedrock` / `cold`, with `<label for=…>`), auto-derived slug shown read-only, and an expand toggle. The body preview is **not rendered until the row is expanded**; collapsed rows keep the per-row DOM cost bounded and the page responsive for the full 1–200 range. On expand, the body is rendered through the **existing escape-by-default markdown parser** (same code path as the single-note viewer — no new rendering code). [council rev 2 — bugs: UI scale mitigation beyond the cap.]
+4. **Pre-commit corpus re-scan.** On click of the "Commit N sections" button (before any write), the app re-scans the target tier folders via the existing FolderScanner to refresh its slug index. Collisions that appeared between page-load and commit-click (e.g., from a SharePoint sync pulling in a new file) are detected here and surface as new collision rows that must be resolved before the commit proceeds. This is the soft first line; the atomic temp-and-rename at write time is the hard backstop. [council rev 2 — bugs: stale collision check blocker.]
+5. **Collision check.** For each proposed slug in its chosen tier, check against the corpus index (initial load + pre-commit re-scan). Collisions rendered with icon + text (not color alone), with three options: skip, rename (inline rename field re-derives slug live), overwrite (overwrite gated behind an explicit second confirmation modal). [council rev 1 — accessibility: non-color-only.]
+6. **Empty/invalid-title validation.** Titles that normalize to an empty slug, a slug composed only of stripped characters, a reserved OS filename (`.`, `..`, `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`, with/without extensions), a final slug length that exceeds the tier folder's safe filename budget (assume 200 chars as an OS-cross-compatible bound; precise limit documented in `data_schemas.md`), or a title/body containing NUL or disallowed C0 control bytes are flagged in preview with a specific error message and block commit for that row. [council rev 1 + rev 2 — bugs: invalid-filename + long-title + control-byte edge cases.]
+7. **Slug-mismatch rationale.** When the app's re-derived slug differs from the agent-suggested slug, the preview row shows a short human-readable reason (e.g., "normalized case," "removed non-ASCII," "replaced spaces with hyphens"). [council rev 2 — security nice-to-have.]
+8. **Explicit commit.** The "Commit N sections" button is the only write trigger. Disabled while any row has an unresolved error (empty title, unresolved collision, invalid title, control bytes). Disabled **immediately on first click** for the duration of the batch write to prevent double-click from launching a second parallel write batch. No auto-write path exists. [council rev 2 — bugs: double-click race.]
+9. **Atomic-per-file writes.** Each file uses the existing atomic temp-and-rename pattern (canonical per `data_schemas.md`). The write function wraps the WritableStream handle in a `try … finally` that explicitly aborts/closes the stream and deletes the `.tmp` file on any failure path, including mid-write exceptions. [council rev 1 — bugs: `.tmp` cleanup in `finally`.]
+10. **Per-file error differentiation.** Write failures are surfaced with their specific cause: permission denied, file already exists (race with SharePoint sync or another write), quota/disk full, handle revoked, or generic I/O error. The UI renders each failure row with the specific error and a per-row **"Retry this file"** action. A **"Retry all failed"** aggregate button re-attempts only the failed rows (successful writes are never re-written). [council rev 1 — bugs: differentiated errors + retry-failed-only.]
+11. **aria-live status region.** A single `aria-live="polite"` region announces: parse started / parse complete (N sections detected) / parse error (with category and location) / collision detected (N rows) / pre-commit re-scan started / commit started / commit complete (N success, M failed) / individual retry outcomes. [council rev 1 — accessibility: status-message announcements.]
+12. **Touch-target sizing.** All preview-pane interactive elements (buttons, dropdowns, retry affordances, expand toggles) rendered at ≥44×44 CSS-px minimum target size. [council rev 1 — accessibility: 2.5.5 target size.]
+13. **Contrast.** All new colors verified against WCAG AA (4.5:1 normal, 3:1 large) during implementation, consistent with the Phase-2b link-contrast fix. [council rev 1 — accessibility.]
+14. **Zero-section guard.** A paste that parses to 0 sections (preamble-only, no matched sentinels) shows an informational message ("no sections found") and leaves the commit button disabled. [council rev 2 — bugs.]
+15. **Post-commit.** A link/button to trigger `_index.md` regeneration is surfaced; not auto-run.
 
 #### Rendering-surface discipline
 
@@ -132,6 +138,9 @@ Cross-section `[[wiki-link]]` suggestions from the agent appear inline in sectio
 - **Power Automate flow changes.** `/power-automate/` flows keep working unchanged. Framing text may get a light pass during the Milestone-1 reframe; no flow logic changes.
 - **Rename of existing prompts.** Per Milestone 2 decision, originals stay at their current filenames.
 - **Automatic rollback of partial multi-file writes.** Per Milestone 3 design, full-batch rollback is not attempted; partial success + honest per-file reporting + retry-failed-only is the chosen semantics.
+- **Internationalization (i18n) of new UI strings.** New user-facing strings in the Milestone-3 preview pane are committed in English only. i18n of the UI (externalized string tables, locale switching) is deferred; the product is for a single English-speaking user. [council rev 2 — accessibility nice-to-have, declined for scope.]
+- **Post-commit re-verification scan against SharePoint overwrites.** If SharePoint sync overwrites or deletes a just-written file seconds after commit, the UI will report success even though the file on disk is stale. Post-commit re-verification is out of scope for Milestone 3; the existing SharePoint-visibility caveat in README covers the semantics. [council rev 2 — bugs: acknowledged as hard problem, deferred.]
+- **>200-section batches.** Per the section-count cap, pastes producing >200 sections are rejected. Virtualized rendering or pagination to lift the cap is deferred to a separate plan if usage pressures it.
 
 ## Non-negotiables check (per `CLAUDE.md`)
 
@@ -155,28 +164,36 @@ Cross-section `[[wiki-link]]` suggestions from the agent appear inline in sectio
 - **Milestone 2** — prompt text only, no code changes. Manual review; CI green. Add a Vitest test that asserts every file in `_prompts/` (excluding `README.md`) has a valid `mode: chat | agent` frontmatter field and that every agent-mode prompt contains the untrusted-content framing phrase (grep-for-string check is sufficient as a guard against regression).
 - **Milestone 3** — new parser + new UI flow:
   - **Vitest** unit tests for the delimiter parser, covering:
-    - Well-formed input: 1 / 3 / 10 / 100 sections.
+    - Well-formed input: 1 / 3 / 10 / 100 / 200 sections (upper boundary).
+    - 201-section input — must reject with `parser.too-many-sections` diagnostic. [council rev 2.]
+    - Zero-section input (preamble-only, no sentinels) — parser returns empty sections list with an informational flag; downstream UI disables commit. [council rev 2.]
     - Mismatched open/close slugs.
     - Missing close sentinel (unterminated section).
     - Orphan close sentinel with no prior open.
     - Nested open (open sentinel while a section is still open).
     - Duplicate slug across two sections in the same paste.
     - Empty section body (frontmatter + no content).
-    - Missing frontmatter block.
+    - Missing frontmatter block → `frontmatter.missing-block` category.
+    - **Invalid YAML inside a section's frontmatter** → `frontmatter.yaml-parse-error` category, distinct from delimiter errors. [council rev 2.]
     - Empty/invalid frontmatter title (empty string, whitespace-only, all-stripped characters, reserved OS filename).
+    - Title/body containing NUL bytes or C0 control characters. [council rev 2.]
+    - Extremely long title → slugifies beyond the documented filename budget; parser surfaces the validation diagnostic, not a crash. [council rev 2.]
     - Preamble and postamble text outside sentinels (treated as preamble, shown but not written).
     - Literal escaped `<<<LLMWIKI-SECTION:` text inside a section body (per the prompt's escape rule) — parser correctly does not treat it as a delimiter. [council rev 1 — manual test + parser robustness.]
-    - **Fuzz / performance tests**: inputs of 1 MB, 10 MB, and a pathological sentinel-heavy but malformed input; assert parse completes within a reasonable time bound and does not hang. Concrete bound: ≤ 1 s per MB on the CI runner; fail the test otherwise. [council rev 1 — security: ReDoS prevention.]
-  - **Vitest** unit tests for app-side slug re-derivation (agent-suggested slug ignored; re-slugified from title; mismatches surfaced but not errors).
-  - **Vitest** unit tests for collision detection against a stubbed corpus.
-  - **Vitest** unit test for invalid-filename detection (reserved OS names, empty after slugification).
+    - **Fuzz / performance tests**: inputs of 1 MB, 10 MB, and a pathological sentinel-heavy but malformed input (e.g., many near-miss sentinels in rapid succession); assert parse completes within a fixed time bound and does not hang. Concrete bound: ≤ 1 s per MB on the CI runner; fail the test otherwise. [council rev 1 + rev 2 — security: ReDoS prevention.]
+  - **Vitest** unit tests for app-side slug re-derivation (agent-suggested slug ignored; re-slugified from title; mismatches surfaced with human-readable rationale, not errors).
+  - **Vitest** unit tests for collision detection against a stubbed corpus, including the pre-commit re-scan path (corpus state changes between initial index and commit-click → new collisions surface).
+  - **Vitest** unit test for invalid-filename detection (reserved OS names, empty after slugification, length overflow, control bytes).
+  - **Vitest** unit test for prompt-framing **position**: every file in `_prompts/` with `mode: agent` has the canonical untrusted-content framing sentence as the last non-blank line before the `{{untrusted_content}}` placeholder (or the documented equivalent). [council rev 2 — security must-do.]
   - **Manual browser test plan** (open `index.html` via `file://` in Edge):
     - Golden path: three-section input with novel slugs; commit; verify three files on disk; regenerate `_index.md`; confirm all three appear.
     - Collision handling: one of three sections collides; exercise each resolution option (skip / rename / overwrite).
     - Partial-write failure: simulable via FS handle errors (e.g., toggle permission mid-batch, or pre-create a read-only file); verify per-file error differentiation and retry-failed-only behavior.
     - Keyboard-only traversal of the preview pane; confirm every control reachable with Tab/Shift-Tab; confirm focus outlines visible; confirm aria-live announcements fire for parse errors, collisions, and commit outcomes (test with a screen reader if available, or with the DOM inspector confirming `aria-live` region updates).
-    - **XSS case.** Section bodies containing `<script>alert(1)</script>`, `<img src=x onerror=alert(1)>`, raw HTML, and a `title` field containing the same; confirm all render as text, never as live markup, in both the preview pane and the final committed note view.
+    - **XSS case — every pasted-content field.** Confirm all fields populated from the paste render as text (never as live markup) in both the preview pane and the final committed note view: section body, frontmatter `title`, any other frontmatter fields rendered in UI, and (if displayed) the slug-mismatch rationale string. Test inputs include `<script>alert(1)</script>`, `<img src=x onerror=alert(1)>`, raw HTML, and a `javascript:` URL in a markdown link inside a body. [council rev 2 — security must-do: XSS test covers every field, not just body.]
     - Literal-escaped-sentinel-in-body case: source document containing the string `<<<LLMWIKI-SECTION:foo>>>` inside a section body (escaped per the prompt); confirm parser treats it as body text. [council rev 1 — manual test must-have.]
+    - Double-click on commit: rapidly click the commit button twice; confirm only one write batch executes. [council rev 2.]
+    - Stale collision via pre-commit re-scan: with the app open, externally create a file in `/warm/` that collides with an about-to-commit slug; click commit; confirm the pre-commit re-scan surfaces the new collision and the batch pauses for resolution. [council rev 2.]
     - `.tmp` cleanup: simulate a write failure mid-stream; confirm no `.tmp` file remains on disk after the failure path completes.
   - **Security checklist** (`.harness/scripts/security_checklist.md`) re-read for every content-to-DOM surface the change introduces.
 
@@ -193,12 +210,15 @@ Cross-section `[[wiki-link]]` suggestions from the agent appear inline in sectio
 9. **Prompt bloat.** Agent-mode variants double the prompt-template count. *Mitigation:* `_prompts/README.md` navigation page; cost kill criterion retires under-performing agent prompts.
 10. **Reframe scope creep.** *Mitigation:* Milestone 1 scoped to README + prompts + tier READMEs + `data_schemas.md` one-liner; deeper polish deferred unless council flags a specific omission.
 11. **SRS abandonment drift.** *Mitigation:* out of scope; revisit after usage signal.
+12. **UI scale on large pastes.** *Mitigation:* hard cap at 200 sections per batch + collapsed-by-default rows so body-preview DOM cost is paid only on expand.
+13. **Collision-check staleness before commit.** *Mitigation:* pre-commit corpus re-scan; atomic temp-and-rename as the hard backstop surfacing any residual race as a differentiated per-file error.
+14. **Double-click race on commit.** *Mitigation:* commit button disabled on first click for the duration of the batch write.
 
 ## Success criteria
 
 - **Milestone 1:** ME-degree framing replaced throughout README + tier READMEs + the five existing prompts; **single-user personal reference corpus** framing consistent across all reframed files (no team/shared/multi-user language introduced); `warm/` documented as default landing tier in `docs/data_schemas.md`; lint / format / test green; `file://` manual test of the viewer unchanged.
 - **Milestone 2:** five new `*-agent.md` prompts committed; chat/agent pairing visible in `_prompts/README.md`; each agent-mode prompt includes main + subagent decomposition with explicit contracts; **untrusted-content framing present in every main and subagent prompt** (enforced by a Vitest grep-check); `mode:` field present on every prompt (enforced by a Vitest frontmatter-check); cost kill criterion documented; lint / format / test green.
-- **Milestone 3:** multi-section import flow lands with preview + collision handling + differentiated errors + retry-failed-only + atomic-per-file writes with `.tmp` cleanup; Vitest unit tests for the parser pass (including fuzz/perf bounds); full `file://` manual test plan passes including the XSS case and the literal-sentinel-in-body case; accessibility checks pass (keyboard traversal, aria-live, 44×44 targets, WCAG AA contrast); existing tests still green; no regression in single-note ingest; `_index.md` regeneration picks up the new files.
+- **Milestone 3:** multi-section import flow lands with 200-section cap + collapsed rows + pre-commit re-scan + preview + collision handling + differentiated parse/write errors + retry-failed-only + double-click guard + atomic-per-file writes with `.tmp` cleanup; Vitest unit tests for the parser pass (including fuzz/perf bounds, too-many-sections, zero-sections, invalid YAML, control bytes, long titles); Vitest test for prompt-framing position passes; full `file://` manual test plan passes including XSS on every pasted field, literal-sentinel-in-body, double-click, and pre-commit-rescan cases; accessibility checks pass (keyboard traversal, aria-live, 44×44 targets, WCAG AA contrast); existing tests still green; no regression in single-note ingest; `_index.md` regeneration picks up the new files.
 
 ## Cost posture
 
