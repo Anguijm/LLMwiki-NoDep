@@ -1,161 +1,184 @@
-# Active plan — Dev tooling: ESLint, Prettier, test runner
+# Active plan — Course corrections: corpus reframe, dual-mode prompts, chunked large-doc ingest
 
-**Status:** draft — awaiting council round 1 + human approval. Not yet executing.
-**Branch:** `chore/dev-tooling`
-**Base:** `main` @ `5f0fbcd` (Phase 2d merged).
-**Prior context:** Phase 2 is complete. The app ships as a single `index.html` with zero runtime deps. `test.html` runs in-browser manually. This PR adds dev-time tooling to enforce code quality and enable automated test runs.
+**Status:** draft — awaiting council round 1 + human approval. No implementation yet.
+**Branch (this milestone):** `refactor/reframe-corpus` (Milestone 1 of 3).
+**Base:** `main` @ `012a383` (Phase 2 complete, session-close commit).
+**Prior context:** Phase 2 shipped the static `index.html` app (markdown parser + wiki-link resolver), SRS review mode, tier folders, chat-paradigm prompt templates, Power Automate flow docs, and dev tooling (ESLint / Prettier / Vitest / CI). All six Phase-2 PRs merged. `active_plan` is currently `null` in `session_state.json`; this plan repopulates it.
 
-## Scope
+## Why now — four user-directed course corrections
 
-Dev-time tooling only. **Nothing in this PR ships to the user.** The `index.html` file remains zero-dependency. Dev tools run during development and CI, not at runtime.
+The user has redirected the product on four axes. All four ship through this single plan, sequenced across three PRs (this one plus two successors), so the reframe is internally consistent and the council synthesis covers the whole arc.
 
-**Deliverables:**
+1. **Audience & purpose.** No longer a single student studying for a mechanical-engineering degree. The tool now serves ease of access to **a shared corpus of instruction and guidance** (the mil/gov framing implied by the existing GenAI.mil tooling). Team use, not solo use; reference-retrieval, not exam prep.
+2. **Dual prompt modes.** GenAI.mil offers both a chat paradigm and an agent paradigm (main agent + subagents, Gemini-style). Users should be able to pick per-task. Additive: existing prompts stay as chat-mode; new siblings carry agent-mode variants, clearly labeled.
+3. **Large-document ingest.** Today's `ingest.md` assumes single-note output from a single paste. Users will feed large source documents (multi-chapter manuals, multi-section instructions) that should be split into logical sections on the way in — one note per chapter/section — so that each lands as an individually linkable note in the corpus.
+4. **Default tier → `warm/`.** New notes default to `/warm/` unless a tier is explicitly justified, matching the new reference-retrieval posture (most corpus material is active reference, not durable bedrock nor archival cold).
 
-1. **`package.json`** — `devDependencies` only. No `dependencies`. No `bundledDependencies`. No runtime scripts.
+## Scope — three sequenced milestones
 
-2. **ESLint** — JS linting for `index.html`'s `<script>` block:
-   - `eslint` + `eslint-plugin-html` (to lint inline scripts in HTML files)
-   - Config: ES2022, browser globals, no-unused-vars, no-undef, semi, eqeqeq
-   - `npm run lint` script
+This `active_plan.md` is the contract across all three PRs. Each subsequent PR re-references this file and updates its status block; it is not rewritten per milestone.
 
-3. **Prettier** — formatting:
-   - `prettier` + `prettier-plugin-html` (optional, for HTML formatting)
-   - Config: single quotes, 2-space indent, trailing comma ES5, print width 120
-   - `npm run format` and `npm run format:check` scripts
+### Milestone 1 — Corpus reframe + default-tier pivot (this PR)
 
-4. **Vitest** — test runner for headless test execution:
-   - `vitest` + `happy-dom` (lightweight DOM environment)
-   - Extract test suites from `test.html` into `tests/*.test.js` files that import the modules
-   - Since modules are globals in `index.html`, the test setup will extract the `<script>` block content and eval it in the happy-dom environment to make globals available
-   - `npm run test` script
-   - `test.html` continues to work as-is for manual browser testing
+**Docs + prompt-text only. No new code paths. No schema change. No new prompt files.**
 
-5. **`.github/workflows/ci.yml`** — CI workflow:
-   - Runs on `pull_request` and `push` to `main`
-   - Steps: `npm ci` → `npm run lint` → `npm run format:check` → `npm run test`
-   - Runs after the existing council workflow (not replacing it)
+- **`README.md`** — replace "personal study wiki" / "single engineer-user" / study-oriented language with instruction-and-guidance framing. Preserve intact: locked-down-laptop constraints, SharePoint-sync facts, install-UX narrative, the SharePoint-visibility caveat section (which already implies a team-visible audience). Add one paragraph acknowledging the shared-corpus (team) framing so the SharePoint multi-user caveat reads intentionally rather than accidentally.
+- **`_prompts/ingest.md`** — strip ME-undergraduate voice. Replace "simplified to undergraduate mechanical-engineering level" (frontmatter `purpose:` and body) with plain-language reading-level guidance tied to a generalist corpus reader. Flashcards-adjacent language stays; the ME-specific calibration lines go.
+- **`_prompts/linker.md`** — `study-wiki note` → `corpus note`.
+- **`_prompts/flashcards.md`** — reframe "spaced-repetition cards for my personal study wiki" as an optional retention layer on reference content. Feature stays; framing shifts.
+- **`_prompts/review-packet.md`** — "student" → role-neutral "reader"; exam-session language → "review session."
+- **`_prompts/gap-analysis.md`** — drop the ME-undergrad calibration; replace with target-audience framing ("a reader of this corpus").
+- **Tier READMEs.**
+  - `/bedrock/README.md` — audit for study framing; keep tier semantics (durable, invariant reference).
+  - `/warm/README.md` — rewrite the "current-semester coursework" / KVL-worked-example content. Establish `warm/` as the **default landing tier** for newly ingested notes. Lifecycle arrows stay (warm → bedrock / warm → cold) but reframe the graduation criteria from "SRS ease ≥ 2.8" to a reference-retrieval criterion (durability + reuse frequency).
+  - `/cold/README.md` — audit for study framing; keep tier semantics (archive).
+- **`CLAUDE.md`** — audit complete: a `grep -i "mechanical|engineer|degree|study|student"` across CLAUDE.md returns only incidental references (e.g., `[skip council]` anti-pattern language). No ME-degree framing to strip. Milestone 1 will update the Stack-invariants / runtime-environment narrative only if council flags an inconsistency with the new purpose; default is to leave CLAUDE.md content-neutral.
+- **`docs/data_schemas.md`** — one-line addition: `warm` is the default tier when frontmatter is being generated by a prompt template; `bedrock` and `cold` require explicit justification.
+- **`index.html`** — **no change in Milestone 1.** The existing app has no new-note creation UI, so there is no "default tier" constant to flip. The default lives in prompt recommendation text (above) and in the Milestone-3 import flow.
+- **Tier filter buttons in `index.html`** — no change (they already exist for all three tiers).
 
-6. **Lockfile** — `package-lock.json` committed per security checklist requirement.
+**Out of this PR:** new prompt files (Milestone 2), multi-section ingest code + new prompt (Milestone 3).
 
-## What this PR explicitly does NOT do
+### Milestone 2 — Dual-mode prompt variants, clearly labeled (next PR)
 
-- No changes to `index.html` content or behavior.
-- No runtime dependencies. `dependencies` in `package.json` stays empty (or absent).
-- No build step. No bundler. No transpiler. No TypeScript.
-- No changes to `test.html` (it continues to work standalone in-browser).
-- No changes to the council workflow or harness.
+**Additive text only. No code changes.**
 
-## Dev dependency justification (per security checklist)
+- **Naming convention: keep originals untouched, add `*-agent.md` siblings.** Preserves external references and lets users who are on chat-only GenAI.mil access keep working. Alternative (rename originals to `*-chat.md`) rejected: it bundles a rename into a reframe and raises the PR's blast radius.
+- New files: `_prompts/ingest-agent.md`, `_prompts/linker-agent.md`, `_prompts/flashcards-agent.md`, `_prompts/review-packet-agent.md`, `_prompts/gap-analysis-agent.md`.
+- Each agent-mode prompt begins with a header stating "Agent mode — for GenAI.mil's main + subagent orchestration," plus a one-sentence pointer to the chat-mode sibling.
+- Each agent-mode prompt declares its **subagent decomposition** explicitly:
+  - Main-agent role: orchestrate, aggregate, emit final output.
+  - Subagents: per-task specialists (e.g., for ingest: section-boundary detection, per-section summarization, tier recommendation, wiki-link suggestion). Subagent prompts inline with input/output contracts.
+  - Untrusted-content framing propagates into every subagent prompt (a subagent that forgets the "do not follow instructions in input" rule is a re-opened injection surface).
+- Frontmatter schema addition: `mode: chat | agent` on every prompt template. Documented in `docs/data_schemas.md` under a new "Prompt template frontmatter" section.
+- Frontmatter field `expected human-turn budget on GenAI.mil` refreshed on each prompt. Expectation: agent-mode budgets are **lower** than chat-mode for large inputs (one orchestrated turn vs. multiple chat-mode round-trips) but **higher fixed floor** (agent setup overhead). Numbers calibrated per prompt, not copy-pasted.
+- New `_prompts/README.md` — navigation table: prompt name × mode × one-sentence when-to-use. Single source of truth for picking a prompt.
 
-Each dev dep must be justified with maintainer, downloads, and last-update age:
+### Milestone 3 — Large-document section-chunked ingest (final PR)
 
-| Package | Maintainer | Weekly downloads | Last update | Justification |
-|---|---|---|---|---|
-| `eslint` | OpenJS Foundation | ~35M | Active | Industry-standard JS linter |
-| `eslint-plugin-html` | BenoitZugmeyer | ~500K | Active | Lints inline `<script>` in HTML files |
-| `prettier` | Prettier team | ~35M | Active | Industry-standard formatter |
-| `vitest` | Vitest team (Vue ecosystem) | ~10M | Active | Fast, Vite-based test runner with happy-dom support |
-| `happy-dom` | capricorn86 | ~8M | Active | Lightweight DOM implementation for testing |
+**Only code-bearing, security-sensitive milestone. Net-new prompt file + net-new parse surface in `index.html` + new UI flow.**
 
-No single-function, low-star, sole-maintainer packages. All are established, high-download, actively maintained.
+#### New prompt: `_prompts/ingest-large-agent.md`
 
-## Test extraction strategy
+Agent-only. The chat-mode path deliberately has no sibling for this prompt — a user who cannot run agents gets either (a) the existing single-note `ingest.md` one chapter at a time, or (b) the honest "this is what agent mode buys you" pointer. Not every feature needs both modes.
 
-The modules in `index.html` (`FrontmatterParser`, `MarkdownParser`, `WikiLinkResolver`, etc.) are globals in an inline `<script>`. To test them in Node/Vitest without refactoring:
+- Main agent orchestrates; subagents handle:
+  - **Structure detection** — identify logical section boundaries. Default: heading level 1–2, numbered chapter/section, explicit `Chapter N` / `Section N.M` markers. Fallback: topical breaks with a confidence flag.
+  - **Per-section normalization** — rewrite each section into a self-contained note body with our frontmatter schema.
+  - **Tier recommendation** — default `warm`; justify explicitly if `bedrock` or `cold`.
+  - **Cross-link suggestion** — emit `[[wiki-link]]` candidates between sections in the same batch; mark each suggestion with low/high confidence.
+- Output format: each section wrapped in the delimiter spec below.
+- Degradation: if no clear structure is detected, the prompt instructs the agent to emit a single section with an explanatory caveat and a low-confidence flag. The app's preview pane shows the caveat prominently.
+- Cost-posture note: the agent may burn multiple internal turns; the frontmatter `expected human-turn budget` captures human paste round-trips, not internal agent turns.
 
-1. A `tests/setup.js` file reads `index.html`, extracts the `<script>` block content, and evaluates it in the happy-dom environment.
-2. After eval, all module globals (`FrontmatterParser`, `MarkdownParser`, etc.) are available on `globalThis`.
-3. Each `tests/*.test.js` file imports from `setup.js` and runs assertions using Vitest's `expect` API.
-4. Test cases mirror `test.html` exactly — same coverage, same assertions, different runner.
+#### Delimiter spec
 
-This avoids refactoring `index.html` into ES modules (which would break `file://` compatibility).
+Chosen to be extremely unlikely in source content and to survive pasting through Edge's clipboard without mangling.
 
-## ESLint configuration
+```
+<<<LLMWIKI-SECTION slug="kebab-case-slug" tier="warm" title="Human Readable Title">>>
+---
+<full frontmatter block per docs/data_schemas.md>
+---
 
-```json
-{
-  "env": { "browser": true, "es2022": true },
-  "plugins": ["html"],
-  "rules": {
-    "eqeqeq": ["error", "always"],
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "no-undef": "error",
-    "semi": ["error", "always"],
-    "no-eval": "error",
-    "no-implied-eval": "error"
-  },
-  "globals": {
-    "FrontmatterParser": "readonly",
-    "MarkdownParser": "readonly",
-    "WikiLinkResolver": "readonly",
-    "IndexRegenerator": "readonly",
-    "BacklinkGraph": "readonly",
-    "FolderScanner": "readonly",
-    "SRSCardParser": "readonly",
-    "SM2Scheduler": "readonly",
-    "SRSCardWriter": "readonly",
-    "ReviewQueueBuilder": "readonly",
-    "App": "readonly",
-    "STRINGS": "readonly"
-  }
-}
+<section body markdown>
+
+<<<LLMWIKI-SECTION-END slug="kebab-case-slug">>>
 ```
 
-## Prettier configuration
+- Both open and close carry the slug; parser validates pairing and **rejects the entire paste on any mismatch**.
+- The agent's emitted slug is treated as a **suggestion**, not a commitment. The app re-derives the canonical slug from the `title` using the rules in `data_schemas.md`; any mismatch is surfaced in the preview (not an error).
+- Text outside sentinel pairs is treated as preamble, shown in the preview, and never written to disk.
+- If the user's source document literally contains `<<<LLMWIKI-SECTION`, the prompt instructs the agent to escape the literal in its output. The parser rejects on ambiguity with a precise diagnostic (line number, offending sentinel).
 
-```json
-{
-  "singleQuote": true,
-  "trailingComma": "es5",
-  "tabWidth": 2,
-  "printWidth": 120,
-  "semi": true
-}
-```
+#### New UI flow: "Multi-section import" preview pane
 
-## CI workflow
+1. **Parse.** User pastes or drops the delimited agent output into a new affordance. On parse error, the pane shows the raw paste + the parse diagnostic and writes nothing.
+2. **Preview list.** One row per detected section: editable title, tier dropdown (default `warm`, selectable `bedrock` / `cold`), auto-derived slug shown read-only, collapsible body preview rendered through the **existing escape-by-default markdown parser** (same code path as the single-note viewer — no new rendering code).
+3. **Collision check.** For each proposed slug in its chosen tier, check against the current corpus. Collisions rendered prominently with three options: skip, rename (inline rename field re-derives slug), overwrite (overwrite gated behind an explicit second confirmation).
+4. **Explicit commit.** The "Commit N sections" button is the only write trigger. No auto-write path exists.
+5. **Atomic-per-file writes.** Each file uses the existing atomic temp-and-rename pattern (already canonical in the repo per `data_schemas.md`). If any file fails mid-batch, the UI stops, reports which sections succeeded and which did not, and leaves successful writes on disk. **Full-batch rollback is not attempted** — the FS Access API does not give us a transactional handle across multiple files, and implementing compensating deletes on partial failure is itself a risky pattern (new DOM-to-FS surface for the deletion path). Partial success with honest reporting is safer than failed-rollback surprises.
+6. **Post-commit.** A link to trigger `_index.md` regeneration is surfaced; not auto-run.
 
-```yaml
-name: CI
-on:
-  pull_request:
-  push:
-    branches: [main]
-jobs:
-  lint-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run test
-```
+#### Rendering-surface discipline
 
-## Execution order
+Every section body flows through the existing escape-by-default markdown parser. No section body is ever assigned to `.innerHTML`. The preview uses the same parser as the viewer — no fast path exists. The delimiter parser is a pre-step that turns one paste into N strings; those strings then flow through the same code paths as any other note.
 
-1. `chore: add package.json with dev dependencies`
-2. `chore: add ESLint config and lint script`
-3. `chore: add Prettier config and format scripts`
-4. `chore: add Vitest config and test setup`
-5. `test: extract test suites from test.html to Vitest`
-6. `ci: add CI workflow for lint + format + test`
-7. `style: fix any lint/format issues in index.html` (auto-fixable only — no behavioral changes)
+#### Wiki-link handling
 
-## Risks
+Cross-section `[[wiki-link]]` suggestions from the agent appear inline in section bodies. After commit, the existing resolver picks them up with no new code. The preview warns on any suggested wiki-link whose target slug is neither in this batch nor in the current corpus (dangling-link surfacing, not a hard block).
 
-1. **Prettier reformatting `index.html`.** Prettier may reformat the inline CSS/JS in ways that produce a large diff. Mitigation: commit the format fix as a separate `style:` commit so the diff is reviewable.
-2. **ESLint false positives.** The inline script uses `var` and function hoisting patterns that modern ESLint rules may flag. Mitigation: configure rules to match the existing code style, not fight it.
-3. **Test extraction fragility.** Extracting the `<script>` block via string manipulation is brittle if the HTML structure changes. Mitigation: the extraction uses a simple regex for `<script>` tags and is tested itself.
+## Out of scope (explicit)
+
+- **SRS removal or redesign.** Phase 2c's review mode and `srs.csv` stay as-is. If the reference-corpus reframe turns review mode into unused surface area, revisit in a separate plan once we have signal; no speculative removal.
+- **Runtime dependency changes.** Zero runtime deps remains non-negotiable.
+- **Build step / bundler / runtime TypeScript / ES modules at runtime.** No.
+- **Network calls from `index.html`.** No.
+- **Telemetry / analytics / error reporting.** No.
+- **Multi-user concurrency enhancements** beyond the existing last-write-wins + SharePoint caveat. The reframe surfaces the team use-case in docs; it does **not** change concurrency semantics.
+- **Power Automate flow changes.** `/power-automate/` flows keep working unchanged. Framing text may get a light pass during the Milestone-1 reframe; no flow logic changes.
+- **Rename of existing prompts.** Per Milestone 2 decision, originals stay at their current filenames.
+
+## Non-negotiables check (per `CLAUDE.md`)
+
+- **Never assign untrusted content to `.innerHTML`.** ✅ — Multi-section parsing produces strings routed through the existing escape-by-default markdown parser. No new `.innerHTML` write introduced.
+- **No PII or API keys in logs.** ✅ — No new log surfaces. Parse-error reporting shows only the offending delimiter line + line number, not the full paste content.
+- **No `eval` / `new Function` / string-arg `setTimeout` on ingested content.** ✅ — Delimiter parsing is string-split plus regex; no dynamic code construction.
+- **Runtime deps stay at zero.** ✅ — No imports, CDN references, `<script src="...">` additions, or network calls.
+- **Conventional commits.** ✅ — `docs:`, `feat:`, `refactor:` as appropriate per milestone.
+
+## Data / schema impact
+
+- **Note frontmatter schema** (`docs/data_schemas.md`) unchanged. Sections written by multi-section ingest use the existing schema; only the intake path is new.
+- **Prompt-template frontmatter** gains `mode: chat | agent` (documented in `data_schemas.md` under a new "Prompt template frontmatter" heading in Milestone 2).
+- **`srs.csv`** unchanged. Multi-section ingest does not touch SRS.
+- **`_index.md`** regeneration contract unchanged. New notes land in their target tier and are picked up on the next regenerate.
+
+## Testing strategy
+
+- **Milestone 1** — prose/framing only; manual review + existing CI (lint / format / test) green.
+- **Milestone 2** — prompt text only, no code changes. Manual review; CI green. If a prompt-frontmatter parser exists or is added, a regression test asserts every prompt has a valid `mode:` field.
+- **Milestone 3** — new parser + new UI flow:
+  - **Vitest** unit tests for the delimiter parser: well-formed input, mismatched open/close slugs, missing close sentinel, empty section body, duplicate slugs within a paste, literal sentinel-like text inside a body (properly escaped per prompt), text outside sentinels (preamble), and a fuzz-style set of malformed inputs.
+  - **Vitest** unit tests for app-side slug re-derivation (the agent's suggested slug is ignored in favor of re-slugifying from title; mismatches are surfaced but not errors).
+  - **Vitest** unit tests for collision detection against a stubbed corpus.
+  - **Manual browser test plan** (open `index.html` via `file://` in Edge):
+    - Golden path: three-section input with novel slugs; commit; verify three files on disk; regenerate `_index.md`; confirm all three appear.
+    - Collision handling: one of three sections collides; exercise each resolution option (skip / rename / overwrite).
+    - Partial-write failure: if simulable via FS handle errors, verify the partial-state report UI.
+    - Keyboard-only traversal of the preview pane (accessibility-persona concern).
+    - **XSS case.** Input whose section bodies contain `<script>`, `<img onerror=...>`, and raw HTML; confirm escape-by-default holds end-to-end.
+  - **Security checklist** (`.harness/scripts/security_checklist.md`) re-read for every content-to-DOM surface the change introduces.
+
+## Risks + mitigations
+
+1. **New content-to-DOM surface.** Multi-section import is a brand-new path from paste to disk to DOM. *Mitigation:* every body flows through the existing escape-by-default parser; no fast path.
+2. **Agent output is untrusted.** Even the delimiter line is agent-produced. *Mitigation:* strict regex on sentinel format; any mismatch rejects the whole paste; slug re-derived app-side.
+3. **Partial-write failure mid-batch.** 7 of 10 files succeed, 8th fails. *Mitigation:* preview + explicit commit, per-file status reporting, clear success/failure list. Full-batch rollback not attempted (explained above).
+4. **Sentinel collision with source content.** Document literally containing `<<<LLMWIKI-SECTION`. *Mitigation:* prompt instructs escape; parser rejects on ambiguity with diagnostic.
+5. **Team-use concurrency.** Reframing to "our corpus" invites multi-user ingest into the same SharePoint folder. *Mitigation:* existing last-write-wins; docs reframe explicitly calls this out; we do not promise conflict-free multi-user behavior.
+6. **Prompt bloat.** Agent-mode variants double the prompt-template count. *Mitigation:* `_prompts/README.md` navigation page; chat/agent pairing visible at a glance.
+7. **Reframe scope creep.** Every piece of copy in the repo could pull in. *Mitigation:* Milestone 1 scoped to README + prompts + tier READMEs + `data_schemas.md` one-liner; deeper copy polish deferred unless council flags a specific omission.
+8. **SRS abandonment drift.** If review mode quietly stops being used post-reframe, it becomes stale dead code. *Mitigation:* not addressed in this plan; flagged for a follow-up review once we have usage signal. Out of scope.
 
 ## Success criteria
 
-- `npm run lint` passes with zero errors.
-- `npm run format:check` passes (code is formatted).
-- `npm run test` passes all test suites.
-- CI workflow runs on PRs and passes.
-- `test.html` still works unchanged in-browser.
-- `index.html` has zero behavioral changes.
-- No runtime dependencies in `package.json`.
+- **Milestone 1:** study-aid framing replaced throughout README + tier READMEs + the five existing prompts; `warm/` documented as default landing tier in `docs/data_schemas.md`; lint / format / test green; `file://` manual test of the viewer unchanged.
+- **Milestone 2:** five new `*-agent.md` prompts committed; chat/agent pairing visible in `_prompts/README.md`; each agent-mode prompt includes main + subagent decomposition with explicit contracts and untrusted-content discipline; `mode:` field present on every prompt; lint / format / test green.
+- **Milestone 3:** multi-section import flow lands with preview + collision handling + atomic-per-file writes; Vitest unit tests for the parser pass; full `file://` manual test plan passes including the XSS case; existing tests still green; no regression in single-note ingest; `_index.md` regeneration picks up the new files.
+
+## Cost posture
+
+- **Runtime:** $0/month (no runtime AI) — unchanged.
+- **Dev-time council budget:** each milestone stays within `CALL_CAP` (15 Gemini calls per run). Milestone 1 is docs-heavy — target 2–3 rounds to converge, per the learnings note on docs-PR diminishing returns. Milestone 2 is docs-only also. Milestone 3 is the council-heavy one — budget 3–5 rounds.
+- **No new dev-time dependencies.**
+
+## Execution order — Milestone 1 only (this PR)
+
+1. `docs: reframe README from ME-degree study aid to shared instruction & guidance corpus`
+2. `docs: reframe _prompts/*.md voice; drop ME-undergraduate calibration language`
+3. `docs: reframe tier READMEs; establish warm/ as default landing tier`
+4. `docs: document warm/ default in data_schemas.md`
+5. Update `.harness/session_state.json` `active_plan` pointer + `focus_area`.
+
+Milestones 2 and 3 each open as their own PR once Milestone 1 is approved and merged. Each re-references this `active_plan.md` with a status-block update; the plan body itself is not rewritten per milestone.
