@@ -1,8 +1,8 @@
 # LLMwiki-NoDep
 
-A zero-dependency, static-file personal study wiki. Runs from a SharePoint-synced folder opened directly in Microsoft Edge via `file://`. No server, no build step, no runtime API calls, no CDN. All "AI" is a human copy/paste loop against GenAI.mil.
+A zero-dependency, static-file **personal reference corpus** for instruction and guidance material. Runs from a SharePoint-synced folder opened directly in Microsoft Edge via `file://`. No server, no build step, no runtime API calls, no CDN. All "AI" is a human copy/paste loop against GenAI.mil.
 
-Built for a specific workflow: a locked-down work laptop, a single engineer-user, SharePoint sync as the storage layer, manual prompts as the AI layer.
+Built for a specific workflow: a single user, a locked-down work laptop, SharePoint sync as the storage layer, manual prompts as the AI layer. The goal is **ease of access to your own accumulated corpus** of procedures, manuals, regulations, and reference notes — not exam prep, not shared knowledge management. One human, one corpus, one laptop.
 
 ---
 
@@ -45,7 +45,7 @@ Have someone with a less restricted machine email you the individual files as at
 
 ```
 cd ~/OneDrive\ -\ YourOrg/documents
-git clone https://github.com/Anguijm/LLMwiki-NoDep.git study-wiki
+git clone https://github.com/Anguijm/LLMwiki-NoDep.git reference-corpus
 ```
 
 **Option E — Download ZIP (if your security scanner permits):**
@@ -60,10 +60,10 @@ The wiki's "database" is the folder itself. For your notes to sync across device
 
 | Location | Works? | Notes |
 |---|---|---|
-| `C:\Users\you\OneDrive - YourOrg\Documents\study-wiki\` | Yes (best) | Standard OneDrive for Business sync path |
-| `C:\Users\you\OneDrive\Documents\study-wiki\` | Yes | Personal OneDrive (if your org permits) |
+| `C:\Users\you\OneDrive - YourOrg\Documents\reference-corpus\` | Yes (best) | Standard OneDrive for Business sync path |
+| `C:\Users\you\OneDrive\Documents\reference-corpus\` | Yes | Personal OneDrive (if your org permits) |
 | Any SharePoint-synced library folder | Yes | Right-click in SharePoint → "Sync" adds it to File Explorer |
-| `C:\Users\you\Desktop\study-wiki\` | Partial | Works locally but won't sync unless Desktop is in OneDrive |
+| `C:\Users\you\Desktop\reference-corpus\` | Partial | Works locally but won't sync unless Desktop is in OneDrive |
 | A network drive (`\\server\share\`) | No | File System Access API doesn't work over UNC paths |
 
 **How to verify sync is working:** after you place the folder, wait 30 seconds. You should see the OneDrive sync icon (blue cloud or green checkmark) appear on the folder in File Explorer.
@@ -107,7 +107,9 @@ Key concepts:
 ```
 
 4. Save the file.
-5. In the wiki app, click **Rescan** (or reload the page). Your note appears.
+5. In the app, click **Rescan** (or reload the page). Your note appears.
+
+**Note:** `tier: warm` is the default landing tier for new material. Use `/bedrock/` only when the content is durable, invariant reference (rarely edited, reached-for repeatedly); use `/cold/` for archival material you still want to search but no longer consult routinely.
 
 ---
 
@@ -130,7 +132,7 @@ Key concepts:
 **Minimum viable setup** (if you only copied `index.html`):
 
 ```
-study-wiki/
+reference-corpus/
 ├── index.html          ← THE APP — open this in Edge
 ├── bedrock/             ← create this empty folder
 ├── warm/                ← create this empty folder
@@ -143,12 +145,12 @@ That's enough to run the app. Everything else is optional.
 **Full setup** (after copying all files from GitHub):
 
 ```
-study-wiki/
+reference-corpus/
 ├── index.html          ← THE APP — open this in Edge
 ├── _index.md            ← auto-generated note index (don't edit by hand)
-├── bedrock/             ← permanent reference notes
-├── warm/                ← active learning notes
-├── cold/                ← archived notes
+├── bedrock/             ← permanent reference (durable, invariant)
+├── warm/                ← default landing tier for new material (active reference)
+├── cold/                ← archived (searchable but not actively consulted)
 ├── srs/                 ← SRS flashcard YAML files (one per card)
 ├── _prompts/            ← GenAI.mil prompt templates
 │   ├── ingest.md
@@ -181,10 +183,10 @@ Every template declares a `human_turn_budget` in its frontmatter: the number of 
 
 ## How to add a note
 
-1. Decide which tier:
-   - `/bedrock/` — permanent reference (always-loaded substrate).
-   - `/warm/` — active learning (current coursework).
-   - `/cold/` — archived (searchable but not auto-loaded).
+1. Decide which tier. **`/warm/` is the default** — use it unless one of the other tiers is clearly justified:
+   - `/bedrock/` — permanent reference (always-loaded substrate; durable, invariant material you reach for repeatedly).
+   - `/warm/` — active reference (default landing tier for new material).
+   - `/cold/` — archived (searchable but not auto-loaded; material you no longer consult routinely).
 
    See `/bedrock/README.md`, `/warm/README.md`, `/cold/README.md` for what belongs in each.
 
@@ -192,8 +194,8 @@ Every template declares a `human_turn_budget` in its frontmatter: the number of 
 
    - Open `/_prompts/ingest.md` in your editor, copy the block.
    - Paste into GenAI.mil.
-   - Paste your source (PDF text, lecture notes, textbook chapter) into the `=== UNTRUSTED INPUT START ===` section.
-   - Specify the tier.
+   - Paste your source (PDF text, procedure, manual excerpt, regulation, reference doc) into the `=== UNTRUSTED INPUT START ===` section.
+   - Specify the tier (default `warm`).
    - Paste the response into a new `.md` file in the chosen tier folder. Derive the filename from the returned `title:` per `/docs/data_schemas.md` § Filename slugging.
 
 3. Hand-write path — create the `.md` file directly, write the frontmatter, write the body. Must match the schema in `/docs/data_schemas.md` exactly.
@@ -227,9 +229,9 @@ Five templates live under `/_prompts/`:
 |---|---|---|
 | `ingest.md` | Normalize a source → one note with frontmatter | 2 |
 | `linker.md` | Inject `[[wiki links]]` into a note | 1 |
-| `flashcards.md` | Generate SRS cards (one YAML file per card, saved to `/srs/`) | 1 |
-| `review-packet.md` | Compile a targeted exam review from a corpus | 2 |
-| `gap-analysis.md` | Find contradictions / missing concepts in a corpus | 3 |
+| `flashcards.md` | Generate SRS cards (one YAML file per card, saved to `/srs/`) — optional retention layer on your reference material | 1 |
+| `review-packet.md` | Compile a targeted refresher on a topic from a subset of your corpus | 2 |
+| `gap-analysis.md` | Find contradictions / missing concepts in a narrow subset of your corpus | 3 |
 
 Usage pattern for each is identical:
 - Copy the template from `/_prompts/<name>.md`.
@@ -299,7 +301,7 @@ The target deployment reality:
 
 Every architectural decision cascades from these constraints. The constraints are not obstacles to work around — they are the design.
 
-**One thing to know about the SharePoint layer:** every file modification — every flashcard review, every note edit, every `_index.md` regeneration — is visible in the SharePoint folder's version history to anyone with access to that folder. The one-file-per-card SRS architecture means individual review actions appear as discrete sync events. If your study-wiki folder is shared (even just with an IT admin), those events are visible. If that's not the audience you want, make sure the folder's SharePoint permissions match your expectations before you start adding content.
+**One thing to know about the SharePoint layer:** every file modification — every flashcard review, every note edit, every `_index.md` regeneration — is visible in the SharePoint folder's version history to anyone with access to that folder. The one-file-per-card SRS architecture means individual review actions appear as discrete sync events. Even though this is a single-user product (no team or multi-user features), the SharePoint path usually exposes the folder to your IT admin, and any other admin with folder permissions can see those events. Make sure the folder's SharePoint permissions match your expectations before you start adding content.
 
 ## License
 
