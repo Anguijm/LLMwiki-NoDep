@@ -276,12 +276,33 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.sections[0].sentinelSlug).toBe('foo');
   });
 
-  it('does not dedent when any non-blank line is already flush-left', () => {
+  it('top-level dedent no-ops when any non-blank line is already flush-left', () => {
+    // Sentinels and the frontmatter `---` are flush-left here, so top-level
+    // dedent sees min-indent = 0 and does nothing (stats.dedented false).
+    // The BODY still gets a per-section dedent pass (see below) so the
+    // mixed-indent-from-chat-paste case renders cleanly — the single-line
+    // "indented body line" case is a synthetic edge where one could argue
+    // for either outcome. We pick body-dedent because it matches the
+    // realistic case where uniform body indent is a copy-paste artifact,
+    // not intentional code-block markdown.
     const input = wrapSection('foo', minimalFrontmatter('Foo') + '    indented body line');
     const result = SectionDelimiterParser.parse(input);
     expect(result.stats.dedented).toBe(false);
     expect(result.valid).toBe(true);
-    expect(result.sections[0].body).toContain('    indented body line');
+    // Body-level dedent strips the uniform indent.
+    expect(result.sections[0].body).toBe('indented body line');
+  });
+
+  it('preserves relative indentation within a body (e.g., code block inside prose)', () => {
+    // Body has a flush-left line AND a 4-space-indented line. The body-level
+    // dedent sees min-indent = 0 (from the flush line) and correctly leaves
+    // the indented line alone — so a genuine indented code block survives.
+    const body = 'prose paragraph\n\n    code block line\n';
+    const input = wrapSection('foo', minimalFrontmatter('Foo') + body);
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.valid).toBe(true);
+    expect(result.sections[0].body).toContain('prose paragraph');
+    expect(result.sections[0].body).toContain('    code block line');
   });
 
   it('dedents with tabs as well as spaces', () => {
@@ -326,6 +347,52 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.sections).toHaveLength(2);
     expect(result.sections[0].sentinelSlug).toBe('one');
     expect(result.sections[1].sentinelSlug).toBe('two');
+  });
+
+  it('parses the exact mixed-indent shape that bit a user (regression pin from 2026-04-23)', () => {
+    // Reported shape: line 1 (open sentinel) was flush-left, line 2 (opening
+    // frontmatter `---`) was flush-left, every subsequent line was 2-space
+    // indented. Dedent computes min-indent = 0 (line 1 and 2) and does
+    // nothing. Sentinel detection has per-line tolerance, but frontmatter
+    // `---` detection also needs per-line tolerance — this test pins that
+    // the full parse (sentinel + frontmatter + body) succeeds, the YAML
+    // block resolves, and both sections come back valid.
+    const input = [
+      '<<<LLMWIKI-SECTION:test-ingest-alpha>>>',
+      '---',
+      '  title: Test Ingest Alpha',
+      '  tier: warm',
+      '  ---',
+      '',
+      '  # Alpha section',
+      '',
+      '  First test note.',
+      '',
+      '  <<<LLMWIKI-SECTION-END:test-ingest-alpha>>>',
+      '',
+      '  <<<LLMWIKI-SECTION:test-ingest-beta>>>',
+      '  ---',
+      '  title: Test Ingest Beta',
+      '  tier: warm',
+      '  ---',
+      '',
+      '  # Beta section',
+      '',
+      '  Linked: [[Test Ingest Alpha]].',
+      '',
+      '  <<<LLMWIKI-SECTION-END:test-ingest-beta>>>',
+    ].join('\n');
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(2);
+    expect(result.sections[0].sentinelSlug).toBe('test-ingest-alpha');
+    expect(result.sections[0].frontmatter.title).toBe('Test Ingest Alpha');
+    expect(result.sections[0].frontmatter.tier).toBe('warm');
+    expect(result.sections[0].errors).toEqual([]);
+    expect(result.sections[1].sentinelSlug).toBe('test-ingest-beta');
+    expect(result.sections[1].frontmatter.title).toBe('Test Ingest Beta');
+    expect(result.sections[1].errors).toEqual([]);
   });
 
   it('tolerates trailing whitespace on sentinel lines', () => {

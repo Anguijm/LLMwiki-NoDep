@@ -2399,10 +2399,17 @@
           var frontmatter = null;
           var body = lines.join('\n');
 
+          // Frontmatter delimiter detection is whitespace-tolerant on each
+          // line (same rationale as sentinel detection above — mixed-indent
+          // pastes where one line is flush-left and others aren't show up
+          // in real user copies). The YAML key/value parser already trims
+          // each key+value, so leading whitespace inside the YAML block
+          // itself is a no-op.
           var fmStartIdx = -1;
           for (var i = 0; i < lines.length; i++) {
-            if (lines[i] === '') continue;
-            if (lines[i] === '---') {
+            var probe = lines[i].replace(/^[ \t]+|[ \t]+$/g, '');
+            if (probe === '') continue;
+            if (probe === '---') {
               fmStartIdx = i;
             }
             break;
@@ -2420,7 +2427,7 @@
           } else {
             var fmEndIdx = -1;
             for (var j = fmStartIdx + 1; j < lines.length; j++) {
-              if (lines[j] === '---') {
+              if (lines[j].replace(/^[ \t]+|[ \t]+$/g, '') === '---') {
                 fmEndIdx = j;
                 break;
               }
@@ -2456,6 +2463,11 @@
               }
               body = lines.slice(fmEndIdx + 1).join('\n');
               if (body.charAt(0) === '\n') body = body.slice(1);
+              // Per-body dedent: the top-level dedent saw min-indent = 0
+              // because sentinel and/or frontmatter lines were flush-left,
+              // so body content kept its uniform indent. Strip it now so
+              // `  # Heading` renders as a heading and not as literal text.
+              body = SectionDelimiterParser._stripCommonLeadingWhitespace(body);
             }
           }
 
