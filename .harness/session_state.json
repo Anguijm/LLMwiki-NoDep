@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 merged; M3 pending.",
-  "focus_area": "phase-3-m2-merged-plus-council-anchor",
-  "approval_state": "idle",
+  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 + council-anchor infra merged; M3 (chunked ingest) in progress on branch feat/phase-3-m3-chunked-ingest.",
+  "focus_area": "phase-3-m3-chunked-ingest-plan-pr",
+  "approval_state": "plan-pending-council",
   "last_council": {
-    "source": "PR #9 round 1 (override-merged)",
-    "decision": "Revise (overridden — hallucinated critique)",
+    "source": "PR #9 round 1 (override-merged); council-infra anchor shipped in PR #10",
+    "decision": "Revise (overridden — hallucinated critique); anchor fix merged afterward",
     "scores": { "accessibility": 6, "architecture": 7, "bugs": 5, "cost": 10, "product": 7, "security": 10 },
     "run_at": "2026-04-23T01:29:39Z"
   },
   "last_commit": {
-    "hash": "cb8a348",
-    "short": "cb8a348",
-    "subject": "feat: Phase 3 Milestone 2 — dual-mode prompts (chat + agent) (#9)",
+    "hash": "a69671a",
+    "short": "a69671a",
+    "subject": "fix(council): inject repo-context anchor + session close (#10)",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "main",
-    "committed_at": "2026-04-23T01:35:00+00:00",
-    "files_changed": 12
+    "committed_at": "2026-04-23T02:00:00+00:00",
+    "files_changed": 0
   },
-  "notes": "M1 + M2 merged. M2 council round hallucinated a Vue/pnpm/src/lib/ stack (same pattern as M1-session-close PR #8); overridden on evidence that referenced files do not exist. This PR ships .harness/council/repo_context.md + council.py injection as the root-cause fix before M3. Milestone 3 (large-doc chunked ingest) remains as the final PR."
+  "notes": "M3 PR opens with just the plan Status-block bump; body unchanged per the multi-PR contract. First council run with the repo-context anchor live on a mixed code + prose diff — monitoring whether hallucination frequency drops relative to PRs #8 and #9. If council returns accurate critique, the anchor is validated; if it hallucinates again, escalate to persona-file tuning per the IMPROVE note in learnings.md."
 }
