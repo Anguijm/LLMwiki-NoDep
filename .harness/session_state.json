@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 merged; M3 pending.",
-  "focus_area": "phase-3-m2-merged-plus-council-anchor",
-  "approval_state": "idle",
+  "active_plan": ".harness/active_plan.md — Phase 3 course corrections complete. M1 + M2 + council-infra + M3 all merged or at merge gate; PR #11 pending merge after round 13 Proceed + the two small round-13 follow-ups in the same commit as session close.",
+  "focus_area": "phase-3-m3-session-close",
+  "approval_state": "plan-pending-council-then-merge",
   "last_council": {
-    "source": "PR #9 round 1 (override-merged)",
-    "decision": "Revise (overridden — hallucinated critique)",
-    "scores": { "accessibility": 6, "architecture": 7, "bugs": 5, "cost": 10, "product": 7, "security": 10 },
-    "run_at": "2026-04-23T01:29:39Z"
+    "source": "PR #11 round 13",
+    "decision": "Proceed (round 13; 11th Proceed of 13 rounds on this PR)",
+    "scores": { "accessibility": 10, "architecture": 10, "bugs": 9, "cost": 10, "product": 10, "security": 10 },
+    "run_at": "2026-04-23T07:15:54Z"
   },
   "last_commit": {
-    "hash": "cb8a348",
-    "short": "cb8a348",
-    "subject": "feat: Phase 3 Milestone 2 — dual-mode prompts (chat + agent) (#9)",
+    "hash": "d6ff5c5",
+    "short": "d6ff5c5",
+    "subject": "fix(m3): address council rev 12 Revise blockers — serializer + regen guard + revoked-handle recovery",
     "author": "Claude <noreply@anthropic.com>",
-    "branch": "main",
-    "committed_at": "2026-04-23T01:35:00+00:00",
-    "files_changed": 12
+    "branch": "feat/phase-3-m3-chunked-ingest",
+    "committed_at": "2026-04-23T07:10:00+00:00",
+    "files_changed": 3
   },
-  "notes": "M1 + M2 merged. M2 council round hallucinated a Vue/pnpm/src/lib/ stack (same pattern as M1-session-close PR #8); overridden on evidence that referenced files do not exist. This PR ships .harness/council/repo_context.md + council.py injection as the root-cause fix before M3. Milestone 3 (large-doc chunked ingest) remains as the final PR."
+  "notes": "M3 shipping: ESLint DOM-sink ban + Slugger + SectionDelimiterParser + 28-case security test battery + UI scaffold + writer + post-write verification + newline-safe serializer + regen-index guard + revoked-handle recovery flow. 13 council rounds total (11 Proceed, 2 Revise), zero stack hallucinations. 185 tests (74 baseline + 111 new). User manual-tested writer end-to-end and confirmed all 7 checkpoints passed. Session-close commit includes learnings append, this state file update, yolo_log event, plus the two small round-13 polish items (console.error on .tmp cleanup failure, mixed-line-endings + mixed-whitespace tests) so they don't burn a separate council round."
 }

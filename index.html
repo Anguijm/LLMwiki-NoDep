@@ -704,6 +704,435 @@
         color: var(--color-text-muted);
       }
 
+      /* ── Multi-section import (M3) ────────────── */
+      .ingest-container {
+        max-width: 1000px;
+        padding: 0.5rem 0.25rem 2rem;
+      }
+
+      .ingest-header {
+        margin-bottom: 1.25rem;
+      }
+
+      .ingest-header h2 {
+        margin-bottom: 0.35rem;
+      }
+
+      .ingest-header .ingest-desc {
+        color: var(--color-text-muted);
+        font-size: 0.95rem;
+      }
+
+      .ingest-textarea-wrap {
+        margin-bottom: 1rem;
+      }
+
+      .ingest-textarea-wrap label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
+
+      .ingest-textarea {
+        width: 100%;
+        min-height: 14rem;
+        padding: 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        resize: vertical;
+      }
+
+      .ingest-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+      }
+
+      .ingest-actions button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .ingest-actions button.primary {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+      }
+
+      .ingest-actions button.primary:hover {
+        background: var(--color-primary-hover);
+      }
+
+      .ingest-actions button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .ingest-stats {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        margin-left: auto;
+      }
+
+      .ingest-errors,
+      .ingest-warnings,
+      .ingest-empty-state {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .ingest-errors {
+        background: var(--color-danger-bg);
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+      }
+
+      .ingest-warnings {
+        background: var(--color-warning-bg);
+        border: 1px solid #fde68a;
+        color: var(--color-warning-text);
+      }
+
+      .ingest-empty-state {
+        background: var(--color-tag-bg);
+        color: var(--color-text-muted);
+      }
+
+      .ingest-errors h3,
+      .ingest-warnings h3 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+      }
+
+      .ingest-errors ul,
+      .ingest-warnings ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .ingest-errors li,
+      .ingest-warnings li {
+        padding: 0.3rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      .ingest-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .ingest-row {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+      }
+
+      .ingest-row.has-issues {
+        border-color: #fecaca;
+      }
+
+      .ingest-row-head {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr) minmax(0, 2fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.6rem 0.75rem;
+      }
+
+      .ingest-row-head label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+      }
+
+      .ingest-row-head input[type='text'],
+      .ingest-row-head select {
+        min-height: 44px;
+        padding: 0.4rem 0.55rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        font: inherit;
+        margin-top: 0.2rem;
+      }
+
+      .ingest-row-slug {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        word-break: break-all;
+      }
+
+      .ingest-row-expand {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .ingest-row-mismatch {
+        padding: 0 0.75rem 0.5rem;
+        font-size: 0.8rem;
+        color: var(--color-warning-text);
+      }
+
+      .ingest-row-issues {
+        padding: 0 0.75rem 0.5rem;
+        font-size: 0.8rem;
+        color: var(--color-danger);
+      }
+
+      .ingest-row-issues ul {
+        list-style: disc;
+        padding-left: 1.25rem;
+        margin: 0.25rem 0 0;
+      }
+
+      .ingest-row-body {
+        padding: 0.6rem 0.75rem 0.75rem;
+        border-top: 1px solid var(--color-border);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .ingest-row-body.hidden {
+        display: none !important;
+      }
+
+      .ingest-row-collision {
+        padding: 0.5rem 0.75rem 0.75rem;
+        font-size: 0.85rem;
+        color: var(--color-warning-text);
+        background: var(--color-warning-bg);
+        border-top: 1px solid #fde68a;
+      }
+
+      .ingest-row-collision.corpus::before,
+      .ingest-row-collision.intra::before {
+        content: '⚠ ';
+        font-weight: 700;
+        margin-right: 0.25rem;
+      }
+
+      .ingest-row-intent {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0.4rem 0.75rem;
+        border-top: 1px solid var(--color-border);
+        background: #fafafa;
+        font-size: 0.85rem;
+      }
+
+      .ingest-row-intent label {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: var(--radius);
+        cursor: pointer;
+      }
+
+      .ingest-row-intent input[type='radio'] {
+        min-width: 20px;
+        min-height: 20px;
+      }
+
+      .ingest-row-rename {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .ingest-row-rename input[type='text'] {
+        min-height: 44px;
+        padding: 0.4rem 0.55rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        font: inherit;
+        flex: 1;
+      }
+
+      .ingest-row-rename-slug {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+      }
+
+      .ingest-row-result {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .ingest-row-result.ok {
+        background: var(--color-success-bg);
+        color: #166534;
+      }
+
+      .ingest-row-result.failed {
+        background: var(--color-danger-bg);
+        color: var(--color-danger);
+      }
+
+      .ingest-row-result.skipped {
+        background: var(--color-tag-bg);
+        color: var(--color-text-muted);
+      }
+
+      .ingest-row-result button {
+        min-height: 44px;
+        padding: 0.3rem 0.75rem;
+        border: 1px solid currentColor;
+        border-radius: var(--radius);
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .ingest-result-icon {
+        font-weight: 700;
+        margin-right: 0.25rem;
+      }
+
+      .ingest-regen-wrap {
+        margin-top: 1rem;
+      }
+
+      .ingest-regen-wrap button {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      /* Overwrite confirmation dialog */
+      .ingest-confirm-dialog {
+        max-width: 30rem;
+        padding: 1.25rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+      }
+
+      .ingest-confirm-dialog h3 {
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+      }
+
+      .ingest-confirm-dialog p {
+        margin-bottom: 1rem;
+      }
+
+      .ingest-confirm-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+      }
+
+      .ingest-confirm-actions button {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .ingest-confirm-actions button.danger {
+        background: var(--color-danger);
+        color: #fff;
+        border-color: var(--color-danger);
+      }
+
+      .ingest-revoked-banner {
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius);
+        background: var(--color-danger-bg);
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+        margin-bottom: 1rem;
+      }
+
+      .ingest-revoked-banner h3 {
+        margin-bottom: 0.4rem;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .ingest-revoked-banner p {
+        margin-bottom: 0.75rem;
+        color: var(--color-text);
+        font-size: 0.9rem;
+      }
+
+      .ingest-revoked-banner button {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        background: var(--color-primary);
+        color: #fff;
+        border: 1px solid var(--color-primary);
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .ingest-revoked-banner button:hover {
+        background: var(--color-primary-hover);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ingest-row,
+        .ingest-row-body {
+          transition: none !important;
+        }
+      }
+
       /* ── Visibility helper ────────────────────── */
       .hidden {
         display: none !important;
@@ -734,6 +1163,7 @@
           </div>
           <button id="btn-review" type="button"></button>
           <button id="btn-outline" type="button"></button>
+          <button id="btn-ingest" type="button"></button>
           <button id="btn-rescan" type="button"></button>
         </div>
       </header>
@@ -747,6 +1177,7 @@
         <div id="note-view"></div>
         <div id="review-view" class="hidden"></div>
         <div id="outline-view" class="hidden"></div>
+        <div id="ingest-view" class="hidden" role="region" aria-label="Multi-section import"></div>
         <div id="broken-panel" class="status-panel broken hidden" role="region" aria-label="Broken notes"></div>
         <div id="conflict-panel" class="status-panel conflict hidden" role="region" aria-label="Sync conflicts"></div>
         <div id="broken-cards-panel" class="status-panel broken hidden" role="region" aria-label="Broken cards"></div>
@@ -760,6 +1191,16 @@
 
     <!-- ARIA live region for announcements -->
     <div id="announcements" aria-live="assertive" aria-atomic="true" class="hidden"></div>
+
+    <!-- Overwrite confirmation dialog (M3 ingest writer) -->
+    <dialog id="ingest-confirm-overwrite" class="ingest-confirm-dialog" aria-labelledby="ingest-confirm-title">
+      <h3 id="ingest-confirm-title"></h3>
+      <p id="ingest-confirm-body"></p>
+      <div class="ingest-confirm-actions">
+        <button type="button" id="ingest-confirm-no"></button>
+        <button type="button" id="ingest-confirm-yes" class="danger"></button>
+      </div>
+    </dialog>
 
     <script>
       'use strict';
@@ -844,6 +1285,148 @@
         outlineTitle: 'Knowledge Graph \u2014 Outline',
         outlineEmpty: 'No notes to display.',
         outlineLinks: 'Links to:',
+        // Multi-section import (M3) strings
+        ingest: 'Import',
+        ingestTitle: 'Multi-section import',
+        ingestDesc:
+          'Paste a multi-section document emitted by a GenAI.mil agent-mode prompt. Each section becomes a separate note. Preview and resolve any issues before committing.',
+        ingestTextareaLabel: 'Paste agent-formatted content here',
+        ingestTextareaPlaceholder:
+          '<<<LLMWIKI-SECTION:slug>>>\n---\ntitle: ...\ntier: warm\n---\n\nsection body\n\n<<<LLMWIKI-SECTION-END:slug>>>',
+        ingestParse: 'Parse',
+        ingestClear: 'Clear',
+        ingestCommitPending: 'Commit (writer ships next)',
+        ingestCommitDisabledTitle:
+          'Commit button is wired in the next implementation commit \u2014 this view currently previews parsed sections only.',
+        ingestParseStarted: 'Parsing paste\u2026',
+        ingestParseComplete: function (n) {
+          return 'Parsed ' + n + (n === 1 ? ' section' : ' sections') + '. Review before committing.';
+        },
+        ingestParseFailed: function (n) {
+          return 'Parse failed: ' + n + (n === 1 ? ' fatal error' : ' fatal errors') + ' blocked the paste.';
+        },
+        ingestParseFailedWithCategory: function (category, line) {
+          return 'Parse failed: ' + category + ' at line ' + line + '.';
+        },
+        ingestZeroSections:
+          'No sections found. Paste must contain <<<LLMWIKI-SECTION:slug>>> / <<<LLMWIKI-SECTION-END:slug>>> delimiter pairs.',
+        ingestEmptyPaste: 'Paste some content first, then click Parse.',
+        ingestErrorsHeading: 'Parse errors',
+        ingestWarningsHeading: 'Warnings',
+        ingestSectionsHeading: 'Sections',
+        ingestRowTitleLabel: 'Title',
+        ingestRowTierLabel: 'Tier',
+        ingestRowSlugLabel: 'Slug (auto-derived)',
+        ingestRowExpand: 'Expand preview',
+        ingestRowCollapse: 'Collapse preview',
+        ingestRowIssuesHeading: 'Section issues:',
+        ingestSlugMismatch: function (canonical, reason) {
+          return 'Canonical slug \u201c' + canonical + '\u201d differs from sentinel (' + reason + ').';
+        },
+        ingestSectionIssues: function (n) {
+          return n + (n === 1 ? ' issue' : ' issues');
+        },
+        ingestStatsBom: 'BOM stripped from paste',
+        ingestStatsLineEndings: 'Line endings normalized to LF',
+        ingestStatsDedented: 'Common leading whitespace stripped',
+        ingestStatsTooMany: function (n, cap) {
+          return 'Parsed ' + n + ' sections (limit ' + cap + ')';
+        },
+        ingestTierLabelBedrock: 'Bedrock',
+        ingestTierLabelWarm: 'Warm (default)',
+        ingestTierLabelCold: 'Cold',
+        ingestEmptyTitle: '(no title)',
+        ingestEmptyBody: '(empty body)',
+        ingestErrorLine: function (category, line, column, message) {
+          var loc = line > 0 ? ' [line ' + line + (column > 1 ? ':' + column : '') + ']' : '';
+          return category + loc + ' \u2014 ' + message;
+        },
+        // \u2500\u2500 Multi-section commit flow (M3, writer phase) \u2500\u2500
+        ingestCommitReady: function (n) {
+          return 'Commit ' + n + (n === 1 ? ' section' : ' sections');
+        },
+        ingestCommitNoop: 'Nothing to commit',
+        ingestCommitWriting: 'Writing\u2026',
+        ingestCommitRetryFailed: function (n) {
+          return 'Retry ' + n + ' failed ' + (n === 1 ? 'file' : 'files');
+        },
+        ingestCommitBlockedTitle: function (n) {
+          return (
+            n +
+            ' ' +
+            (n === 1 ? 'row has' : 'rows have') +
+            ' unresolved issues (errors, empty slugs, or collisions). Fix or set to Skip before committing.'
+          );
+        },
+        ingestPreScanStarted: 'Pre-commit scan starting\u2026',
+        ingestPreScanComplete: function (collisions) {
+          if (collisions === 0) return 'Pre-commit scan complete \u2014 no new collisions.';
+          return (
+            'Pre-commit scan complete \u2014 ' +
+            collisions +
+            ' ' +
+            (collisions === 1 ? 'collision' : 'collisions') +
+            ' detected. Resolve before committing.'
+          );
+        },
+        ingestPreScanFailed: function (kind) {
+          return 'Pre-commit scan failed (' + kind + '). Re-grant folder access and try again.';
+        },
+        ingestRevokedHandle: 'Folder access was revoked. Re-grant and retry.',
+        ingestWriteRowStart: function (n, total) {
+          return 'Writing ' + n + ' of ' + total + '\u2026';
+        },
+        ingestWriteComplete: function (ok, failed, skipped) {
+          var parts = [ok + (ok === 1 ? ' written' : ' written')];
+          if (failed > 0) parts.push(failed + ' failed');
+          if (skipped > 0) parts.push(skipped + ' skipped');
+          return 'Commit complete \u2014 ' + parts.join(', ') + '.';
+        },
+        ingestCollisionCorpus: function (existingName) {
+          return 'Collides with existing file "' + existingName + '" in this tier.';
+        },
+        ingestCollisionIntra: function (otherRowNum) {
+          return 'Collides with section #' + otherRowNum + ' in this paste (same slug + tier).';
+        },
+        ingestIntentSkip: 'Skip',
+        ingestIntentWrite: 'Write',
+        ingestIntentRename: 'Rename',
+        ingestIntentOverwrite: 'Overwrite',
+        ingestIntentLegend: 'Action:',
+        ingestConfirmOverwriteTitle: 'Confirm overwrite',
+        ingestConfirmOverwriteBody: function (filename) {
+          return (
+            'This will replace the existing file "' +
+            filename +
+            '". This cannot be undone by the app \u2014 prior content is gone after write. Proceed?'
+          );
+        },
+        ingestConfirmOverwriteYes: 'Yes, overwrite',
+        ingestConfirmOverwriteNo: 'Cancel',
+        ingestEmptySlugAfterEdit:
+          'Edited title normalizes to empty slug \u2014 provide a title with at least one alphanumeric character.',
+        ingestRowWritten: function (tier, filename) {
+          return 'Written: ' + tier + '/' + filename;
+        },
+        ingestRowFailed: function (tier, filename, kind) {
+          return 'Failed: ' + tier + '/' + filename + ' \u2014 ' + kind;
+        },
+        ingestRowSkipped: 'Skipped.',
+        ingestRowRetry: 'Retry this file',
+        ingestWriteErrorPermDenied: 'permission denied',
+        ingestWriteErrorExists: 'file already exists (collision detected after rescan)',
+        ingestWriteErrorQuota: 'disk full or quota exceeded',
+        ingestWriteErrorRevoked: 'folder access revoked',
+        ingestWriteErrorIO: 'io error',
+        ingestRegenIndex: 'Regenerate _index.md',
+        ingestRegenIndexDone: 'Index regenerated.',
+        ingestRegenIndexFail: 'Index regeneration failed \u2014 check folder permissions.',
+        ingestReadOnlyMode:
+          'Drag-drop folders are read-only. Ingest requires a picked folder (File System Access API). Use "Choose wiki folder" on the landing screen.',
+        ingestRevokedBannerTitle: 'Folder access was revoked',
+        ingestRevokedBannerBody:
+          'The browser or operating system dropped access to this folder — likely because the device slept, the folder was moved, or permissions changed. Re-select the folder to continue. The parsed sections in the preview are preserved.',
+        ingestRevokedBannerButton: 'Re-select folder',
       };
 
       // ══════════════════════════════════════════════
@@ -1447,6 +2030,568 @@
       };
 
       // ══════════════════════════════════════════════
+      // Slugger — canonical filename derivation from titles
+      // ══════════════════════════════════════════════
+
+      const Slugger = {
+        // Algorithm follows docs/data_schemas.md "Filename slugging". Output
+        // character set is [a-z0-9-] with an optional leading '_' for reserved
+        // Windows stems. Length <= 81 (80 + optional '_').
+        _combiningMarkRegex: /[\u0300-\u036f]/g,
+        // Apostrophes (ASCII ', curly U+2019, modifier U+02BC) drop to empty
+        // before hyphenization, so "Parseval's" slugs to "parsevals" not
+        // "parseval-s". Matches the example in docs/data_schemas.md.
+        _apostropheRegex: /['\u2019\u02bc]/g,
+        _nonSlugCharRegex: /[^a-z0-9]+/g,
+        _consecutiveHyphensRegex: /-+/g,
+        _trimHyphensRegex: /^-+|-+$/g,
+        _reservedStemRegex: /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/,
+        _slugFormatRegex: /^_?[a-z0-9]+(-[a-z0-9]+)*$/,
+
+        slugify: function (title, timestampForEmpty) {
+          // Returns a canonical slug string, or null if the title normalizes to
+          // empty and no timestamp was supplied. Timestamps come from the app
+          // (OS clock) or the human — never from an LLM.
+          if (typeof title !== 'string') return null;
+          var s = title.normalize('NFKD');
+          s = s.replace(Slugger._combiningMarkRegex, '');
+          s = s.toLowerCase();
+          s = s.replace(Slugger._apostropheRegex, '');
+          s = s.replace(Slugger._nonSlugCharRegex, '-');
+          s = s.replace(Slugger._consecutiveHyphensRegex, '-');
+          s = s.replace(Slugger._trimHyphensRegex, '');
+
+          if (s.length === 0) {
+            if (typeof timestampForEmpty === 'number' && isFinite(timestampForEmpty)) {
+              s = 'untitled-' + Math.trunc(timestampForEmpty);
+            } else {
+              return null;
+            }
+          }
+
+          if (s.length > 80) {
+            var cut = 80;
+            var hyphenIdx = s.lastIndexOf('-', 80);
+            if (hyphenIdx >= 60) cut = hyphenIdx;
+            s = s.substring(0, cut);
+            s = s.replace(/-+$/, '');
+          }
+
+          if (Slugger._reservedStemRegex.test(s)) {
+            s = '_' + s;
+          }
+          return s;
+        },
+
+        isValidSlug: function (slug) {
+          if (typeof slug !== 'string') return false;
+          if (slug.length === 0 || slug.length > 81) return false;
+          return Slugger._slugFormatRegex.test(slug);
+        },
+
+        isReservedOSName: function (name) {
+          // Accepts bare stems, stems with extensions, and '.'/'..'.
+          // Case-insensitive per Windows filesystem semantics.
+          if (typeof name !== 'string') return false;
+          var lower = name.toLowerCase();
+          if (lower === '.' || lower === '..') return true;
+          // First-dot strip so `NUL.txt.md` reduces to stem `nul` (reserved),
+          // not `nul.txt` (not reserved). Reserved names are forbidden
+          // regardless of how many extensions a user piles on.
+          var stem = lower.replace(/\..*$/, '');
+          return Slugger._reservedStemRegex.test(stem);
+        },
+
+        slugMismatchReason: function (agentSlug, canonicalSlug) {
+          // Best-effort human-readable rationale. Both inputs are assumed to be
+          // validated-safe (no raw-content leakage through this path).
+          if (agentSlug === canonicalSlug) return null;
+          if (typeof agentSlug !== 'string' || typeof canonicalSlug !== 'string') {
+            return 'invalid slug input';
+          }
+          if (agentSlug.toLowerCase() === canonicalSlug) return 'normalized case';
+          if (/[^a-z0-9-]/i.test(agentSlug)) return 'removed non-ASCII or special characters';
+          if (
+            agentSlug.length > canonicalSlug.length &&
+            agentSlug.substring(0, canonicalSlug.length) === canonicalSlug
+          ) {
+            return 'truncated to length limit';
+          }
+          return 're-derived from title per canonical rules';
+        },
+      };
+
+      // ══════════════════════════════════════════════
+      // SectionDelimiterParser — chunked-ingest sentinel scanner (M3)
+      // ══════════════════════════════════════════════
+
+      const SectionDelimiterParser = {
+        // Linear single-pass scanner with strict prefix match. No regex
+        // alternation or backtracking on the line-scan hot path. Error
+        // messages NEVER include raw ingested content — only error category,
+        // validated sentinel slug, and line/column metadata. See
+        // .harness/active_plan.md §"Error-log redaction (new in rev 5)".
+        OPEN_PREFIX: '<<<LLMWIKI-SECTION:',
+        CLOSE_PREFIX: '<<<LLMWIKI-SECTION-END:',
+        SUFFIX: '>>>',
+        MAX_SECTIONS: 200,
+        MAX_TITLE_LENGTH: 200,
+        // C0 control bytes minus TAB (0x09), LF (0x0A), CR (0x0D).
+        _controlByteRegex: /[\x00-\x08\x0B\x0C\x0E-\x1F]/,
+
+        parse: function (rawText) {
+          if (typeof rawText !== 'string') {
+            return SectionDelimiterParser._emptyResult([
+              {
+                category: 'input.invalid-type',
+                message: 'input must be a string',
+                line: 0,
+                column: 0,
+                fatal: true,
+              },
+            ]);
+          }
+
+          var bomStripped = false;
+          var text = rawText;
+          if (text.charCodeAt(0) === 0xfeff) {
+            text = text.slice(1);
+            bomStripped = true;
+          }
+
+          var lineEndingsNormalized = /\r\n|\r/.test(text);
+          text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+          // Dedent: strip common leading whitespace across all non-blank
+          // lines. Defends against the common paste-from-chat-UI case where
+          // every line picks up a uniform indent (2 or 4 spaces, or a tab).
+          // Uniform dedent preserves intra-section relative indentation,
+          // so markdown code-blocks etc. remain correctly indented. The
+          // strict prefix-match rule for sentinels still applies AFTER
+          // dedent — this is a preprocessor, not a rule relaxation.
+          var preDedent = text;
+          text = SectionDelimiterParser._stripCommonLeadingWhitespace(text);
+          var dedented = text !== preDedent;
+
+          var lines = text.split('\n');
+          var errors = [];
+          var warnings = [];
+          var sections = [];
+          var preambleLines = [];
+          var state = 'IDLE';
+          var currentSection = null;
+          var hadFatalError = false;
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var lineNo = i + 1;
+            // Sentinel detection is per-line whitespace-tolerant: the dedent
+            // preprocessor above normalizes the *common* leading indent, but
+            // it can't handle the mixed-indent case where one line is flush-
+            // left by accident of copy-paste and the rest are indented. The
+            // probe trims both sides, the strict-match rule still applies to
+            // the trimmed content, body lines are captured verbatim below.
+            var sentinelProbe = line.replace(/^[ \t]+|[ \t]+$/g, '');
+
+            if (sentinelProbe.indexOf(SectionDelimiterParser.OPEN_PREFIX) === 0) {
+              var openResult = SectionDelimiterParser._parseSentinelLine(
+                sentinelProbe,
+                SectionDelimiterParser.OPEN_PREFIX,
+                lineNo,
+                'open'
+              );
+              if (openResult.error) {
+                errors.push(openResult.error);
+                hadFatalError = true;
+                continue;
+              }
+              if (state === 'IN_SECTION') {
+                errors.push({
+                  category: 'delimiter.nested-open',
+                  message:
+                    'open sentinel at line ' +
+                    lineNo +
+                    ' found inside already-open section (opened at line ' +
+                    currentSection.startLine +
+                    ')',
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              currentSection = {
+                sentinelSlug: openResult.slug,
+                startLine: lineNo,
+                bodyLines: [],
+              };
+              state = 'IN_SECTION';
+              continue;
+            }
+
+            if (sentinelProbe.indexOf(SectionDelimiterParser.CLOSE_PREFIX) === 0) {
+              var closeResult = SectionDelimiterParser._parseSentinelLine(
+                sentinelProbe,
+                SectionDelimiterParser.CLOSE_PREFIX,
+                lineNo,
+                'close'
+              );
+              if (closeResult.error) {
+                errors.push(closeResult.error);
+                hadFatalError = true;
+                continue;
+              }
+              if (state !== 'IN_SECTION') {
+                errors.push({
+                  category: 'delimiter.orphan-close',
+                  message: 'close sentinel at line ' + lineNo + ' has no matching open',
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              if (closeResult.slug !== currentSection.sentinelSlug) {
+                errors.push({
+                  category: 'delimiter.mismatched-close',
+                  message:
+                    'close sentinel slug at line ' +
+                    lineNo +
+                    ' does not match open at line ' +
+                    currentSection.startLine,
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              var processed = SectionDelimiterParser._processSection(currentSection, lineNo);
+              sections.push(processed);
+              currentSection = null;
+              state = 'IDLE';
+              continue;
+            }
+
+            if (state === 'IN_SECTION') {
+              currentSection.bodyLines.push(line);
+            } else {
+              preambleLines.push(line);
+            }
+          }
+
+          if (state === 'IN_SECTION') {
+            errors.push({
+              category: 'delimiter.unterminated-section',
+              message:
+                'open sentinel at line ' + currentSection.startLine + ' has no matching close before end of paste',
+              line: currentSection.startLine,
+              column: 1,
+              fatal: true,
+            });
+            hadFatalError = true;
+          }
+
+          var tooMany = sections.length > SectionDelimiterParser.MAX_SECTIONS;
+          if (tooMany) {
+            errors.push({
+              category: 'delimiter.too-many-sections',
+              message:
+                'parsed ' +
+                sections.length +
+                ' sections; per-batch limit is ' +
+                SectionDelimiterParser.MAX_SECTIONS +
+                '. Split the source document or re-prompt the agent to coarsen section boundaries.',
+              line: 0,
+              column: 0,
+              fatal: true,
+            });
+            hadFatalError = true;
+          }
+
+          for (var s = 0; s < sections.length; s++) {
+            var sec = sections[s];
+            if (sec.slugMismatch) {
+              warnings.push({
+                category: 'slug.mismatch',
+                message:
+                  'section ' +
+                  (s + 1) +
+                  " sentinel slug '" +
+                  sec.sentinelSlug +
+                  "' differs from canonical slug '" +
+                  sec.canonicalSlug +
+                  "' (" +
+                  sec.slugMismatchReason +
+                  ')',
+                line: sec.startLine,
+                column: 1,
+              });
+            }
+          }
+
+          return {
+            valid: !hadFatalError && sections.length > 0,
+            preamble: preambleLines.join('\n'),
+            sections: hadFatalError ? [] : sections,
+            errors: errors,
+            warnings: warnings,
+            stats: {
+              totalSections: sections.length,
+              bomStripped: bomStripped,
+              lineEndingsNormalized: lineEndingsNormalized,
+              dedented: dedented,
+              zeroSections: !hadFatalError && sections.length === 0,
+              tooManySections: tooMany,
+            },
+          };
+        },
+
+        _stripCommonLeadingWhitespace: function (text) {
+          // Character-wise common-prefix dedent across non-blank lines.
+          // Runs before line splitting in .parse; no effect if any non-blank
+          // line is flush-left.
+          var lines = text.split('\n');
+          var minIndent = Infinity;
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.length === 0) continue;
+            var j = 0;
+            while (j < line.length && (line.charAt(j) === ' ' || line.charAt(j) === '\t')) j++;
+            if (j === line.length) continue; // whitespace-only line
+            if (j < minIndent) minIndent = j;
+            if (minIndent === 0) break; // can't dedent further
+          }
+          if (!isFinite(minIndent) || minIndent === 0) return text;
+          var out = [];
+          for (var k = 0; k < lines.length; k++) {
+            out.push(lines[k].length >= minIndent ? lines[k].substring(minIndent) : lines[k]);
+          }
+          return out.join('\n');
+        },
+
+        _emptyResult: function (errors) {
+          return {
+            valid: false,
+            preamble: '',
+            sections: [],
+            errors: errors,
+            warnings: [],
+            stats: {
+              totalSections: 0,
+              bomStripped: false,
+              lineEndingsNormalized: false,
+              zeroSections: false,
+              tooManySections: false,
+            },
+          };
+        },
+
+        _parseSentinelLine: function (line, prefix, lineNo, role) {
+          // Strict structure: <prefix><slug><suffix>, nothing else. Trailing
+          // whitespace or extra characters → malformed.
+          if (line.length < prefix.length + SectionDelimiterParser.SUFFIX.length + 1) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.malformed-' + role,
+                message: 'malformed ' + role + " sentinel (empty slug or missing '>>>')",
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          if (line.substring(line.length - SectionDelimiterParser.SUFFIX.length) !== SectionDelimiterParser.SUFFIX) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.malformed-' + role,
+                message: 'malformed ' + role + " sentinel (missing or misplaced '>>>')",
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          var slug = line.substring(prefix.length, line.length - SectionDelimiterParser.SUFFIX.length);
+          if (!Slugger.isValidSlug(slug)) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.invalid-slug',
+                message:
+                  'invalid slug in ' + role + ' sentinel at line ' + lineNo + ' (does not match canonical slug format)',
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          return { slug: slug, error: null };
+        },
+
+        _processSection: function (section, closeLine) {
+          var lines = section.bodyLines;
+          var sectionErrors = [];
+          var frontmatter = null;
+          var body = lines.join('\n');
+
+          // Frontmatter delimiter detection is whitespace-tolerant on each
+          // line (same rationale as sentinel detection above — mixed-indent
+          // pastes where one line is flush-left and others aren't show up
+          // in real user copies). The YAML key/value parser already trims
+          // each key+value, so leading whitespace inside the YAML block
+          // itself is a no-op.
+          var fmStartIdx = -1;
+          for (var i = 0; i < lines.length; i++) {
+            var probe = lines[i].replace(/^[ \t]+|[ \t]+$/g, '');
+            if (probe === '') continue;
+            if (probe === '---') {
+              fmStartIdx = i;
+            }
+            break;
+          }
+
+          if (fmStartIdx === -1) {
+            sectionErrors.push({
+              category: 'frontmatter.missing-block',
+              message:
+                "section '" + section.sentinelSlug + "' has no frontmatter (section body must start with '---' line)",
+              line: section.startLine + 1,
+              column: 1,
+              fatal: false,
+            });
+          } else {
+            var fmEndIdx = -1;
+            for (var j = fmStartIdx + 1; j < lines.length; j++) {
+              if (lines[j].replace(/^[ \t]+|[ \t]+$/g, '') === '---') {
+                fmEndIdx = j;
+                break;
+              }
+            }
+            if (fmEndIdx === -1) {
+              sectionErrors.push({
+                category: 'frontmatter.unterminated',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' has an open '---' but no matching close before end of section",
+                line: section.startLine + 1 + fmStartIdx,
+                column: 1,
+                fatal: false,
+              });
+            } else {
+              var yamlBlock = lines.slice(fmStartIdx + 1, fmEndIdx).join('\n');
+              try {
+                frontmatter = FrontmatterParser._parseYaml(yamlBlock);
+              } catch (e) {
+                sectionErrors.push({
+                  category: 'frontmatter.yaml-parse-error',
+                  message:
+                    "section '" +
+                    section.sentinelSlug +
+                    "' frontmatter YAML parse failed (kind: " +
+                    (e && e.name ? e.name : 'Error') +
+                    ')',
+                  line: section.startLine + 1 + fmStartIdx,
+                  column: 1,
+                  fatal: false,
+                });
+              }
+              body = lines.slice(fmEndIdx + 1).join('\n');
+              if (body.charAt(0) === '\n') body = body.slice(1);
+              // Per-body dedent: the top-level dedent saw min-indent = 0
+              // because sentinel and/or frontmatter lines were flush-left,
+              // so body content kept its uniform indent. Strip it now so
+              // `  # Heading` renders as a heading and not as literal text.
+              body = SectionDelimiterParser._stripCommonLeadingWhitespace(body);
+            }
+          }
+
+          var canonicalSlug = null;
+          var slugMismatch = false;
+          var slugMismatchReason = null;
+
+          if (frontmatter && typeof frontmatter.title === 'string') {
+            var title = frontmatter.title;
+            if (title.length > SectionDelimiterParser.MAX_TITLE_LENGTH) {
+              sectionErrors.push({
+                category: 'title.too-long',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' title exceeds maximum length (" +
+                  SectionDelimiterParser.MAX_TITLE_LENGTH +
+                  ' chars; got ' +
+                  title.length +
+                  ')',
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            if (SectionDelimiterParser._controlByteRegex.test(title)) {
+              sectionErrors.push({
+                category: 'title.control-bytes',
+                message: "section '" + section.sentinelSlug + "' title contains disallowed control bytes (NUL or C0)",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            if (SectionDelimiterParser._controlByteRegex.test(body)) {
+              sectionErrors.push({
+                category: 'body.control-bytes',
+                message: "section '" + section.sentinelSlug + "' body contains disallowed control bytes (NUL or C0)",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            canonicalSlug = Slugger.slugify(title);
+            if (canonicalSlug === null) {
+              sectionErrors.push({
+                category: 'title.empty-slug',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' title normalizes to an empty slug — provide timestamp-or-rename at commit time",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            } else if (canonicalSlug !== section.sentinelSlug) {
+              slugMismatch = true;
+              slugMismatchReason = Slugger.slugMismatchReason(section.sentinelSlug, canonicalSlug);
+            }
+          } else if (frontmatter !== null) {
+            sectionErrors.push({
+              category: 'frontmatter.invalid-title',
+              message: "section '" + section.sentinelSlug + "' frontmatter missing required 'title' field",
+              line: section.startLine + 1,
+              column: 1,
+              fatal: false,
+            });
+          }
+
+          return {
+            sentinelSlug: section.sentinelSlug,
+            canonicalSlug: canonicalSlug,
+            slugMismatch: slugMismatch,
+            slugMismatchReason: slugMismatchReason,
+            frontmatter: frontmatter,
+            body: body,
+            startLine: section.startLine,
+            endLine: closeLine,
+            errors: sectionErrors,
+          };
+        },
+      };
+
+      // ══════════════════════════════════════════════
       // WikiLinkResolver
       // ══════════════════════════════════════════════
 
@@ -1718,6 +2863,7 @@
         _atomicWrite: async function (dirHandle, filename, content) {
           var tmpName = '.' + filename + '.tmp';
           var writable = null;
+          var tmpComplete = false;
 
           try {
             // Step 1: Write content to temp file (safe — if this fails, original is untouched)
@@ -1726,6 +2872,7 @@
             await writable.write(content);
             await writable.close();
             writable = null; // closed successfully
+            tmpComplete = true;
 
             // Step 2: Write content to final file
             // File System Access API has no rename() — we must write to the target directly.
@@ -1750,11 +2897,76 @@
               throw finalErr;
             }
 
-            // Step 3: Clean up temp file
+            // Step 3: Verify write integrity — re-read the just-written file
+            // and compare byte length against the source. This matches the
+            // pattern already used by SRSCardWriter.write (Phase 2c). A
+            // mismatch can occur from browser crash mid-write, disk-full
+            // mid-stream, or other partial-write conditions. On detected
+            // corruption we attempt one restore from the in-memory content;
+            // if that ALSO fails to verify, we throw and leave the .tmp file
+            // intact so the user has a recoverable backup. [council rev 11 —
+            // bugs: data-corruption blocker on silent partial writes.]
+            try {
+              var verifyHandle = await dirHandle.getFileHandle(filename);
+              var verifyFile = await verifyHandle.getFile();
+              var verifyContent = await verifyFile.text();
+              if (verifyContent.length !== content.length) {
+                // Attempt one restore from the in-memory content.
+                var restoreHandle = await dirHandle.getFileHandle(filename, { create: true });
+                var restoreWritable = await restoreHandle.createWritable();
+                try {
+                  await restoreWritable.write(content);
+                  await restoreWritable.close();
+                } catch (restoreErr) {
+                  try {
+                    await restoreWritable.close();
+                  } catch (e) {
+                    /* best effort */
+                  }
+                  throw new Error(
+                    'atomic write verification failed and restore errored: length mismatch (expected ' +
+                      content.length +
+                      ', got ' +
+                      verifyContent.length +
+                      '); .tmp preserved'
+                  );
+                }
+                // Re-verify after restore.
+                var reVerifyFile = await (await dirHandle.getFileHandle(filename)).getFile();
+                var reVerifyContent = await reVerifyFile.text();
+                if (reVerifyContent.length !== content.length) {
+                  throw new Error(
+                    'atomic write verification failed after restore attempt: length still mismatched (expected ' +
+                      content.length +
+                      ', got ' +
+                      reVerifyContent.length +
+                      '); .tmp preserved for manual recovery'
+                  );
+                }
+              }
+            } catch (verifyErr) {
+              // Verification errored in an unrecoverable way — do NOT delete
+              // the .tmp file. Surface the original error to the caller so
+              // the commit flow reports a per-file failure with a kind.
+              throw verifyErr;
+            }
+
+            // Step 4: Clean up temp file (only after verified-successful write).
+            // Log failures via console.error so an orphan .tmp after an
+            // otherwise-successful write isn't silent. The write is still
+            // treated as successful (caller sees no error), but the cleanup
+            // miss is visible for debugging. [council rev 13 — bugs: surface
+            // silent .tmp cleanup failures.]
             try {
               await dirHandle.removeEntry(tmpName);
             } catch (e) {
-              /* orphan — cleaned on next scan */
+              console.error(
+                '_atomicWrite: post-write cleanup of ' +
+                  tmpName +
+                  ' failed (' +
+                  (e && e.name ? e.name : 'Error') +
+                  '); orphan will be collected on next scan'
+              );
             }
           } catch (outerErr) {
             // Ensure temp writable is closed if step 1 failed mid-write
@@ -1765,18 +2977,38 @@
                 /* best effort */
               }
             }
-            // Attempt temp cleanup on any failure
-            try {
-              await dirHandle.removeEntry(tmpName);
-            } catch (e) {
-              /* best effort */
+            // Only clean up the .tmp file if it wasn't fully written. A
+            // complete .tmp after a failed verify step is a RECOVERY asset —
+            // the user or the next-run orphan cleanup can use it. [council
+            // rev 11 — bugs: preserve .tmp on verify-path failures.]
+            if (!tmpComplete) {
+              try {
+                await dirHandle.removeEntry(tmpName);
+              } catch (e) {
+                /* best effort */
+              }
             }
             throw outerErr;
           }
         },
 
         _cleanupOrphanTemps: async function (dirHandle) {
-          // Scan root for orphaned .*.tmp files from failed writes
+          // Scan root + tier folders for orphaned .*.tmp files from failed
+          // writes. Ingest writes to tier subfolders, so the M3 round-4 bugs
+          // mitigation (orphan cleanup on startup) must reach into them.
+          await FolderScanner._cleanupOrphanTempsInDir(dirHandle);
+          var tierFolders = ['bedrock', 'warm', 'cold'];
+          for (var t = 0; t < tierFolders.length; t++) {
+            try {
+              var tierHandle = await dirHandle.getDirectoryHandle(tierFolders[t]);
+              await FolderScanner._cleanupOrphanTempsInDir(tierHandle);
+            } catch (e) {
+              /* tier folder doesn't exist yet — nothing to clean */
+            }
+          }
+        },
+
+        _cleanupOrphanTempsInDir: async function (dirHandle) {
           try {
             for await (var entry of dirHandle.values()) {
               if (entry.kind === 'file' && entry.name.startsWith('.') && entry.name.endsWith('.tmp')) {
@@ -1795,6 +3027,38 @@
           } catch (e) {
             /* scan failure is non-fatal */
           }
+        },
+
+        // Enumerate current `.md` filenames in each tier folder. Used by the
+        // M3 pre-commit re-scan to detect corpus collisions case-insensitively
+        // without relying on the OS filesystem's own case handling (which
+        // varies across Windows/macOS/Linux). Returns { tier: [filename, ...] }.
+        listTierFilenames: async function (dirHandle) {
+          var tierFolders = ['bedrock', 'warm', 'cold'];
+          var byTier = {};
+          for (var t = 0; t < tierFolders.length; t++) {
+            var tierName = tierFolders[t];
+            byTier[tierName] = [];
+            try {
+              var tierHandle = await dirHandle.getDirectoryHandle(tierName);
+              for await (var entry of tierHandle.values()) {
+                if (entry.kind === 'file' && entry.name.endsWith('.md') && !entry.name.startsWith('.')) {
+                  byTier[tierName].push(entry.name);
+                }
+              }
+            } catch (e) {
+              // Only treat "folder doesn't exist" as an empty tier — a write
+              // will create it later. Any other error (permission denied,
+              // revoked handle, I/O failure) must propagate so the caller's
+              // pre-commit scan fails loudly instead of silently producing
+              // an empty collision snapshot that would allow writes that
+              // should have been blocked. [council rev 10 — bugs: silent
+              // failure in listTierFilenames.]
+              if (e && e.name === 'NotFoundError') continue;
+              throw e;
+            }
+          }
+          return byTier;
         },
       };
 
@@ -2299,6 +3563,7 @@
           document.getElementById('filter-cold').textContent = STRINGS.filterCold;
           document.getElementById('btn-review').textContent = STRINGS.review;
           document.getElementById('btn-outline').textContent = STRINGS.outline;
+          document.getElementById('btn-ingest').textContent = STRINGS.ingest;
           document.getElementById('btn-rescan').textContent = STRINGS.rescan;
           document.getElementById('backlinks-title').textContent = STRINGS.backlinksTitle;
 
@@ -2310,6 +3575,9 @@
           });
           document.getElementById('btn-outline').addEventListener('click', function () {
             App._toggleView('outline');
+          });
+          document.getElementById('btn-ingest').addEventListener('click', function () {
+            App._toggleView('ingest');
           });
 
           // Tier filter buttons
@@ -2805,18 +4073,1347 @@
           }
           App._syncViewVisibility();
           if (App._currentView === 'outline') App._renderOutline();
+          if (App._currentView === 'ingest') App._renderIngest();
         },
 
         _syncViewVisibility: function () {
           var noteView = document.getElementById('note-view');
           var reviewView = document.getElementById('review-view');
           var outlineView = document.getElementById('outline-view');
+          var ingestView = document.getElementById('ingest-view');
           var aside = document.querySelector('.aside-panel');
 
           noteView.classList.toggle('hidden', App._currentView !== 'notes');
           reviewView.classList.toggle('hidden', App._currentView !== 'review');
           outlineView.classList.toggle('hidden', App._currentView !== 'outline');
+          ingestView.classList.toggle('hidden', App._currentView !== 'ingest');
           if (aside) aside.classList.toggle('hidden', App._currentView !== 'notes');
+        },
+
+        // ── Multi-section import (M3) ───────────────
+        // Scaffold only. Parses pastes via SectionDelimiterParser and
+        // renders a preview. Commit / writer / collision handling lands in
+        // a follow-up commit; the button is present but disabled here.
+        // Every DOM node is built via createElement + textContent +
+        // setAttribute. Zero innerHTML/outerHTML/insertAdjacentHTML.
+
+        _ingestScaffoldRendered: false,
+        _ingestLastResult: null,
+
+        _renderIngest: function () {
+          if (App._ingestScaffoldRendered) return;
+          var view = document.getElementById('ingest-view');
+          view.textContent = '';
+
+          var container = document.createElement('div');
+          container.className = 'ingest-container';
+
+          var header = document.createElement('div');
+          header.className = 'ingest-header';
+          var h = document.createElement('h2');
+          h.textContent = STRINGS.ingestTitle;
+          var desc = document.createElement('p');
+          desc.className = 'ingest-desc';
+          desc.textContent = STRINGS.ingestDesc;
+          header.appendChild(h);
+          header.appendChild(desc);
+          container.appendChild(header);
+
+          var textareaWrap = document.createElement('div');
+          textareaWrap.className = 'ingest-textarea-wrap';
+          var label = document.createElement('label');
+          label.setAttribute('for', 'ingest-textarea');
+          label.textContent = STRINGS.ingestTextareaLabel;
+          var textarea = document.createElement('textarea');
+          textarea.id = 'ingest-textarea';
+          textarea.className = 'ingest-textarea';
+          textarea.setAttribute('spellcheck', 'false');
+          textarea.setAttribute('autocomplete', 'off');
+          textarea.setAttribute('autocorrect', 'off');
+          textarea.setAttribute('autocapitalize', 'off');
+          textarea.setAttribute('placeholder', STRINGS.ingestTextareaPlaceholder);
+          textareaWrap.appendChild(label);
+          textareaWrap.appendChild(textarea);
+          container.appendChild(textareaWrap);
+
+          var actions = document.createElement('div');
+          actions.className = 'ingest-actions';
+
+          var parseBtn = document.createElement('button');
+          parseBtn.type = 'button';
+          parseBtn.className = 'primary';
+          parseBtn.id = 'ingest-parse';
+          parseBtn.textContent = STRINGS.ingestParse;
+          parseBtn.addEventListener('click', App._onParseIngest);
+
+          var clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.id = 'ingest-clear';
+          clearBtn.textContent = STRINGS.ingestClear;
+          clearBtn.addEventListener('click', App._onClearIngest);
+
+          var commitBtn = document.createElement('button');
+          commitBtn.type = 'button';
+          commitBtn.id = 'ingest-commit';
+          commitBtn.className = 'primary';
+          commitBtn.textContent = STRINGS.ingestCommitNoop;
+          commitBtn.disabled = true;
+          commitBtn.addEventListener('click', App._onCommitIngest);
+
+          actions.appendChild(parseBtn);
+          actions.appendChild(clearBtn);
+          actions.appendChild(commitBtn);
+
+          var stats = document.createElement('div');
+          stats.id = 'ingest-stats';
+          stats.className = 'ingest-stats';
+          actions.appendChild(stats);
+
+          container.appendChild(actions);
+
+          var resultsMount = document.createElement('div');
+          resultsMount.id = 'ingest-results';
+          container.appendChild(resultsMount);
+
+          view.appendChild(container);
+          App._ingestScaffoldRendered = true;
+        },
+
+        _onClearIngest: function () {
+          var textarea = document.getElementById('ingest-textarea');
+          if (textarea) textarea.value = '';
+          var results = document.getElementById('ingest-results');
+          if (results) results.textContent = '';
+          var stats = document.getElementById('ingest-stats');
+          if (stats) stats.textContent = '';
+          App._ingestLastResult = null;
+          App._ingestRowModels = [];
+          App._ingestCorpusSnapshot = null;
+          App._ingestUpdateCommitButton();
+        },
+
+        _onParseIngest: async function () {
+          if (App._ingestIsParsing) return; // double-click guard per round-9 bugs persona
+          var textarea = document.getElementById('ingest-textarea');
+          var results = document.getElementById('ingest-results');
+          var stats = document.getElementById('ingest-stats');
+          if (!textarea || !results) return;
+
+          App._ingestIsParsing = true;
+          try {
+            results.textContent = '';
+            if (stats) stats.textContent = '';
+            App._ingestRowModels = [];
+            App._ingestUpdateCommitButton();
+
+            var paste = textarea.value;
+            if (paste.length === 0) {
+              App._renderIngestEmptyState(results, STRINGS.ingestEmptyPaste);
+              App.announce(STRINGS.ingestEmptyPaste);
+              return;
+            }
+
+            App.announce(STRINGS.ingestParseStarted);
+            var result = SectionDelimiterParser.parse(paste);
+            App._ingestLastResult = result;
+            App._renderIngestStats(stats, result);
+            App._renderIngestPreview(results, result);
+
+            var fatalErrors = (result.errors || []).filter(function (e) {
+              return e.fatal;
+            });
+            if (fatalErrors.length > 0) {
+              var first = fatalErrors[0];
+              App.announce(STRINGS.ingestParseFailedWithCategory(first.category, first.line || 0));
+              return;
+            }
+            if (result.stats && result.stats.zeroSections) {
+              App.announce(STRINGS.ingestZeroSections);
+              return;
+            }
+
+            App.announce(STRINGS.ingestParseComplete(result.sections.length));
+
+            // Kick off a corpus scan so the preview can show collisions now.
+            // Only meaningful when we have a writable directory handle —
+            // drag-drop (read-only) mode skips this; the commit button will
+            // surface the read-only reason.
+            if (App._isWritable && App._dirHandle) {
+              try {
+                App._ingestCorpusSnapshot = await FolderScanner.listTierFilenames(App._dirHandle);
+                App._ingestReEvaluateAllRows();
+              } catch (e) {
+                App._ingestCorpusSnapshot = null;
+                App._ingestReEvaluateAllRows();
+                var mappedScan = App._ingestMapWriteError(e);
+                App.announce(STRINGS.ingestPreScanFailed(mappedScan.kind));
+                if (mappedScan.kind === STRINGS.ingestWriteErrorRevoked) {
+                  App._ingestShowRevokedBanner();
+                }
+              }
+            } else {
+              App._ingestCorpusSnapshot = null;
+              App._ingestReEvaluateAllRows();
+            }
+          } finally {
+            App._ingestIsParsing = false;
+          }
+        },
+
+        _onCommitIngest: async function () {
+          if (App._ingestIsWriting) return; // double-click guard
+          if (!App._isWritable || !App._dirHandle) {
+            App.announce(STRINGS.ingestReadOnlyMode);
+            return;
+          }
+          var models = App._ingestRowModels || [];
+          if (models.length === 0) return;
+
+          // Reset stale cancelled-overwrite skips so a second Commit click
+          // re-prompts for each overwrite. Rows with intent==='skip' stay
+          // skipped (they're filtered out of the write queue below); rows
+          // with writeResult.kind==='skipped' represent a prior cancelled
+          // overwrite and should come back around.
+          for (var clr = 0; clr < models.length; clr++) {
+            if (models[clr].writeResult && models[clr].writeResult.kind === 'skipped') {
+              models[clr].writeResult = null;
+              App._ingestRenderRowDynamicSlots(models[clr]);
+            }
+          }
+
+          App._ingestIsWriting = true;
+          App._ingestUpdateCommitButton();
+
+          // Pre-commit rescan (case-insensitive). Per round-5 bugs persona:
+          // this is the defense against SharePoint-sync-introduced files
+          // appearing between parse-time and commit-time.
+          App.announce(STRINGS.ingestPreScanStarted);
+          try {
+            App._ingestCorpusSnapshot = await FolderScanner.listTierFilenames(App._dirHandle);
+          } catch (e) {
+            App._ingestIsWriting = false;
+            var mapped = App._ingestMapWriteError(e);
+            App.announce(STRINGS.ingestPreScanFailed(mapped.kind));
+            if (mapped.kind === STRINGS.ingestWriteErrorRevoked) {
+              App._ingestShowRevokedBanner();
+            }
+            App._ingestUpdateCommitButton();
+            return;
+          }
+          // Snapshot any newly-appeared collisions before writing.
+          App._ingestReEvaluateAllRows();
+          var newCollisions = models.filter(function (m) {
+            return m.collision && !(m.writeResult && m.writeResult.ok) && m.intent === 'write';
+          });
+          if (newCollisions.length > 0) {
+            App._ingestIsWriting = false;
+            App._ingestUpdateCommitButton();
+            App.announce(STRINGS.ingestPreScanComplete(newCollisions.length));
+            return;
+          }
+          App.announce(STRINGS.ingestPreScanComplete(0));
+
+          // Build the write queue: rows that should be attempted this commit.
+          // Includes (a) rows never attempted, (b) previously-failed rows
+          // (bulk-retry is built into the same Commit click per plan
+          // §"Retry all failed"). Excludes rows already-succeeded or with
+          // intent='skip'. Blocked rows (unresolved collision, empty slug,
+          // parse errors) are also excluded — the commit button should not
+          // be enabled with blocked rows, but we filter defensively.
+          var queue = models.filter(function (m) {
+            if (m.writeResult && m.writeResult.ok) return false;
+            if (m.intent === 'skip') return false;
+            if (App._ingestHasBlockingIssues(m)) return false;
+            return true;
+          });
+
+          // Confirmation pass: any overwrite rows need explicit OK. This
+          // loop serializes the modal so the user confirms one at a time
+          // and can cancel mid-batch without losing the already-confirmed.
+          for (var c = 0; c < queue.length; c++) {
+            var m = queue[c];
+            if (m.intent === 'overwrite') {
+              var slug = App._ingestCurrentSlug(m);
+              var tier = App._ingestCurrentTier(m);
+              var existing = m.collision && m.collision.kind === 'corpus' ? m.collision.existingName : slug + '.md';
+              var ok = await App._ingestConfirmOverwrite(tier + '/' + existing);
+              if (!ok) {
+                // User cancelled → mark row as skipped so we don't silently
+                // drop it from the retry flow.
+                m.writeResult = { ok: false, kind: 'skipped' };
+                App._ingestRenderRowDynamicSlots(m);
+              }
+            }
+          }
+
+          // Write loop: serialized to preserve aria-live ordering and to
+          // keep failure handling simple. Each file is atomic via the
+          // existing FolderScanner._atomicWrite. Rows whose intent was
+          // overwrite-then-cancelled have already had writeResult set to
+          // kind='skipped' in the confirmation pass above; those are
+          // excluded from `writable` here.
+          var okCount = 0;
+          var failedCount = 0;
+          var skippedCount = 0;
+          var writable = queue.filter(function (x) {
+            return !(x.writeResult && x.writeResult.kind === 'skipped');
+          });
+          // Batch aria-live announcements for large batches so screen readers
+          // aren't spammed on a 200-section commit. Threshold: per-file for
+          // small batches (<10 rows — the cadence is useful and short), every
+          // ~10% of progress (and the first row) for larger batches. Failed
+          // writes always announce immediately regardless of batch size —
+          // those are the announcements the user would actually want to act
+          // on. [council rev 7 — a11y: reduce commit-announcement verbosity.]
+          var batchAnnounce = writable.length >= 10;
+          var announceStep = Math.max(1, Math.ceil(writable.length / 10));
+          var lastAnnounceIdx = -announceStep;
+          for (var i = 0; i < writable.length; i++) {
+            var row = writable[i];
+            if (!batchAnnounce || i - lastAnnounceIdx >= announceStep) {
+              App.announce(STRINGS.ingestWriteRowStart(i + 1, writable.length));
+              lastAnnounceIdx = i;
+            }
+            var res = await App._ingestWriteOne(row);
+            row.writeResult = res;
+            App._ingestRenderRowDynamicSlots(row);
+            if (res.ok) okCount++;
+            else if (res.kind === 'skipped') skippedCount++;
+            else {
+              failedCount++;
+              if (batchAnnounce) {
+                // Always announce failures immediately — they're actionable.
+                App.announce(STRINGS.ingestRowFailed(res.tier || '?', res.filename || '?', res.kind || '?'));
+              }
+            }
+          }
+
+          // Count cancelled-overwrite rows that never entered the write loop.
+          for (var k = 0; k < queue.length; k++) {
+            if (queue[k].writeResult && queue[k].writeResult.kind === 'skipped' && writable.indexOf(queue[k]) === -1) {
+              skippedCount++;
+            }
+          }
+
+          App._ingestIsWriting = false;
+          App._ingestUpdateCommitButton();
+          App.announce(STRINGS.ingestWriteComplete(okCount, failedCount, skippedCount));
+
+          // If any row failed with a revoked-handle kind, surface the recovery
+          // banner so the user knows how to re-establish access without
+          // having to discover the re-pick flow themselves.
+          var anyRevoked = writable.some(function (r) {
+            return r.writeResult && !r.writeResult.ok && r.writeResult.kind === STRINGS.ingestWriteErrorRevoked;
+          });
+          if (anyRevoked) App._ingestShowRevokedBanner();
+
+          // Offer _index.md regeneration as an explicit affordance (plan
+          // §"Post-commit. A link/button to trigger _index.md regeneration
+          // is surfaced; not auto-run").
+          if (okCount > 0) App._ingestShowRegenerateIndexButton();
+        },
+
+        _ingestWriteOne: async function (model) {
+          var slug = App._ingestCurrentSlug(model);
+          var tier = App._ingestCurrentTier(model);
+          if (slug === null) {
+            return { ok: false, kind: 'empty-slug', filename: '(unknown)', tier: tier };
+          }
+          var filename = slug + '.md';
+
+          // Compose the file content: frontmatter + body. Frontmatter gets
+          // the effective title + tier (user edits win over agent output),
+          // plus created/updated timestamps from the OS clock (never from
+          // an LLM, per data_schemas.md) and any other fields the agent
+          // emitted (tags, etc.).
+          var fm = Object.assign({}, model.section.frontmatter || {});
+          fm.title = App._ingestCurrentTitle(model);
+          fm.tier = tier;
+          var now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+          if (!fm.created) fm.created = now;
+          fm.updated = now;
+          if (!fm.tags) fm.tags = [];
+          var content = App._ingestSerializeNote(fm, model.section.body);
+
+          try {
+            var tierHandle = await App._dirHandle.getDirectoryHandle(tier, { create: true });
+            await FolderScanner._atomicWrite(tierHandle, filename, content);
+            return { ok: true, filename: filename, tier: tier };
+          } catch (e) {
+            var mapped = App._ingestMapWriteError(e);
+            return {
+              ok: false,
+              kind: mapped.kind,
+              filename: filename,
+              tier: tier,
+              rawName: e && e.name ? e.name : 'Error',
+            };
+          }
+        },
+
+        _ingestRetryRow: async function (model) {
+          if (App._ingestIsWriting) return;
+          App._ingestIsWriting = true;
+          App._ingestUpdateCommitButton();
+          App.announce(STRINGS.ingestWriteRowStart(1, 1));
+          var res = await App._ingestWriteOne(model);
+          model.writeResult = res;
+          App._ingestRenderRowDynamicSlots(model);
+          App._ingestIsWriting = false;
+          App._ingestUpdateCommitButton();
+          App.announce(
+            res.ok
+              ? STRINGS.ingestRowWritten(res.tier, res.filename)
+              : STRINGS.ingestRowFailed(res.tier || '?', res.filename || '?', res.kind || '?')
+          );
+          if (!res.ok && res.kind === STRINGS.ingestWriteErrorRevoked) {
+            App._ingestShowRevokedBanner();
+          }
+        },
+
+        _ingestMapWriteError: function (e) {
+          var name = e && e.name ? e.name : '';
+          if (name === 'NotAllowedError') return { kind: STRINGS.ingestWriteErrorPermDenied };
+          if (name === 'InvalidStateError' || name === 'NotFoundError') {
+            // NotFoundError on a dir handle typically means the handle is
+            // stale (folder moved/renamed) or permission was revoked.
+            return { kind: STRINGS.ingestWriteErrorRevoked };
+          }
+          if (name === 'QuotaExceededError') return { kind: STRINGS.ingestWriteErrorQuota };
+          if (name === 'TypeMismatchError') return { kind: STRINGS.ingestWriteErrorExists };
+          if (name === 'NotReadableError') return { kind: STRINGS.ingestWriteErrorIO };
+          return { kind: STRINGS.ingestWriteErrorIO };
+        },
+
+        _ingestSerializeNote: function (frontmatter, body) {
+          // Serialize a flat-YAML frontmatter block matching FrontmatterParser's
+          // reader. Quoted scalars only for strings containing : or starting
+          // with a YAML-special char; arrays use flow syntax. Trusts the
+          // caller to have validated control bytes beforehand.
+          var lines = ['---'];
+          var orderedKeys = ['title', 'tier', 'created', 'updated', 'tags'];
+          var seen = {};
+          for (var i = 0; i < orderedKeys.length; i++) {
+            var k = orderedKeys[i];
+            if (Object.prototype.hasOwnProperty.call(frontmatter, k)) {
+              lines.push(k + ': ' + App._ingestSerializeYamlValue(frontmatter[k]));
+              seen[k] = true;
+            }
+          }
+          var fmKeys = Object.keys(frontmatter);
+          for (var j = 0; j < fmKeys.length; j++) {
+            var fk = fmKeys[j];
+            if (seen[fk]) continue;
+            lines.push(fk + ': ' + App._ingestSerializeYamlValue(frontmatter[fk]));
+          }
+          lines.push('---');
+          lines.push('');
+          return lines.join('\n') + body + (body.endsWith('\n') ? '' : '\n');
+        },
+
+        _ingestSerializeYamlValue: function (v) {
+          if (Array.isArray(v)) {
+            return '[' + v.map(App._ingestSerializeYamlValue).join(', ') + ']';
+          }
+          if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+          if (v === null || v === undefined) return '';
+          var s = String(v);
+          // Always-single-line double-quoted form if the string contains ANY
+          // char that could break FrontmatterParser's line-based scan:
+          // newlines (would split the `key: value` line in two), CRs (same),
+          // a colon-space (would re-parse as a nested key), leading
+          // YAML-special chars, or `#` (inline comment marker).
+          //
+          // We escape \n and \r to literal \n / \r backslash-sequences
+          // inside the quoted string rather than emitting a block scalar.
+          // Block scalars are a YAML-spec feature but our FrontmatterParser
+          // is a flat line-addressable subset that does not interpret block
+          // scalar indicators (`|`, `>`). Emitting one would produce a file
+          // that reads as garbage on the next scan. Literal backslash-n is
+          // uglier but round-trips through the reader without data loss.
+          // [council rev 12 — bugs: serializer must not write malformed
+          // frontmatter when a title contains newlines.]
+          var needsQuoting = /^[\s'"[{&*!|>%@`]/.test(s) || /:\s/.test(s) || /#/.test(s) || /[\n\r]/.test(s);
+          if (needsQuoting) {
+            var escaped = s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            return '"' + escaped + '"';
+          }
+          return s;
+        },
+
+        _ingestConfirmOverwrite: function (targetPath) {
+          return new Promise(function (resolve) {
+            var dialog = document.getElementById('ingest-confirm-overwrite');
+            var title = document.getElementById('ingest-confirm-title');
+            var body = document.getElementById('ingest-confirm-body');
+            var yesBtn = document.getElementById('ingest-confirm-yes');
+            var noBtn = document.getElementById('ingest-confirm-no');
+            if (!dialog || !dialog.showModal) {
+              // Browser without <dialog> support — fall back to window.confirm.
+              // Not expected on modern Edge/Chrome but keeps the promise contract.
+              resolve(window.confirm(STRINGS.ingestConfirmOverwriteBody(targetPath)));
+              return;
+            }
+            title.textContent = STRINGS.ingestConfirmOverwriteTitle;
+            body.textContent = STRINGS.ingestConfirmOverwriteBody(targetPath);
+            yesBtn.textContent = STRINGS.ingestConfirmOverwriteYes;
+            noBtn.textContent = STRINGS.ingestConfirmOverwriteNo;
+
+            function cleanup(result) {
+              yesBtn.removeEventListener('click', onYes);
+              noBtn.removeEventListener('click', onNo);
+              dialog.removeEventListener('cancel', onCancel);
+              if (dialog.open) dialog.close();
+              resolve(result);
+            }
+            function onYes() {
+              cleanup(true);
+            }
+            function onNo() {
+              cleanup(false);
+            }
+            function onCancel(ev) {
+              ev.preventDefault();
+              cleanup(false);
+            }
+            yesBtn.addEventListener('click', onYes);
+            noBtn.addEventListener('click', onNo);
+            dialog.addEventListener('cancel', onCancel);
+            dialog.showModal();
+            // Focus "No" (the safe default) for keyboard accessibility.
+            noBtn.focus();
+          });
+        },
+
+        _ingestShowRevokedBanner: function () {
+          // Display a prominent recovery banner above the preview when any
+          // file-system call in the ingest flow fails with a revoked-handle
+          // kind. One click takes the user back to the landing screen to
+          // re-grant access; parsed rows and commit results are preserved
+          // in memory so they can resume after re-picking the folder.
+          // [council rev 12 — bugs: user-facing recovery path for revoked
+          // handles.]
+          var results = document.getElementById('ingest-results');
+          if (!results) return;
+          if (document.getElementById('ingest-revoked-banner')) return; // already visible
+
+          var banner = document.createElement('div');
+          banner.id = 'ingest-revoked-banner';
+          banner.className = 'ingest-revoked-banner';
+          banner.setAttribute('role', 'alert');
+
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestRevokedBannerTitle;
+          var p = document.createElement('p');
+          p.textContent = STRINGS.ingestRevokedBannerBody;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = STRINGS.ingestRevokedBannerButton;
+          btn.addEventListener('click', App._ingestReSelectFolder);
+
+          banner.appendChild(h);
+          banner.appendChild(p);
+          banner.appendChild(btn);
+          // Prepend so the banner lands ABOVE whatever error/warning/row
+          // content was already in the results mount.
+          if (results.firstChild) {
+            results.insertBefore(banner, results.firstChild);
+          } else {
+            results.appendChild(banner);
+          }
+        },
+
+        _ingestReSelectFolder: function () {
+          App._dirHandle = null;
+          App._isWritable = false;
+          App._ingestCorpusSnapshot = null;
+          App._ingestUpdateCommitButton();
+          document.getElementById('app').classList.add('hidden');
+          document.getElementById('landing').classList.remove('hidden');
+          var pickBtn = document.getElementById('btn-pick-folder');
+          if (pickBtn) pickBtn.focus();
+        },
+
+        _ingestShowRegenerateIndexButton: function () {
+          var results = document.getElementById('ingest-results');
+          if (!results) return;
+          if (document.getElementById('ingest-regen-index')) return; // already shown
+          var wrap = document.createElement('div');
+          wrap.className = 'ingest-regen-wrap';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = 'ingest-regen-index';
+          btn.textContent = STRINGS.ingestRegenIndex;
+          btn.addEventListener('click', App._ingestRegenerateIndex);
+          wrap.appendChild(btn);
+          results.appendChild(wrap);
+        },
+
+        _ingestIsRegenerating: false,
+        _ingestRegenerateIndex: async function () {
+          if (App._ingestIsRegenerating) return; // double-click guard
+          if (!App._isWritable || !App._dirHandle) {
+            App.announce(STRINGS.indexSkipped);
+            return;
+          }
+          App._ingestIsRegenerating = true;
+          var regenBtn = document.getElementById('ingest-regen-index');
+          if (regenBtn) regenBtn.disabled = true;
+          try {
+            // Refresh notes list so new writes are included.
+            var scanResult = await FolderScanner.scan(App._dirHandle);
+            if (scanResult && scanResult.notes) App._notes = scanResult.notes;
+            var indexContent = IndexRegenerator.generate(App._notes);
+            await FolderScanner._atomicWrite(App._dirHandle, '_index.md', indexContent);
+            App.announce(STRINGS.ingestRegenIndexDone);
+          } catch (e) {
+            // Route through the write-error differentiator so the announcement
+            // names the specific failure kind (permission denied / revoked /
+            // quota / io) instead of a generic "index regeneration failed."
+            // [council rev 9 — bugs: generic error reporting in regen.]
+            var mapped = App._ingestMapWriteError(e);
+            App.announce(STRINGS.ingestRegenIndexFail + ' (' + mapped.kind + ')');
+            // If the failure was handle-revoked, surface the recovery banner.
+            if (mapped.kind === STRINGS.ingestWriteErrorRevoked) {
+              App._ingestShowRevokedBanner();
+            }
+          } finally {
+            App._ingestIsRegenerating = false;
+            if (regenBtn) regenBtn.disabled = false;
+          }
+        },
+
+        _renderIngestStats: function (mount, result) {
+          if (!mount) return;
+          var parts = [];
+          if (result.stats) {
+            if (result.stats.bomStripped) parts.push(STRINGS.ingestStatsBom);
+            if (result.stats.lineEndingsNormalized) parts.push(STRINGS.ingestStatsLineEndings);
+            if (result.stats.dedented) parts.push(STRINGS.ingestStatsDedented);
+            if (result.stats.tooManySections) {
+              parts.push(STRINGS.ingestStatsTooMany(result.stats.totalSections, SectionDelimiterParser.MAX_SECTIONS));
+            }
+          }
+          mount.textContent = parts.join(' · ');
+        },
+
+        _renderIngestPreview: function (mount, result) {
+          var fatalErrors = (result.errors || []).filter(function (e) {
+            return e.fatal;
+          });
+          if (fatalErrors.length > 0) {
+            App._renderIngestErrorBox(mount, fatalErrors);
+            return;
+          }
+
+          if (result.stats && result.stats.zeroSections) {
+            App._renderIngestEmptyState(mount, STRINGS.ingestZeroSections);
+            return;
+          }
+
+          if ((result.warnings || []).length > 0) {
+            App._renderIngestWarningsBox(mount, result.warnings);
+          }
+
+          App._renderIngestSectionList(mount, result.sections || []);
+        },
+
+        _renderIngestErrorBox: function (mount, errors) {
+          var box = document.createElement('div');
+          box.className = 'ingest-errors';
+          box.setAttribute('role', 'alert');
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestErrorsHeading;
+          box.appendChild(h);
+          var ul = document.createElement('ul');
+          for (var i = 0; i < errors.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = STRINGS.ingestErrorLine(
+              errors[i].category,
+              errors[i].line || 0,
+              errors[i].column || 0,
+              errors[i].message || ''
+            );
+            ul.appendChild(li);
+          }
+          box.appendChild(ul);
+          mount.appendChild(box);
+        },
+
+        _renderIngestWarningsBox: function (mount, warnings) {
+          var box = document.createElement('div');
+          box.className = 'ingest-warnings';
+          box.setAttribute('role', 'status');
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestWarningsHeading;
+          box.appendChild(h);
+          var ul = document.createElement('ul');
+          for (var i = 0; i < warnings.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = STRINGS.ingestErrorLine(
+              warnings[i].category,
+              warnings[i].line || 0,
+              warnings[i].column || 0,
+              warnings[i].message || ''
+            );
+            ul.appendChild(li);
+          }
+          box.appendChild(ul);
+          mount.appendChild(box);
+        },
+
+        _renderIngestEmptyState: function (mount, text) {
+          var box = document.createElement('div');
+          box.className = 'ingest-empty-state';
+          box.textContent = text;
+          mount.appendChild(box);
+        },
+
+        // Row model: one per parsed section. Holds the editable title/tier,
+        // user-chosen intent (write/skip/rename/overwrite), derived collision
+        // state, and per-row write result. Stored as App._ingestRowModels so
+        // the commit flow can iterate them and the re-evaluation can update
+        // all rows on any single-row change.
+        _ingestRowModels: [],
+        _ingestCorpusSnapshot: null,
+        _ingestIsWriting: false,
+        _ingestIsParsing: false,
+        _ingestReEvaluateTimer: null,
+
+        // Debounced wrapper used by high-frequency input handlers (title/tier
+        // live edits). 120ms trails the user's typing by about one character
+        // at typical speeds, which is fast enough that the collision UI feels
+        // responsive but slow enough to avoid re-running the full group-by
+        // every keystroke on a 200-section batch. Intent changes and rename
+        // edits still call _ingestReEvaluateAllRows directly because they're
+        // deliberate single actions that should update immediately.
+        _ingestReEvaluateDebounced: function () {
+          if (App._ingestReEvaluateTimer) clearTimeout(App._ingestReEvaluateTimer);
+          App._ingestReEvaluateTimer = setTimeout(function () {
+            App._ingestReEvaluateTimer = null;
+            App._ingestReEvaluateAllRows();
+          }, 120);
+        },
+
+        _renderIngestSectionList: function (mount, sections) {
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestSectionsHeading;
+          mount.appendChild(h);
+
+          var list = document.createElement('div');
+          list.className = 'ingest-sections';
+
+          App._ingestRowModels = [];
+          for (var i = 0; i < sections.length; i++) {
+            var model = App._ingestBuildRowModel(sections[i], i);
+            App._ingestRowModels.push(model);
+            list.appendChild(App._renderIngestSectionRow(model, sections.length));
+          }
+          mount.appendChild(list);
+
+          // Initial evaluation — fills collision + intent slots now that all
+          // rows exist (intra-paste collisions need the full set in hand).
+          App._ingestReEvaluateAllRows();
+        },
+
+        _ingestBuildRowModel: function (section, index) {
+          var fmTitle =
+            section.frontmatter && typeof section.frontmatter.title === 'string' ? section.frontmatter.title : '';
+          var fmTier =
+            section.frontmatter && typeof section.frontmatter.tier === 'string' ? section.frontmatter.tier : 'warm';
+          if (fmTier !== 'bedrock' && fmTier !== 'warm' && fmTier !== 'cold') {
+            fmTier = 'warm';
+          }
+          return {
+            index: index,
+            section: section,
+            initialTitle: fmTitle,
+            initialTier: fmTier,
+            // DOM handles — filled by _renderIngestSectionRow.
+            titleInput: null,
+            tierSelect: null,
+            renameInput: null,
+            collisionSlot: null,
+            intentSlot: null,
+            renameSlot: null,
+            resultSlot: null,
+            mismatchSlot: null,
+            rowEl: null,
+            // Live state.
+            intent: 'write', // one of: 'write' | 'skip' | 'rename' | 'overwrite'
+            renameTitle: '', // only used when intent === 'rename'
+            collision: null, // null | { kind: 'corpus' | 'intra', existingName?, otherRowNum? }
+            writeResult: null, // null | { ok: true, filename, tier } | { ok: false, kind, filename, tier }
+          };
+        },
+
+        _ingestCurrentTitle: function (model) {
+          if (model.intent === 'rename' && model.renameInput) {
+            return model.renameInput.value;
+          }
+          return model.titleInput ? model.titleInput.value : model.initialTitle;
+        },
+
+        _ingestCurrentTier: function (model) {
+          return model.tierSelect ? model.tierSelect.value : model.initialTier;
+        },
+
+        _ingestCurrentSlug: function (model) {
+          return Slugger.slugify(App._ingestCurrentTitle(model));
+        },
+
+        _ingestHasBlockingIssues: function (model) {
+          // Returns true if the row cannot be written as-is. Skipped rows
+          // never block commit.
+          if (model.intent === 'skip') return false;
+          if (model.writeResult && model.writeResult.ok) return false;
+          // Parse-time per-section errors = blocking
+          if ((model.section.errors || []).length > 0) return true;
+          // Edited title that normalizes empty = blocking
+          if (App._ingestCurrentSlug(model) === null) return true;
+          // Unresolved collision = blocking (must pick rename or overwrite)
+          if (model.collision && model.intent === 'write') return true;
+          return false;
+        },
+
+        _renderIngestSectionRow: function (model, totalRows) {
+          var section = model.section;
+          var index = model.index;
+
+          var row = document.createElement('div');
+          row.className = 'ingest-row';
+          if ((section.errors || []).length > 0) row.classList.add('has-issues');
+          model.rowEl = row;
+
+          var head = document.createElement('div');
+          head.className = 'ingest-row-head';
+
+          // Title input
+          var titleLabel = document.createElement('label');
+          var titleId = 'ingest-row-title-' + index;
+          titleLabel.setAttribute('for', titleId);
+          titleLabel.appendChild(document.createTextNode(STRINGS.ingestRowTitleLabel));
+          var titleInput = document.createElement('input');
+          titleInput.type = 'text';
+          titleInput.id = titleId;
+          titleInput.value = model.initialTitle;
+          titleInput.setAttribute('placeholder', STRINGS.ingestEmptyTitle);
+          titleLabel.appendChild(titleInput);
+          model.titleInput = titleInput;
+          titleInput.addEventListener('input', App._ingestReEvaluateDebounced);
+
+          // Tier select
+          var tierLabel = document.createElement('label');
+          var tierId = 'ingest-row-tier-' + index;
+          tierLabel.setAttribute('for', tierId);
+          tierLabel.appendChild(document.createTextNode(STRINGS.ingestRowTierLabel));
+          var tierSelect = document.createElement('select');
+          tierSelect.id = tierId;
+          var tierOptions = [
+            { value: 'bedrock', label: STRINGS.ingestTierLabelBedrock },
+            { value: 'warm', label: STRINGS.ingestTierLabelWarm },
+            { value: 'cold', label: STRINGS.ingestTierLabelCold },
+          ];
+          for (var t = 0; t < tierOptions.length; t++) {
+            var opt = document.createElement('option');
+            opt.value = tierOptions[t].value;
+            opt.textContent = tierOptions[t].label;
+            if (tierOptions[t].value === model.initialTier) opt.selected = true;
+            tierSelect.appendChild(opt);
+          }
+          tierLabel.appendChild(tierSelect);
+          model.tierSelect = tierSelect;
+          tierSelect.addEventListener('change', App._ingestReEvaluateDebounced);
+
+          // Slug display (read-only, live-updated by evaluator)
+          var slugBlock = document.createElement('div');
+          var slugLabel = document.createElement('div');
+          slugLabel.style.fontSize = '0.75rem';
+          slugLabel.style.fontWeight = '600';
+          slugLabel.style.color = 'var(--color-text-muted)';
+          slugLabel.textContent = STRINGS.ingestRowSlugLabel;
+          var slugValue = document.createElement('div');
+          slugValue.className = 'ingest-row-slug';
+          slugValue.textContent = section.canonicalSlug || section.sentinelSlug;
+          slugBlock.appendChild(slugLabel);
+          slugBlock.appendChild(slugValue);
+          model.slugValueEl = slugValue;
+
+          // Expand toggle
+          var expandBtn = document.createElement('button');
+          expandBtn.type = 'button';
+          expandBtn.className = 'ingest-row-expand';
+          expandBtn.textContent = STRINGS.ingestRowExpand;
+          expandBtn.setAttribute('aria-expanded', 'false');
+
+          head.appendChild(titleLabel);
+          head.appendChild(tierLabel);
+          head.appendChild(slugBlock);
+          head.appendChild(expandBtn);
+          row.appendChild(head);
+
+          // Slug-mismatch banner (parse-time only; disappears if user edits title)
+          var mismatchSlot = document.createElement('div');
+          mismatchSlot.className = 'ingest-row-mismatch';
+          if (!(section.slugMismatch && section.canonicalSlug)) {
+            mismatchSlot.classList.add('hidden');
+          } else {
+            mismatchSlot.textContent = STRINGS.ingestSlugMismatch(
+              section.canonicalSlug,
+              section.slugMismatchReason || ''
+            );
+          }
+          row.appendChild(mismatchSlot);
+          model.mismatchSlot = mismatchSlot;
+
+          // Per-section issues (parse-time — static)
+          if ((section.errors || []).length > 0) {
+            var issues = document.createElement('div');
+            issues.className = 'ingest-row-issues';
+            var issuesH = document.createElement('div');
+            issuesH.textContent = STRINGS.ingestRowIssuesHeading;
+            issues.appendChild(issuesH);
+            var issuesUl = document.createElement('ul');
+            for (var k = 0; k < section.errors.length; k++) {
+              var ei = section.errors[k];
+              var ili = document.createElement('li');
+              ili.textContent = STRINGS.ingestErrorLine(ei.category, ei.line || 0, ei.column || 0, ei.message || '');
+              issuesUl.appendChild(ili);
+            }
+            issues.appendChild(issuesUl);
+            row.appendChild(issues);
+          }
+
+          // Dynamic slots — filled by _ingestReEvaluateAllRows
+          var collisionSlot = document.createElement('div');
+          collisionSlot.classList.add('hidden');
+          row.appendChild(collisionSlot);
+          model.collisionSlot = collisionSlot;
+
+          var intentSlot = document.createElement('div');
+          intentSlot.classList.add('hidden');
+          row.appendChild(intentSlot);
+          model.intentSlot = intentSlot;
+
+          var renameSlot = document.createElement('div');
+          renameSlot.classList.add('hidden');
+          row.appendChild(renameSlot);
+          model.renameSlot = renameSlot;
+
+          var resultSlot = document.createElement('div');
+          resultSlot.classList.add('hidden');
+          row.appendChild(resultSlot);
+          model.resultSlot = resultSlot;
+
+          // Collapsed body mount (rendered on expand)
+          var bodyMount = document.createElement('div');
+          bodyMount.className = 'ingest-row-body hidden';
+          bodyMount.setAttribute('aria-hidden', 'true');
+          row.appendChild(bodyMount);
+
+          var bodyRendered = false;
+          expandBtn.addEventListener('click', function () {
+            var isHidden = bodyMount.classList.contains('hidden');
+            if (isHidden && !bodyRendered) {
+              bodyMount.textContent = '';
+              if (section.body && section.body.length > 0) {
+                var frag = MarkdownParser.parse(section.body, {
+                  resolve: function () {
+                    return null;
+                  },
+                });
+                bodyMount.appendChild(frag);
+              } else {
+                var empty = document.createElement('em');
+                empty.textContent = STRINGS.ingestEmptyBody;
+                bodyMount.appendChild(empty);
+              }
+              bodyRendered = true;
+            }
+            bodyMount.classList.toggle('hidden', !isHidden);
+            bodyMount.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+            expandBtn.textContent = isHidden ? STRINGS.ingestRowCollapse : STRINGS.ingestRowExpand;
+            expandBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+          });
+
+          // totalRows is accepted for future use (e.g., row-count annotations in
+          // collision messages); currently unused but kept to keep the signature
+          // stable if we expand per-row rendering later.
+          void totalRows;
+          return row;
+        },
+
+        _ingestReEvaluateAllRows: function () {
+          var models = App._ingestRowModels;
+          if (!models || models.length === 0) return;
+
+          // First pass: recompute effective slug + detect intra-paste collisions.
+          // Group by (tier + slug). Any group with >1 row that's not skipped
+          // and has a non-null slug is intra-colliding.
+          var groups = {};
+          for (var i = 0; i < models.length; i++) {
+            var m = models[i];
+            if (m.writeResult && m.writeResult.ok) continue; // already written
+            if (m.intent === 'skip') continue;
+            var slug = App._ingestCurrentSlug(m);
+            if (slug === null) continue;
+            var tier = App._ingestCurrentTier(m);
+            var key = tier + '/' + slug;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(m);
+          }
+
+          // Second pass: assign collisions per row.
+          for (var j = 0; j < models.length; j++) {
+            var model = models[j];
+            if (model.writeResult && model.writeResult.ok) {
+              model.collision = null;
+              App._ingestRenderRowDynamicSlots(model);
+              continue;
+            }
+            var effSlug = App._ingestCurrentSlug(model);
+            var effTier = App._ingestCurrentTier(model);
+            // Update slug display live.
+            if (model.slugValueEl) {
+              model.slugValueEl.textContent = effSlug ? effSlug : STRINGS.ingestEmptySlugAfterEdit;
+            }
+            model.collision = null;
+
+            // Intra-paste collision: same group has another non-skipped row.
+            if (effSlug !== null && model.intent !== 'skip') {
+              var grp = groups[effTier + '/' + effSlug];
+              if (grp && grp.length > 1) {
+                var other = grp.find(function (x) {
+                  return x.index !== model.index;
+                });
+                if (other) {
+                  model.collision = { kind: 'intra', otherRowNum: other.index + 1 };
+                }
+              }
+            }
+
+            // Corpus collision (case-insensitive): only checked if no intra
+            // collision and the corpus snapshot exists.
+            if (!model.collision && effSlug !== null && model.intent !== 'skip') {
+              var snap = App._ingestCorpusSnapshot;
+              if (snap && snap[effTier]) {
+                var targetLower = (effSlug + '.md').toLowerCase();
+                for (var n = 0; n < snap[effTier].length; n++) {
+                  if (snap[effTier][n].toLowerCase() === targetLower) {
+                    model.collision = { kind: 'corpus', existingName: snap[effTier][n] };
+                    break;
+                  }
+                }
+              }
+            }
+
+            // If user had set intent to rename/overwrite but no collision now
+            // exists (e.g., they edited the title into uniqueness), reset to write.
+            if (!model.collision && (model.intent === 'rename' || model.intent === 'overwrite')) {
+              model.intent = 'write';
+            }
+
+            App._ingestRenderRowDynamicSlots(model);
+          }
+
+          App._ingestUpdateCommitButton();
+        },
+
+        _ingestRenderRowDynamicSlots: function (model) {
+          var writeDone = model.writeResult !== null;
+          var effSlug = App._ingestCurrentSlug(model);
+          var effTier = App._ingestCurrentTier(model);
+
+          // aria-invalid + aria-describedby on the title input so assistive
+          // tech announces the REASON the row is blocked (visual UX already
+          // shows it via the updated slug text + intent slot). [council
+          // rev 7 — accessibility: per-field validation feedback.]
+          if (model.titleInput) {
+            var titleBlocked =
+              !writeDone &&
+              model.intent !== 'skip' &&
+              (App._ingestCurrentSlug(model) === null || (model.section.errors || []).length > 0);
+            if (titleBlocked) {
+              model.titleInput.setAttribute('aria-invalid', 'true');
+              if (model.slugValueEl) {
+                var errId = 'ingest-row-slug-' + model.index;
+                model.slugValueEl.id = errId;
+                model.titleInput.setAttribute('aria-describedby', errId);
+              }
+            } else {
+              model.titleInput.removeAttribute('aria-invalid');
+              model.titleInput.removeAttribute('aria-describedby');
+            }
+          }
+
+          // Collision slot
+          if (writeDone || !model.collision) {
+            model.collisionSlot.classList.add('hidden');
+            model.collisionSlot.textContent = '';
+          } else {
+            model.collisionSlot.classList.remove('hidden');
+            model.collisionSlot.className =
+              'ingest-row-collision ' + (model.collision.kind === 'corpus' ? 'corpus' : 'intra');
+            model.collisionSlot.textContent =
+              model.collision.kind === 'corpus'
+                ? STRINGS.ingestCollisionCorpus(model.collision.existingName)
+                : STRINGS.ingestCollisionIntra(model.collision.otherRowNum);
+          }
+
+          // Intent slot — only visible when there's a collision or result is pending
+          // and the row has blocking issues. For clean rows we hide it (write is default).
+          if (writeDone) {
+            model.intentSlot.classList.add('hidden');
+            model.intentSlot.textContent = '';
+          } else if (model.collision) {
+            App._ingestRenderIntentSlot(model);
+          } else if (effSlug === null && model.intent !== 'skip') {
+            // Edited title → empty slug. Offer Skip (the only valid option).
+            App._ingestRenderIntentSlot(model, /*forceSkipOnly=*/ true);
+          } else {
+            model.intentSlot.classList.add('hidden');
+            model.intentSlot.textContent = '';
+          }
+
+          // Rename slot — only when intent === 'rename'
+          if (!writeDone && model.intent === 'rename') {
+            App._ingestRenderRenameSlot(model);
+          } else {
+            model.renameSlot.classList.add('hidden');
+            model.renameSlot.textContent = '';
+            model.renameInput = null;
+          }
+
+          // Result slot — shown post-write
+          if (writeDone) {
+            App._ingestRenderResultSlot(model);
+          } else {
+            model.resultSlot.classList.add('hidden');
+            model.resultSlot.textContent = '';
+          }
+
+          // Mismatch banner — hide if user has edited the title (no longer meaningful)
+          if (model.mismatchSlot && !model.mismatchSlot.classList.contains('hidden')) {
+            var edited = model.titleInput && model.titleInput.value !== model.initialTitle;
+            if (edited) model.mismatchSlot.classList.add('hidden');
+          }
+
+          // Row outline color update
+          if (model.collision || App._ingestHasBlockingIssues(model)) {
+            model.rowEl.classList.add('has-issues');
+          } else {
+            model.rowEl.classList.remove('has-issues');
+          }
+
+          // Suppress unused-binding warning (effTier is computed but only
+          // referenced via the collision evaluator above).
+          void effTier;
+        },
+
+        _ingestRenderIntentSlot: function (model, forceSkipOnly) {
+          model.intentSlot.classList.remove('hidden');
+          model.intentSlot.className = 'ingest-row-intent';
+          model.intentSlot.textContent = '';
+
+          var legend = document.createElement('span');
+          legend.textContent = STRINGS.ingestIntentLegend;
+          legend.style.fontWeight = '600';
+          model.intentSlot.appendChild(legend);
+
+          var options = forceSkipOnly
+            ? [{ value: 'skip', label: STRINGS.ingestIntentSkip }]
+            : [
+                { value: 'write', label: STRINGS.ingestIntentWrite },
+                { value: 'rename', label: STRINGS.ingestIntentRename },
+                { value: 'overwrite', label: STRINGS.ingestIntentOverwrite },
+                { value: 'skip', label: STRINGS.ingestIntentSkip },
+              ];
+
+          // If a collision exists and intent is still 'write', the row is
+          // blocked; don't preselect 'write' — instead show none selected so
+          // user must make a choice.
+          for (var i = 0; i < options.length; i++) {
+            var label = document.createElement('label');
+            var radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'ingest-intent-' + model.index;
+            radio.value = options[i].value;
+            if (model.intent === options[i].value) radio.checked = true;
+            // closure capture
+            (function (valueCopy) {
+              radio.addEventListener('change', function () {
+                var prevIntent = model.intent;
+                model.intent = valueCopy;
+                // When the user transitions INTO 'rename' from another intent,
+                // re-seed the rename field from the current main title so the
+                // rename input doesn't show stale text from a prior rename
+                // attempt. [council rev 8 — bugs: rename-input state staleness.]
+                if (prevIntent !== 'rename' && valueCopy === 'rename' && model.titleInput) {
+                  model.renameTitle = model.titleInput.value;
+                }
+                App._ingestReEvaluateAllRows();
+              });
+            })(options[i].value);
+            label.appendChild(radio);
+            label.appendChild(document.createTextNode(' ' + options[i].label));
+            model.intentSlot.appendChild(label);
+          }
+        },
+
+        _ingestRenderRenameSlot: function (model) {
+          model.renameSlot.classList.remove('hidden');
+          model.renameSlot.className = 'ingest-row-rename';
+          model.renameSlot.textContent = '';
+
+          var label = document.createElement('label');
+          var renameId = 'ingest-rename-' + model.index;
+          label.setAttribute('for', renameId);
+          label.textContent = 'New title:';
+          label.style.fontWeight = '600';
+
+          var input = document.createElement('input');
+          input.type = 'text';
+          input.id = renameId;
+          // Prefer the user's in-progress rename text if they've typed any;
+          // otherwise seed from the current main title so the field shows a
+          // sensible starting point after an intent-change re-seed above.
+          input.value = model.renameTitle || model.titleInput.value;
+          if (!model.renameTitle) model.renameTitle = input.value;
+          input.setAttribute('aria-describedby', 'ingest-rename-slug-' + model.index);
+
+          var slugPreview = document.createElement('span');
+          slugPreview.className = 'ingest-row-rename-slug';
+          slugPreview.id = 'ingest-rename-slug-' + model.index;
+
+          function updatePreview() {
+            var s = Slugger.slugify(input.value);
+            slugPreview.textContent = s ? '→ ' + s + '.md' : '→ (empty slug)';
+          }
+          updatePreview();
+
+          input.addEventListener('input', function () {
+            model.renameTitle = input.value;
+            updatePreview();
+            // The rename input shadows the title for slug derivation; trigger
+            // a full re-eval so collision state updates live.
+            App._ingestReEvaluateAllRows();
+          });
+
+          model.renameSlot.appendChild(label);
+          model.renameSlot.appendChild(input);
+          model.renameSlot.appendChild(slugPreview);
+          model.renameInput = input;
+        },
+
+        _ingestRenderResultSlot: function (model) {
+          model.resultSlot.className = 'ingest-row-result';
+          model.resultSlot.textContent = '';
+
+          if (!model.writeResult) {
+            model.resultSlot.classList.add('hidden');
+            return;
+          }
+          model.resultSlot.classList.remove('hidden');
+
+          if (model.writeResult.ok) {
+            model.resultSlot.classList.add('ok');
+            var icon = document.createElement('span');
+            icon.className = 'ingest-result-icon';
+            icon.textContent = '✓';
+            var msg = document.createElement('span');
+            msg.textContent = STRINGS.ingestRowWritten(model.writeResult.tier, model.writeResult.filename);
+            model.resultSlot.appendChild(icon);
+            model.resultSlot.appendChild(msg);
+          } else if (model.writeResult.kind === 'skipped') {
+            model.resultSlot.classList.add('skipped');
+            var sIcon = document.createElement('span');
+            sIcon.className = 'ingest-result-icon';
+            sIcon.textContent = '∅';
+            var sMsg = document.createElement('span');
+            sMsg.textContent = STRINGS.ingestRowSkipped;
+            model.resultSlot.appendChild(sIcon);
+            model.resultSlot.appendChild(sMsg);
+          } else {
+            model.resultSlot.classList.add('failed');
+            var fIcon = document.createElement('span');
+            fIcon.className = 'ingest-result-icon';
+            fIcon.textContent = '✗';
+            var fMsg = document.createElement('span');
+            fMsg.textContent = STRINGS.ingestRowFailed(
+              model.writeResult.tier,
+              model.writeResult.filename,
+              model.writeResult.kind
+            );
+            var retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.textContent = STRINGS.ingestRowRetry;
+            retryBtn.addEventListener('click', function () {
+              App._ingestRetryRow(model);
+            });
+            model.resultSlot.appendChild(fIcon);
+            model.resultSlot.appendChild(fMsg);
+            model.resultSlot.appendChild(retryBtn);
+          }
+        },
+
+        _ingestUpdateCommitButton: function () {
+          var btn = document.getElementById('ingest-commit');
+          if (!btn) return;
+          var models = App._ingestRowModels || [];
+
+          if (App._ingestIsWriting) {
+            btn.disabled = true;
+            btn.textContent = STRINGS.ingestCommitWriting;
+            btn.setAttribute('aria-label', STRINGS.ingestCommitWriting);
+            btn.removeAttribute('title');
+            return;
+          }
+
+          if (!App._isWritable) {
+            btn.disabled = true;
+            btn.textContent = STRINGS.ingestCommitPending;
+            btn.setAttribute('title', STRINGS.ingestReadOnlyMode);
+            btn.setAttribute('aria-label', STRINGS.ingestReadOnlyMode);
+            return;
+          }
+
+          // Writable rows: not already-succeeded, not intent='skip', not blocked.
+          // Previously-failed rows are writable (bulk-retry is built into
+          // the same Commit click per plan §"Retry all failed").
+          var writable = models.filter(function (m) {
+            if (m.writeResult && m.writeResult.ok) return false;
+            if (m.intent === 'skip') return false;
+            if (App._ingestHasBlockingIssues(m)) return false;
+            return true;
+          });
+          var blocked = models.filter(function (m) {
+            if (m.writeResult && m.writeResult.ok) return false;
+            if (m.intent === 'skip') return false;
+            return App._ingestHasBlockingIssues(m);
+          });
+
+          if (writable.length === 0) {
+            btn.disabled = true;
+            if (blocked.length > 0) {
+              btn.textContent = STRINGS.ingestCommitBlockedTitle(blocked.length);
+              btn.setAttribute('title', STRINGS.ingestCommitBlockedTitle(blocked.length));
+              btn.setAttribute('aria-label', STRINGS.ingestCommitBlockedTitle(blocked.length));
+            } else {
+              btn.textContent = STRINGS.ingestCommitNoop;
+              btn.setAttribute('title', STRINGS.ingestCommitNoop);
+              btn.setAttribute('aria-label', STRINGS.ingestCommitNoop);
+            }
+            return;
+          }
+
+          btn.disabled = false;
+          btn.textContent = STRINGS.ingestCommitReady(writable.length);
+          if (blocked.length > 0) {
+            btn.setAttribute('title', STRINGS.ingestCommitBlockedTitle(blocked.length));
+          } else {
+            btn.removeAttribute('title');
+          }
+          btn.setAttribute('aria-label', STRINGS.ingestCommitReady(writable.length));
         },
 
         // ── SRS Review mode ─────────────────────────

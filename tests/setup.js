@@ -53,8 +53,9 @@ scriptContent = scriptContent.replace(constRegex, (match, name) => {
 // Verify key globals are available
 const requiredGlobals = [
   'FrontmatterParser', 'MarkdownParser', 'WikiLinkResolver',
-  'IndexRegenerator', 'BacklinkGraph', 'SRSCardParser',
+  'IndexRegenerator', 'BacklinkGraph', 'FolderScanner', 'SRSCardParser',
   'SM2Scheduler', 'SRSCardWriter', 'ReviewQueueBuilder', 'STRINGS',
+  'Slugger', 'SectionDelimiterParser', 'App',
 ];
 
 for (const name of requiredGlobals) {

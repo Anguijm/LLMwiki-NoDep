@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Dev tooling for LLMwiki-NoDep. Zero runtime dependencies.",
   "scripts": {
-    "lint": "eslint index.html",
-    "lint:fix": "eslint index.html --fix",
+    "lint": "eslint index.html tests/",
+    "lint:fix": "eslint index.html tests/ --fix",
     "format": "prettier --write index.html",
     "format:check": "prettier --check index.html",
     "test": "vitest run",
