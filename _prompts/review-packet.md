@@ -2,6 +2,7 @@
 purpose: Compile a targeted refresher on a named topic from a pasted subset of your personal reference corpus. Output is a single markdown review packet, not a set of new notes or SRS cards.
 inputs: A named topic or review scope. A pasted subset of relevant notes (typically a handful of /warm/ notes). Optional list of existing SRS card questions for the topic.
 outputs: One markdown review packet: quick-reference summary, worked examples, likely question patterns, common pitfalls, self-test questions.
+mode: chat
 human_turn_budget: 2
 version: 1
 ---

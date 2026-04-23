@@ -2,6 +2,7 @@
 purpose: Normalize a pasted source (PDF text, procedure, manual excerpt, regulation, reference doc) into a single linked markdown note with LLMwiki-NoDep frontmatter, written in plain language for a generalist reader of a personal reference corpus.
 inputs: One pasted source document. One chosen tier (bedrock | warm | cold — default warm). Optional list of existing note titles from /_index.md for link-injection.
 outputs: A single markdown file content block with valid frontmatter per /docs/data_schemas.md, ready for the human to save into the chosen tier folder.
+mode: chat
 human_turn_budget: 2
 version: 1
 ---

@@ -2,6 +2,7 @@
 purpose: Generate one or more SRS cards from a note, each as standalone YAML matching the per-card schema in /docs/data_schemas.md. Output is YAML for SEPARATE files under /srs/ — NOT CSV rows and NOT a single consolidated file.
 inputs: One note body (markdown with frontmatter).
 outputs: One or more YAML blocks, each delimited, each ready to save as a separate /srs/<slug>.yaml file.
+mode: chat
 human_turn_budget: 1
 version: 1
 ---
