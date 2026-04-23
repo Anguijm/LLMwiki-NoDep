@@ -90,7 +90,7 @@ Write tests (once the dev test runner is wired up) for:
 
 - The inline markdown parser (escape-by-default coverage for every token type).
 - The `[[wiki link]]` resolver (path-traversal guards, missing-target behavior).
-- The CSV reader / writer for `srs.csv` (CSV-injection guards, round-trip fidelity).
+- The per-card YAML reader / writer for `/srs/*.yaml` (atomic write-to-temp-and-rename, schema-validation on read, handle-revoked error path).
 - The SM-2 scheduler (boundary cases: first review, lapse, ease floor/ceiling).
 - The frontmatter parser.
 
@@ -106,8 +106,8 @@ Manual tests are required in addition, because unit tests can't catch File Syste
    - Add a markdown note under the appropriate tier folder (`bedrock/`, `warm/`, `cold/`).
    - Link it from another note with `[[wiki-link syntax]]`.
    - Confirm the backlink appears in the target note's backlinks panel.
-   - If you touched the SRS flow: start a review session, rate a card, confirm `srs.csv` is updated on disk.
-4. Spot-check one edge case for the feature you touched (empty folder, a note with no frontmatter, a wiki link to a non-existent target, a CSV row with a formula-leading cell, etc.).
+   - If you touched the SRS flow: start a review session, rate a card, confirm the corresponding `/srs/<id>.yaml` card is updated on disk.
+4. Spot-check one edge case for the feature you touched (empty folder, a note with no frontmatter, a wiki link to a non-existent target, an SRS card with a missing required field, etc.).
 5. Check `console.log` / `console.error` — no PII, no file contents, no API keys.
 
 ---
