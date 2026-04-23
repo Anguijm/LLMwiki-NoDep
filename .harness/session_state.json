@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 + council-anchor infra merged; M3 (chunked ingest) in progress on branch feat/phase-3-m3-chunked-ingest.",
-  "focus_area": "phase-3-m3-chunked-ingest-plan-pr",
+  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 + council-anchor infra merged; M3 (chunked ingest) in progress on branch feat/phase-3-m3-chunked-ingest. Plan at rev 5 (PR #11 council round 1 response).",
+  "focus_area": "phase-3-m3-chunked-ingest-plan-rev5",
   "approval_state": "plan-pending-council",
   "last_council": {
-    "source": "PR #9 round 1 (override-merged); council-infra anchor shipped in PR #10",
-    "decision": "Revise (overridden — hallucinated critique); anchor fix merged afterward",
-    "scores": { "accessibility": 6, "architecture": 7, "bugs": 5, "cost": 10, "product": 7, "security": 10 },
-    "run_at": "2026-04-23T01:29:39Z"
+    "source": "PR #11 round 1",
+    "decision": "Revise (accurate — no stack hallucination; 3 genuine must-dos / nice-to-have accepted, ~11 items already covered and cross-referenced in plan appendix)",
+    "scores": { "accessibility": 6, "architecture": 9, "bugs": 6, "cost": 10, "product": 10, "security": 10 },
+    "run_at": "2026-04-23T02:35:43Z"
   },
   "last_commit": {
     "hash": "a69671a",
@@ -18,5 +18,5 @@
     "committed_at": "2026-04-23T02:00:00+00:00",
     "files_changed": 0
   },
-  "notes": "M3 PR opens with just the plan Status-block bump; body unchanged per the multi-PR contract. First council run with the repo-context anchor live on a mixed code + prose diff — monitoring whether hallucination frequency drops relative to PRs #8 and #9. If council returns accurate critique, the anchor is validated; if it hallucinates again, escalate to persona-file tuning per the IMPROVE note in learnings.md."
+  "notes": "Council round 1 on PR #11 returned Revise with NO stack hallucination — all cited files (`.eslintrc.cjs`, `package.json`, `index.html`, `tests/markdown-parser.test.js`, `tests/srs.test.js`) are real. Anchor validated on structural grounding. New failure mode: shallow read of plan body relative to diff — ~11 of ~14 flagged concerns were already specified in the plan. Rev 5 response: 3 accepted items (explicit error-log redaction, XSS-split-across-boundaries Vitest case, optional mixed-XSS fuzz suite) + an anti-relitigation appendix at end of active_plan.md cross-referencing line numbers for already-covered items. Awaiting council round 2 on rev 5 push."
 }
