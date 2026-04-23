@@ -1090,6 +1090,42 @@
         border-color: var(--color-danger);
       }
 
+      .ingest-revoked-banner {
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius);
+        background: var(--color-danger-bg);
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+        margin-bottom: 1rem;
+      }
+
+      .ingest-revoked-banner h3 {
+        margin-bottom: 0.4rem;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .ingest-revoked-banner p {
+        margin-bottom: 0.75rem;
+        color: var(--color-text);
+        font-size: 0.9rem;
+      }
+
+      .ingest-revoked-banner button {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        background: var(--color-primary);
+        color: #fff;
+        border: 1px solid var(--color-primary);
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .ingest-revoked-banner button:hover {
+        background: var(--color-primary-hover);
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .ingest-row,
         .ingest-row-body {
@@ -1387,6 +1423,10 @@
         ingestRegenIndexFail: 'Index regeneration failed \u2014 check folder permissions.',
         ingestReadOnlyMode:
           'Drag-drop folders are read-only. Ingest requires a picked folder (File System Access API). Use "Choose wiki folder" on the landing screen.',
+        ingestRevokedBannerTitle: 'Folder access was revoked',
+        ingestRevokedBannerBody:
+          'The browser or operating system dropped access to this folder — likely because the device slept, the folder was moved, or permissions changed. Re-select the folder to continue. The parsed sections in the preview are preserved.',
+        ingestRevokedBannerButton: 'Re-select folder',
       };
 
       // ══════════════════════════════════════════════
@@ -4194,7 +4234,11 @@
               } catch (e) {
                 App._ingestCorpusSnapshot = null;
                 App._ingestReEvaluateAllRows();
-                App.announce(STRINGS.ingestPreScanFailed(App._ingestMapWriteError(e).kind));
+                var mappedScan = App._ingestMapWriteError(e);
+                App.announce(STRINGS.ingestPreScanFailed(mappedScan.kind));
+                if (mappedScan.kind === STRINGS.ingestWriteErrorRevoked) {
+                  App._ingestShowRevokedBanner();
+                }
               }
             } else {
               App._ingestCorpusSnapshot = null;
@@ -4239,6 +4283,9 @@
             App._ingestIsWriting = false;
             var mapped = App._ingestMapWriteError(e);
             App.announce(STRINGS.ingestPreScanFailed(mapped.kind));
+            if (mapped.kind === STRINGS.ingestWriteErrorRevoked) {
+              App._ingestShowRevokedBanner();
+            }
             App._ingestUpdateCommitButton();
             return;
           }
@@ -4341,6 +4388,14 @@
           App._ingestUpdateCommitButton();
           App.announce(STRINGS.ingestWriteComplete(okCount, failedCount, skippedCount));
 
+          // If any row failed with a revoked-handle kind, surface the recovery
+          // banner so the user knows how to re-establish access without
+          // having to discover the re-pick flow themselves.
+          var anyRevoked = writable.some(function (r) {
+            return r.writeResult && !r.writeResult.ok && r.writeResult.kind === STRINGS.ingestWriteErrorRevoked;
+          });
+          if (anyRevoked) App._ingestShowRevokedBanner();
+
           // Offer _index.md regeneration as an explicit affordance (plan
           // §"Post-commit. A link/button to trigger _index.md regeneration
           // is surfaced; not auto-run").
@@ -4400,6 +4455,9 @@
               ? STRINGS.ingestRowWritten(res.tier, res.filename)
               : STRINGS.ingestRowFailed(res.tier || '?', res.filename || '?', res.kind || '?')
           );
+          if (!res.ok && res.kind === STRINGS.ingestWriteErrorRevoked) {
+            App._ingestShowRevokedBanner();
+          }
         },
 
         _ingestMapWriteError: function (e) {
@@ -4449,9 +4507,25 @@
           if (typeof v === 'number' || typeof v === 'boolean') return String(v);
           if (v === null || v === undefined) return '';
           var s = String(v);
-          // Quote if starts with YAML-special or contains a colon-space
-          if (/^[\s'"[{&*!|>%@`]/.test(s) || /:\s/.test(s) || /#/.test(s)) {
-            return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+          // Always-single-line double-quoted form if the string contains ANY
+          // char that could break FrontmatterParser's line-based scan:
+          // newlines (would split the `key: value` line in two), CRs (same),
+          // a colon-space (would re-parse as a nested key), leading
+          // YAML-special chars, or `#` (inline comment marker).
+          //
+          // We escape \n and \r to literal \n / \r backslash-sequences
+          // inside the quoted string rather than emitting a block scalar.
+          // Block scalars are a YAML-spec feature but our FrontmatterParser
+          // is a flat line-addressable subset that does not interpret block
+          // scalar indicators (`|`, `>`). Emitting one would produce a file
+          // that reads as garbage on the next scan. Literal backslash-n is
+          // uglier but round-trips through the reader without data loss.
+          // [council rev 12 — bugs: serializer must not write malformed
+          // frontmatter when a title contains newlines.]
+          var needsQuoting = /^[\s'"[{&*!|>%@`]/.test(s) || /:\s/.test(s) || /#/.test(s) || /[\n\r]/.test(s);
+          if (needsQuoting) {
+            var escaped = s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            return '"' + escaped + '"';
           }
           return s;
         },
@@ -4500,6 +4574,55 @@
           });
         },
 
+        _ingestShowRevokedBanner: function () {
+          // Display a prominent recovery banner above the preview when any
+          // file-system call in the ingest flow fails with a revoked-handle
+          // kind. One click takes the user back to the landing screen to
+          // re-grant access; parsed rows and commit results are preserved
+          // in memory so they can resume after re-picking the folder.
+          // [council rev 12 — bugs: user-facing recovery path for revoked
+          // handles.]
+          var results = document.getElementById('ingest-results');
+          if (!results) return;
+          if (document.getElementById('ingest-revoked-banner')) return; // already visible
+
+          var banner = document.createElement('div');
+          banner.id = 'ingest-revoked-banner';
+          banner.className = 'ingest-revoked-banner';
+          banner.setAttribute('role', 'alert');
+
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestRevokedBannerTitle;
+          var p = document.createElement('p');
+          p.textContent = STRINGS.ingestRevokedBannerBody;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = STRINGS.ingestRevokedBannerButton;
+          btn.addEventListener('click', App._ingestReSelectFolder);
+
+          banner.appendChild(h);
+          banner.appendChild(p);
+          banner.appendChild(btn);
+          // Prepend so the banner lands ABOVE whatever error/warning/row
+          // content was already in the results mount.
+          if (results.firstChild) {
+            results.insertBefore(banner, results.firstChild);
+          } else {
+            results.appendChild(banner);
+          }
+        },
+
+        _ingestReSelectFolder: function () {
+          App._dirHandle = null;
+          App._isWritable = false;
+          App._ingestCorpusSnapshot = null;
+          App._ingestUpdateCommitButton();
+          document.getElementById('app').classList.add('hidden');
+          document.getElementById('landing').classList.remove('hidden');
+          var pickBtn = document.getElementById('btn-pick-folder');
+          if (pickBtn) pickBtn.focus();
+        },
+
         _ingestShowRegenerateIndexButton: function () {
           var results = document.getElementById('ingest-results');
           if (!results) return;
@@ -4515,11 +4638,16 @@
           results.appendChild(wrap);
         },
 
+        _ingestIsRegenerating: false,
         _ingestRegenerateIndex: async function () {
+          if (App._ingestIsRegenerating) return; // double-click guard
           if (!App._isWritable || !App._dirHandle) {
             App.announce(STRINGS.indexSkipped);
             return;
           }
+          App._ingestIsRegenerating = true;
+          var regenBtn = document.getElementById('ingest-regen-index');
+          if (regenBtn) regenBtn.disabled = true;
           try {
             // Refresh notes list so new writes are included.
             var scanResult = await FolderScanner.scan(App._dirHandle);
@@ -4534,6 +4662,13 @@
             // [council rev 9 — bugs: generic error reporting in regen.]
             var mapped = App._ingestMapWriteError(e);
             App.announce(STRINGS.ingestRegenIndexFail + ' (' + mapped.kind + ')');
+            // If the failure was handle-revoked, surface the recovery banner.
+            if (mapped.kind === STRINGS.ingestWriteErrorRevoked) {
+              App._ingestShowRevokedBanner();
+            }
+          } finally {
+            App._ingestIsRegenerating = false;
+            if (regenBtn) regenBtn.disabled = false;
           }
         },
 

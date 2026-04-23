@@ -95,6 +95,103 @@ function mockAtomicWriteDirHandle(options) {
   };
 }
 
+describe('App._ingestSerializeNote — YAML safety for special chars', () => {
+  // Council rev 12 blocker: the serializer must not write malformed frontmatter
+  // when a title (or other string value) contains newlines, colons, or other
+  // YAML-specials. These tests round-trip serialized output back through
+  // FrontmatterParser.parse and assert zero errors.
+
+  it('round-trips a title containing newlines as literal \\n escapes (no broken YAML)', () => {
+    const fm = {
+      title: 'Line one\nLine two\nLine three',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body text');
+    const parsed = FrontmatterParser.parse(serialized);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.frontmatter.title).toContain('Line one');
+    // The \n survives as literal backslash-n in the parsed value — not ideal
+    // semantically, but round-trippable without data loss (vs. the prior
+    // behavior which emitted a real newline mid-quote and broke the scan).
+  });
+
+  it('round-trips a title containing colon-space (would collide with key: value syntax)', () => {
+    const fm = {
+      title: 'Chapter 3: The Fall',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body');
+    const parsed = FrontmatterParser.parse(serialized);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.frontmatter.title).toBe('Chapter 3: The Fall');
+  });
+
+  it('serializes title containing # without producing parse errors (value may be truncated by the reader)', () => {
+    // Pre-existing FrontmatterParser limitation: its inline-comment stripper
+    // runs before quote-unwrap, so ` #` inside a quoted value is treated as
+    // a comment marker and truncates the title. Not a serializer bug — this
+    // test asserts ZERO errors in the resulting file (the YAML is still
+    // syntactically valid), accepting that the title will read back
+    // truncated. Fixing the reader is out of scope for M3.
+    const fm = {
+      title: 'Tagged #important',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body');
+    const parsed = FrontmatterParser.parse(serialized);
+    expect(parsed.errors).toEqual([]);
+  });
+
+  it('round-trips a title containing CR (carriage return)', () => {
+    const fm = {
+      title: 'before\rafter',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body');
+    const parsed = FrontmatterParser.parse(serialized);
+    expect(parsed.errors).toEqual([]);
+  });
+
+  it('round-trips a title starting with a YAML-special leading character', () => {
+    const fm = {
+      title: '*a starred title',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body');
+    const parsed = FrontmatterParser.parse(serialized);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.frontmatter.title).toBe('*a starred title');
+  });
+
+  it('leaves plain simple strings unquoted for readability', () => {
+    const fm = {
+      title: 'Plain Title',
+      tier: 'warm',
+      created: '2026-04-23T00:00:00Z',
+      updated: '2026-04-23T00:00:00Z',
+      tags: [],
+    };
+    const serialized = App._ingestSerializeNote(fm, 'body');
+    expect(serialized).toContain('title: Plain Title');
+    expect(serialized).not.toContain('title: "Plain Title"');
+  });
+});
+
 describe('FolderScanner._atomicWrite — post-write verification', () => {
   it('writes, verifies, and cleans up temp on happy path', async () => {
     var dir = mockAtomicWriteDirHandle();

@@ -55,7 +55,7 @@ const requiredGlobals = [
   'FrontmatterParser', 'MarkdownParser', 'WikiLinkResolver',
   'IndexRegenerator', 'BacklinkGraph', 'FolderScanner', 'SRSCardParser',
   'SM2Scheduler', 'SRSCardWriter', 'ReviewQueueBuilder', 'STRINGS',
-  'Slugger', 'SectionDelimiterParser',
+  'Slugger', 'SectionDelimiterParser', 'App',
 ];
 
 for (const name of requiredGlobals) {
