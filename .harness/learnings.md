@@ -84,3 +84,80 @@
   PII in Power Automate run history, missing stale-write detection.
 - Lowest-value rounds: repeated Bugs findings on Power Automate
   documentation edge cases (pagination, conflict-file filter specificity).
+
+## 2026-04-22 — Phase 3 Milestone 1: personal corpus reframe (PR #7)
+
+### KEEP
+- Plan-first discipline held through a product-persona veto. Council
+  round 1 flagged the user's "our corpus" / team-use framing as an
+  anti-scope violation (Product score 2, single blocker). No code was
+  written; the plan was revised in place. Five council rounds later
+  (4 on the plan, 1 on the implementation diff) converged to
+  10-across-the-board with zero rework. Up-front cost paid in full.
+- Multi-PR milestones in one active_plan.md is a clean pattern: the
+  plan is the contract, each PR updates the status block without
+  rewriting the body. Avoids three separate plan PRs fighting for
+  council capacity on the same arc.
+- When a council persona blocks on scope, surface 2–3 concrete paths
+  to the human (accept narrower scope / change persona / override
+  council) rather than picking for them. The human has final say on
+  product direction; the agent's job is to present choices, not make
+  them.
+- A parser-security pushback can produce a SIMPLER spec, not a more
+  complex one. Round 1 Bugs persona flagged quote-escaping in the
+  delimiter's `title="..."` attribute; rev 2 moved metadata into
+  per-section YAML frontmatter and reduced the sentinel to a
+  slug-only marker. Whole class of edge cases dissolved via structural
+  simplification rather than added validation.
+
+### IMPROVE
+- When the user's direction sounds like it might cross a known
+  anti-scope, briefly cite the anti-scope to the user BEFORE writing
+  the plan, not after. "Our corpus" was ambiguous enough that round 1
+  could have been avoided with a one-line pre-flight: "I read `our` as
+  team — Product anti-scope is single-user-only; do you mean shared
+  access, or a single-user personal corpus?" Council budget saved;
+  user's intent clarified earlier.
+- Rev 4 (two implementation-level refinements baked into the plan
+  post-approval) cost one extra council round. Worth it for approval-
+  gate integrity against the final SHA, but for smaller refinements
+  consider treating them as Milestone-3 execution details and capturing
+  them in a TODO comment on the plan rather than a new revision.
+- Bugs persona converged over three plan rounds (7 → 8 → 9 → 10), each
+  surfacing real edge cases. Pre-emptively front-loading known bug
+  classes from prior phases' learnings (async/race, encoding/escaping,
+  resource-exhaustion, state-staleness) would have compressed this.
+  Keep a running "Bugs-persona pattern library" cross-referenced in
+  plan-drafting.
+
+### INSIGHT
+- Approval-gate strictness (plan committed at SHA + council synthesis
+  against that SHA + explicit human approval — all three, always)
+  produces a plan that ships cleanly. Round 5 (implementation review)
+  scored 10 across the board with zero rework requested. The discipline
+  works when followed; skipping any of the three conditions is where
+  past repos burned themselves.
+- Product persona is the most leverage-dense of the six. A product
+  veto can save a month of wrong-direction implementation; the other
+  personas' catches are usually recoverable on the day of writing. If
+  a plan touches product framing (mission, audience, anti-scope), read
+  `.harness/council/product.md` before drafting, not after.
+- Single-user anti-scope is load-bearing in this repo. Even language
+  that sounds collaborative ("our corpus," "shared access") is routed
+  through a single-user framing unless the persona file is deliberately
+  changed. This is not accidental — it defines the product.
+
+### COUNCIL
+- 5 rounds on PR #7 (4 plan, 1 implementation). Score trajectory:
+  - R1: a11y 8, arch 10, bugs 7, cost 9, product 2, security 9 → Revise (product blocker)
+  - R2: a11y 9, arch 10, bugs 8, cost 10, product 10, security 9 → Revise (2 bugs blockers)
+  - R3: a11y 9, arch 10, bugs 9, cost 10, product 10, security 10 → Proceed
+  - R4: a11y 9, arch 10, bugs 9, cost 10, product 10, security 10 → Proceed
+  - R5 (impl): a11y 9, arch 10, bugs 10, cost 10, product 10, security 10 → Proceed
+- Highest-leverage catches: (1) Product anti-scope veto on team framing,
+  (2) Bugs-persona flag on delimiter quote-escaping that drove the
+  spec simplification, (3) Bugs-persona flags on UI scale + stale
+  collision check that produced the 200-section cap and pre-commit
+  re-scan, (4) Security-persona ESLint DOM-sink ban nice-to-have that
+  the human promoted to plan-level commitment.
+- Month-to-date council budget: ~5 of 60 runs used. Well within cap.

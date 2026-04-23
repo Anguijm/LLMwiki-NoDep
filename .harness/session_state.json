@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": "refactor/reframe-corpus → PR #7 — course corrections: corpus reframe, dual-mode prompts, chunked ingest (3 milestones)",
-  "focus_area": "phase-3-course-corrections — Milestone 1: personal reference corpus reframe + warm-default",
-  "approval_state": "approved",
+  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 merged (PR #7). M2 and M3 pending.",
+  "focus_area": "phase-3-m1-merged",
+  "approval_state": "idle",
   "last_council": {
-    "source": "PR #7 round 4",
+    "source": "PR #7 round 5 (implementation review)",
     "decision": "Proceed",
-    "scores": { "accessibility": 9, "architecture": 10, "bugs": 9, "cost": 10, "product": 10, "security": 10 },
-    "run_at": "2026-04-22T23:17:15Z"
+    "scores": { "accessibility": 9, "architecture": 10, "bugs": 10, "cost": 10, "product": 10, "security": 10 },
+    "run_at": "2026-04-22T23:25:35Z"
   },
   "last_commit": {
-    "hash": "801bc85",
-    "short": "801bc85",
-    "subject": "docs: rewrite setup for locked-down laptops that block ZIP downloads",
+    "hash": "b3847b7",
+    "short": "b3847b7",
+    "subject": "plan: course corrections — corpus reframe, dual-mode prompts, chunked ingest (#7)",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "main",
-    "committed_at": "2026-04-22T07:35:00+00:00",
-    "files_changed": 1
+    "committed_at": "2026-04-22T23:27:00+00:00",
+    "files_changed": 12
   },
-  "notes": "PR #7 open on refactor/reframe-corpus. Plan rev 4 committed (SHA 57041cc) and council-approved at round 4. Milestone 1 execution in progress: reframe README + prompts + tier READMEs from ME-degree study aid to personal reference corpus; warm documented as default landing tier. Milestones 2 (dual-mode prompts) and 3 (large-doc chunked ingest) will open as separate PRs after Milestone 1 merges."
+  "notes": "Phase 3 Milestone 1 merged. Corpus reframed single-user personal reference; warm is default tier. Milestones 2 (dual-mode prompts) and 3 (large-doc chunked ingest) remain. Active plan document stays on main and is re-referenced by each subsequent PR."
 }
