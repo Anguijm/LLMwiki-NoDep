@@ -2935,7 +2935,15 @@
                 }
               }
             } catch (e) {
-              /* tier folder missing — treated as empty; write will create it */
+              // Only treat "folder doesn't exist" as an empty tier — a write
+              // will create it later. Any other error (permission denied,
+              // revoked handle, I/O failure) must propagate so the caller's
+              // pre-commit scan fails loudly instead of silently producing
+              // an empty collision snapshot that would allow writes that
+              // should have been blocked. [council rev 10 — bugs: silent
+              // failure in listTierFilenames.]
+              if (e && e.name === 'NotFoundError') continue;
+              throw e;
             }
           }
           return byTier;
@@ -4073,60 +4081,66 @@
         },
 
         _onParseIngest: async function () {
+          if (App._ingestIsParsing) return; // double-click guard per round-9 bugs persona
           var textarea = document.getElementById('ingest-textarea');
           var results = document.getElementById('ingest-results');
           var stats = document.getElementById('ingest-stats');
           if (!textarea || !results) return;
 
-          results.textContent = '';
-          if (stats) stats.textContent = '';
-          App._ingestRowModels = [];
-          App._ingestUpdateCommitButton();
+          App._ingestIsParsing = true;
+          try {
+            results.textContent = '';
+            if (stats) stats.textContent = '';
+            App._ingestRowModels = [];
+            App._ingestUpdateCommitButton();
 
-          var paste = textarea.value;
-          if (paste.length === 0) {
-            App._renderIngestEmptyState(results, STRINGS.ingestEmptyPaste);
-            App.announce(STRINGS.ingestEmptyPaste);
-            return;
-          }
+            var paste = textarea.value;
+            if (paste.length === 0) {
+              App._renderIngestEmptyState(results, STRINGS.ingestEmptyPaste);
+              App.announce(STRINGS.ingestEmptyPaste);
+              return;
+            }
 
-          App.announce(STRINGS.ingestParseStarted);
-          var result = SectionDelimiterParser.parse(paste);
-          App._ingestLastResult = result;
-          App._renderIngestStats(stats, result);
-          App._renderIngestPreview(results, result);
+            App.announce(STRINGS.ingestParseStarted);
+            var result = SectionDelimiterParser.parse(paste);
+            App._ingestLastResult = result;
+            App._renderIngestStats(stats, result);
+            App._renderIngestPreview(results, result);
 
-          var fatalErrors = (result.errors || []).filter(function (e) {
-            return e.fatal;
-          });
-          if (fatalErrors.length > 0) {
-            var first = fatalErrors[0];
-            App.announce(STRINGS.ingestParseFailedWithCategory(first.category, first.line || 0));
-            return;
-          }
-          if (result.stats && result.stats.zeroSections) {
-            App.announce(STRINGS.ingestZeroSections);
-            return;
-          }
+            var fatalErrors = (result.errors || []).filter(function (e) {
+              return e.fatal;
+            });
+            if (fatalErrors.length > 0) {
+              var first = fatalErrors[0];
+              App.announce(STRINGS.ingestParseFailedWithCategory(first.category, first.line || 0));
+              return;
+            }
+            if (result.stats && result.stats.zeroSections) {
+              App.announce(STRINGS.ingestZeroSections);
+              return;
+            }
 
-          App.announce(STRINGS.ingestParseComplete(result.sections.length));
+            App.announce(STRINGS.ingestParseComplete(result.sections.length));
 
-          // Kick off a corpus scan so the preview can show collisions now.
-          // Only meaningful when we have a writable directory handle —
-          // drag-drop (read-only) mode skips this; the commit button will
-          // surface the read-only reason.
-          if (App._isWritable && App._dirHandle) {
-            try {
-              App._ingestCorpusSnapshot = await FolderScanner.listTierFilenames(App._dirHandle);
-              App._ingestReEvaluateAllRows();
-            } catch (e) {
+            // Kick off a corpus scan so the preview can show collisions now.
+            // Only meaningful when we have a writable directory handle —
+            // drag-drop (read-only) mode skips this; the commit button will
+            // surface the read-only reason.
+            if (App._isWritable && App._dirHandle) {
+              try {
+                App._ingestCorpusSnapshot = await FolderScanner.listTierFilenames(App._dirHandle);
+                App._ingestReEvaluateAllRows();
+              } catch (e) {
+                App._ingestCorpusSnapshot = null;
+                App._ingestReEvaluateAllRows();
+                App.announce(STRINGS.ingestPreScanFailed(App._ingestMapWriteError(e).kind));
+              }
+            } else {
               App._ingestCorpusSnapshot = null;
               App._ingestReEvaluateAllRows();
-              App.announce(STRINGS.ingestPreScanFailed(App._ingestMapWriteError(e).kind));
             }
-          } else {
-            App._ingestCorpusSnapshot = null;
-            App._ingestReEvaluateAllRows();
+          } finally {
+            App._ingestIsParsing = false;
           }
         },
 
@@ -4225,15 +4239,34 @@
           var writable = queue.filter(function (x) {
             return !(x.writeResult && x.writeResult.kind === 'skipped');
           });
+          // Batch aria-live announcements for large batches so screen readers
+          // aren't spammed on a 200-section commit. Threshold: per-file for
+          // small batches (<10 rows — the cadence is useful and short), every
+          // ~10% of progress (and the first row) for larger batches. Failed
+          // writes always announce immediately regardless of batch size —
+          // those are the announcements the user would actually want to act
+          // on. [council rev 7 — a11y: reduce commit-announcement verbosity.]
+          var batchAnnounce = writable.length >= 10;
+          var announceStep = Math.max(1, Math.ceil(writable.length / 10));
+          var lastAnnounceIdx = -announceStep;
           for (var i = 0; i < writable.length; i++) {
             var row = writable[i];
-            App.announce(STRINGS.ingestWriteRowStart(i + 1, writable.length));
+            if (!batchAnnounce || i - lastAnnounceIdx >= announceStep) {
+              App.announce(STRINGS.ingestWriteRowStart(i + 1, writable.length));
+              lastAnnounceIdx = i;
+            }
             var res = await App._ingestWriteOne(row);
             row.writeResult = res;
             App._ingestRenderRowDynamicSlots(row);
             if (res.ok) okCount++;
             else if (res.kind === 'skipped') skippedCount++;
-            else failedCount++;
+            else {
+              failedCount++;
+              if (batchAnnounce) {
+                // Always announce failures immediately — they're actionable.
+                App.announce(STRINGS.ingestRowFailed(res.tier || '?', res.filename || '?', res.kind || '?'));
+              }
+            }
           }
 
           // Count cancelled-overwrite rows that never entered the write loop.
@@ -4434,7 +4467,12 @@
             await FolderScanner._atomicWrite(App._dirHandle, '_index.md', indexContent);
             App.announce(STRINGS.ingestRegenIndexDone);
           } catch (e) {
-            App.announce(STRINGS.ingestRegenIndexFail);
+            // Route through the write-error differentiator so the announcement
+            // names the specific failure kind (permission denied / revoked /
+            // quota / io) instead of a generic "index regeneration failed."
+            // [council rev 9 — bugs: generic error reporting in regen.]
+            var mapped = App._ingestMapWriteError(e);
+            App.announce(STRINGS.ingestRegenIndexFail + ' (' + mapped.kind + ')');
           }
         },
 
@@ -4532,6 +4570,23 @@
         _ingestRowModels: [],
         _ingestCorpusSnapshot: null,
         _ingestIsWriting: false,
+        _ingestIsParsing: false,
+        _ingestReEvaluateTimer: null,
+
+        // Debounced wrapper used by high-frequency input handlers (title/tier
+        // live edits). 120ms trails the user's typing by about one character
+        // at typical speeds, which is fast enough that the collision UI feels
+        // responsive but slow enough to avoid re-running the full group-by
+        // every keystroke on a 200-section batch. Intent changes and rename
+        // edits still call _ingestReEvaluateAllRows directly because they're
+        // deliberate single actions that should update immediately.
+        _ingestReEvaluateDebounced: function () {
+          if (App._ingestReEvaluateTimer) clearTimeout(App._ingestReEvaluateTimer);
+          App._ingestReEvaluateTimer = setTimeout(function () {
+            App._ingestReEvaluateTimer = null;
+            App._ingestReEvaluateAllRows();
+          }, 120);
+        },
 
         _renderIngestSectionList: function (mount, sections) {
           var h = document.createElement('h3');
@@ -4638,9 +4693,7 @@
           titleInput.setAttribute('placeholder', STRINGS.ingestEmptyTitle);
           titleLabel.appendChild(titleInput);
           model.titleInput = titleInput;
-          titleInput.addEventListener('input', function () {
-            App._ingestReEvaluateAllRows();
-          });
+          titleInput.addEventListener('input', App._ingestReEvaluateDebounced);
 
           // Tier select
           var tierLabel = document.createElement('label');
@@ -4663,9 +4716,7 @@
           }
           tierLabel.appendChild(tierSelect);
           model.tierSelect = tierSelect;
-          tierSelect.addEventListener('change', function () {
-            App._ingestReEvaluateAllRows();
-          });
+          tierSelect.addEventListener('change', App._ingestReEvaluateDebounced);
 
           // Slug display (read-only, live-updated by evaluator)
           var slugBlock = document.createElement('div');
@@ -4866,6 +4917,28 @@
           var effSlug = App._ingestCurrentSlug(model);
           var effTier = App._ingestCurrentTier(model);
 
+          // aria-invalid + aria-describedby on the title input so assistive
+          // tech announces the REASON the row is blocked (visual UX already
+          // shows it via the updated slug text + intent slot). [council
+          // rev 7 — accessibility: per-field validation feedback.]
+          if (model.titleInput) {
+            var titleBlocked =
+              !writeDone &&
+              model.intent !== 'skip' &&
+              (App._ingestCurrentSlug(model) === null || (model.section.errors || []).length > 0);
+            if (titleBlocked) {
+              model.titleInput.setAttribute('aria-invalid', 'true');
+              if (model.slugValueEl) {
+                var errId = 'ingest-row-slug-' + model.index;
+                model.slugValueEl.id = errId;
+                model.titleInput.setAttribute('aria-describedby', errId);
+              }
+            } else {
+              model.titleInput.removeAttribute('aria-invalid');
+              model.titleInput.removeAttribute('aria-describedby');
+            }
+          }
+
           // Collision slot
           if (writeDone || !model.collision) {
             model.collisionSlot.classList.add('hidden');
@@ -4962,7 +5035,15 @@
             // closure capture
             (function (valueCopy) {
               radio.addEventListener('change', function () {
+                var prevIntent = model.intent;
                 model.intent = valueCopy;
+                // When the user transitions INTO 'rename' from another intent,
+                // re-seed the rename field from the current main title so the
+                // rename input doesn't show stale text from a prior rename
+                // attempt. [council rev 8 — bugs: rename-input state staleness.]
+                if (prevIntent !== 'rename' && valueCopy === 'rename' && model.titleInput) {
+                  model.renameTitle = model.titleInput.value;
+                }
                 App._ingestReEvaluateAllRows();
               });
             })(options[i].value);
@@ -4986,7 +5067,11 @@
           var input = document.createElement('input');
           input.type = 'text';
           input.id = renameId;
+          // Prefer the user's in-progress rename text if they've typed any;
+          // otherwise seed from the current main title so the field shows a
+          // sensible starting point after an intent-change re-seed above.
           input.value = model.renameTitle || model.titleInput.value;
+          if (!model.renameTitle) model.renameTitle = input.value;
           input.setAttribute('aria-describedby', 'ingest-rename-slug-' + model.index);
 
           var slugPreview = document.createElement('span');

@@ -405,6 +405,31 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.valid).toBe(true);
     expect(result.sections).toHaveLength(1);
   });
+
+  it('preserves frontmatter keys that shadow Object.prototype properties', () => {
+    // Guards the serializer's use of `Object.prototype.hasOwnProperty.call`
+    // plus the parser's direct `result[key] = ...` semantics. A key like
+    // `constructor` shadows the prototype getter with the user's own-property
+    // value; we assert that value survives round-trip through the parser.
+    // [council rev 8 — bugs: pin prototype-shadow behavior.]
+    const input = wrapSection(
+      'foo',
+      [
+        '---',
+        'title: Foo',
+        'tier: warm',
+        'constructor: custom-value',
+        'toString: also-fine',
+        '---',
+        'body',
+      ].join('\n')
+    );
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.valid).toBe(true);
+    expect(result.sections[0].frontmatter.title).toBe('Foo');
+    expect(result.sections[0].frontmatter.constructor).toBe('custom-value');
+    expect(result.sections[0].frontmatter.toString).toBe('also-fine');
+  });
 });
 
 describe('SectionDelimiterParser.parse — redaction discipline', () => {
