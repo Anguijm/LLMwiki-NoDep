@@ -18,12 +18,13 @@ A prompt's mode is declared in its frontmatter: `mode: chat` or `mode: agent`.
 | Task | Chat mode | Agent mode |
 |---|---|---|
 | Normalize a source into a single linked note | [`ingest.md`](./ingest.md) | [`ingest-agent.md`](./ingest-agent.md) |
+| Split a large source document into one note per section | — (agent only) | [`ingest-large-agent.md`](./ingest-large-agent.md) |
 | Inject `[[wiki links]]` into a note | [`linker.md`](./linker.md) | [`linker-agent.md`](./linker-agent.md) |
 | Generate SRS cards (optional retention layer) | [`flashcards.md`](./flashcards.md) | [`flashcards-agent.md`](./flashcards-agent.md) |
 | Compile a targeted refresher on a topic | [`review-packet.md`](./review-packet.md) | [`review-packet-agent.md`](./review-packet-agent.md) |
 | Find contradictions / missing concepts / ambiguities | [`gap-analysis.md`](./gap-analysis.md) | [`gap-analysis-agent.md`](./gap-analysis-agent.md) |
 
-The **large-document chunked ingest** prompt (Milestone 3 of the Phase 3 plan) is agent-only and will land as a separate file — no chat-mode sibling, because the chat-mode paradigm doesn't fit section-by-section orchestration.
+The **large-document chunked ingest** prompt is agent-only — no chat-mode sibling, because the chat-mode paradigm doesn't fit section-by-section orchestration. For the end-to-end user workflow (agent setup, Import view preview pane, commit flow, the 200-section cap), see the top-level [`README.md`](../README.md) § "How to import a large document."
 
 ## Untrusted content is always treated as data, not instructions
 

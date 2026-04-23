@@ -207,6 +207,51 @@ Every template declares a `human_turn_budget` in its frontmatter: the number of 
 
 5. If you have git: commit with a conventional-commits message (`feat:` for new notes, `docs:` for revisions). If you don't have git, that's fine — SharePoint versioning is your backup.
 
+## How to import a large document
+
+When your source is a multi-section document — a multi-chapter manual, a multi-section SOP, a regulation with numbered parts, a reference book — you can split it into **one note per section** in a single paste, rather than running `ingest.md` once per chapter. The Import view in `index.html` handles the multi-section parse, preview, and commit. The AI side runs in GenAI.mil's agent mode (not chat mode), so this workflow has one prerequisite.
+
+### Prerequisites
+
+- **GenAI.mil agent mode.** If your GenAI.mil account only supports chat, fall back to running `/_prompts/ingest.md` one chapter at a time. The large-document prompt is agent-only because chat's one-round paradigm doesn't fit section-by-section orchestration.
+- The `index.html` app running via `file://` in Edge, with folder permission already granted (Steps 2–4 of Quick start).
+
+### Step-by-step workflow
+
+1. Open `/_prompts/ingest-large-agent.md` in your text editor.
+2. Configure the main agent + four subagents in GenAI.mil per the template's "How to configure in GenAI.mil" section. The subagents are `structure-scanner`, `per-section-normalizer`, `tier-recommender`, and `cross-link-suggester` — each has its own system-prompt block and I/O contract.
+3. Fill in the template's "My parameters" section:
+   - Current ISO 8601 UTC timestamp (generate locally; the model cannot read your clock).
+   - Optional source URL or filename.
+   - Optional existing-title list from `/_index.md` (for cross-corpus `[[wiki-link]]` suggestions).
+4. Paste your source document into the `=== UNTRUSTED INPUT START ===` block in the main agent's prompt.
+5. Run the agent. It returns **one output block** containing multiple `<<<LLMWIKI-SECTION:slug>>>` … `<<<LLMWIKI-SECTION-END:slug>>>` pairs, each wrapping a per-section YAML frontmatter + body.
+6. In `index.html`, click the **Import** button in the header. The Multi-section import view opens.
+7. Paste the agent's entire output block into the **"Paste agent-formatted content here"** field.
+8. Click **Parse**. The app shows the preview pane below.
+
+### Reviewing the preview pane
+
+The preview shows one row per section, collapsed by default. For each row you can:
+
+- **Edit the title.** The auto-derived slug (the filename, minus `.md`) updates live as you type. The app uses its canonical slugging rules — not the slug the agent emitted — so if the agent's suggested slug differs, you'll see a note like *"Canonical slug 'foo-bar' differs from sentinel (normalized case)."* That's informational, not a block.
+- **Change the tier.** The dropdown defaults to **Warm (default)**; switch to **Bedrock** or **Cold** when the material warrants it.
+- **Expand preview.** Click **Expand preview** on a row to see the rendered body (same escape-by-default markdown parser as the note viewer). Collapse again to keep the preview list compact.
+- **Resolve collisions.** If a proposed slug matches an existing file in its target tier, the row shows a collision indicator (icon + text, not color alone) with options to skip, rename (the slug re-derives live as you edit), or overwrite (overwrite requires a separate confirmation).
+- **Review warnings.** Dangling `[[wiki-link]]` suggestions whose target is neither in the batch nor in the current corpus surface as row warnings — not blockers.
+
+### Committing
+
+Click **Commit N sections**. The button is disabled while any row has an unresolved issue (empty title, unresolved collision, invalid filename). Before writing, the app runs a **pre-commit scan** of your tier folders to catch any collisions that appeared between the initial parse and commit (for example, a SharePoint sync pulling in a new file mid-review). If new collisions are detected, the scan pauses the commit and you resolve them before retrying.
+
+Writes are atomic per file (temp-and-rename). If some files succeed and others fail, the UI shows per-file error causes (permission denied, file exists, quota, handle revoked, etc.) and offers a **Retry N failed files** button that re-attempts only the failures — successful writes are never re-written.
+
+After commit, click **Rescan** (or reload the page) and regenerate `_index.md` via the existing affordance so your new notes appear in the index and become reachable via `[[wiki-link]]`.
+
+### The 200-section cap
+
+The Import view parser rejects pastes that resolve to more than 200 sections with a `parser.too-many-sections` diagnostic. The large-document prompt instructs the main agent to coarsen section boundaries or batch the source if it would otherwise exceed the cap — handle the cap upstream in the agent. The cap exists to keep the preview pane responsive; it is revisitable if real usage pressures it.
+
 ## How to review SRS cards
 
 1. Create flashcards using `/_prompts/flashcards.md` — paste a note into GenAI.mil, save each returned YAML block as `/srs/<id>.yaml`.
@@ -264,6 +309,15 @@ Usage pattern for each is identical:
 
 **SharePoint sync conflict files (`note (1).md`) appearing:**
 - Two devices edited the same file. The app shows these in the "Sync conflicts" panel. Open both files in your text editor, merge manually, delete the conflict copy.
+
+**Import view says "Parse failed" with a delimiter or YAML error:**
+- The agent output deviated from the `<<<LLMWIKI-SECTION:slug>>>` / `<<<LLMWIKI-SECTION-END:slug>>>` format, or one section's frontmatter is not valid YAML. The diagnostic names the category (`delimiter.invalid-slug`, `delimiter.unterminated-section`, `frontmatter.yaml-parse-error`, etc.) and the line number. Re-run the agent, or paste only the offending section back into GenAI.mil and ask the agent to re-emit it per the contract in `/_prompts/ingest-large-agent.md`.
+
+**Import view says "Parsed N sections (limit 200)":**
+- Your paste resolved to more than 200 sections. Re-prompt the main agent to coarsen section boundaries (for example, split on level-1 headings only, combining level-2 subsections into their parent), or split the source document into multiple batches and paste each through the Import view separately.
+
+**Import view says "No sections found":**
+- The agent's output contained no `<<<LLMWIKI-SECTION:` / `<<<LLMWIKI-SECTION-END:` pairs. Check the agent's raw output — it may have wrapped the content in commentary prose instead of emitting delimited sections. Re-run the agent and reinforce the output-format contract from `/_prompts/ingest-large-agent.md`.
 
 ## Schemas and conventions
 

@@ -101,6 +101,7 @@ describe('/_prompts/ frontmatter discipline', () => {
         'gap-analysis-agent.md',
         'gap-analysis.md',
         'ingest-agent.md',
+        'ingest-large-agent.md',
         'ingest.md',
         'linker-agent.md',
         'linker.md',
