@@ -2823,6 +2823,7 @@
         _atomicWrite: async function (dirHandle, filename, content) {
           var tmpName = '.' + filename + '.tmp';
           var writable = null;
+          var tmpComplete = false;
 
           try {
             // Step 1: Write content to temp file (safe — if this fails, original is untouched)
@@ -2831,6 +2832,7 @@
             await writable.write(content);
             await writable.close();
             writable = null; // closed successfully
+            tmpComplete = true;
 
             // Step 2: Write content to final file
             // File System Access API has no rename() — we must write to the target directly.
@@ -2855,7 +2857,61 @@
               throw finalErr;
             }
 
-            // Step 3: Clean up temp file
+            // Step 3: Verify write integrity — re-read the just-written file
+            // and compare byte length against the source. This matches the
+            // pattern already used by SRSCardWriter.write (Phase 2c). A
+            // mismatch can occur from browser crash mid-write, disk-full
+            // mid-stream, or other partial-write conditions. On detected
+            // corruption we attempt one restore from the in-memory content;
+            // if that ALSO fails to verify, we throw and leave the .tmp file
+            // intact so the user has a recoverable backup. [council rev 11 —
+            // bugs: data-corruption blocker on silent partial writes.]
+            try {
+              var verifyHandle = await dirHandle.getFileHandle(filename);
+              var verifyFile = await verifyHandle.getFile();
+              var verifyContent = await verifyFile.text();
+              if (verifyContent.length !== content.length) {
+                // Attempt one restore from the in-memory content.
+                var restoreHandle = await dirHandle.getFileHandle(filename, { create: true });
+                var restoreWritable = await restoreHandle.createWritable();
+                try {
+                  await restoreWritable.write(content);
+                  await restoreWritable.close();
+                } catch (restoreErr) {
+                  try {
+                    await restoreWritable.close();
+                  } catch (e) {
+                    /* best effort */
+                  }
+                  throw new Error(
+                    'atomic write verification failed and restore errored: length mismatch (expected ' +
+                      content.length +
+                      ', got ' +
+                      verifyContent.length +
+                      '); .tmp preserved'
+                  );
+                }
+                // Re-verify after restore.
+                var reVerifyFile = await (await dirHandle.getFileHandle(filename)).getFile();
+                var reVerifyContent = await reVerifyFile.text();
+                if (reVerifyContent.length !== content.length) {
+                  throw new Error(
+                    'atomic write verification failed after restore attempt: length still mismatched (expected ' +
+                      content.length +
+                      ', got ' +
+                      reVerifyContent.length +
+                      '); .tmp preserved for manual recovery'
+                  );
+                }
+              }
+            } catch (verifyErr) {
+              // Verification errored in an unrecoverable way — do NOT delete
+              // the .tmp file. Surface the original error to the caller so
+              // the commit flow reports a per-file failure with a kind.
+              throw verifyErr;
+            }
+
+            // Step 4: Clean up temp file (only after verified-successful write)
             try {
               await dirHandle.removeEntry(tmpName);
             } catch (e) {
@@ -2870,11 +2926,16 @@
                 /* best effort */
               }
             }
-            // Attempt temp cleanup on any failure
-            try {
-              await dirHandle.removeEntry(tmpName);
-            } catch (e) {
-              /* best effort */
+            // Only clean up the .tmp file if it wasn't fully written. A
+            // complete .tmp after a failed verify step is a RECOVERY asset —
+            // the user or the next-run orphan cleanup can use it. [council
+            // rev 11 — bugs: preserve .tmp on verify-path failures.]
+            if (!tmpComplete) {
+              try {
+                await dirHandle.removeEntry(tmpName);
+              } catch (e) {
+                /* best effort */
+              }
             }
             throw outerErr;
           }
