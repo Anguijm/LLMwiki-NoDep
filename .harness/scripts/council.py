@@ -37,7 +37,8 @@ SESSION_STATE = HARNESS_DIR / "session_state.json"
 
 CALL_CAP = 15
 DEFAULT_MODEL = os.environ.get("HARNESS_MODEL", "gemini-2.5-pro")
-EXCLUDED_PERSONAS = {"lead-architect.md", "README.md"}
+EXCLUDED_PERSONAS = {"lead-architect.md", "README.md", "repo_context.md"}
+REPO_CONTEXT = COUNCIL_DIR / "repo_context.md"
 
 
 def die(msg: str, code: int = 1) -> None:
@@ -74,6 +75,16 @@ def load_security_checklist() -> str:
     if path.exists():
         return path.read_text()
     return "(security_checklist.md not found — Security reviewer will proceed without it.)"
+
+
+def load_repo_context() -> str:
+    """Load the repo-context anchor injected as preamble to every persona
+    prompt and the Lead Architect synthesis prompt. Prevents personas from
+    inferring a hallucinated stack (e.g., Vue + pnpm + src/lib/) when the
+    diff is text-heavy."""
+    if REPO_CONTEXT.exists():
+        return REPO_CONTEXT.read_text()
+    return ""
 
 
 def _plan_is_tracked(path: Path) -> bool:
@@ -173,8 +184,16 @@ def get_plan_text(args: argparse.Namespace) -> tuple[str, str]:
     die("Pass --plan <path> or --diff.")
 
 
-def build_prompt(persona_body: str, source_label: str, source_text: str, extra: str = "") -> str:
+def build_prompt(
+    persona_body: str,
+    source_label: str,
+    source_text: str,
+    repo_context: str = "",
+    extra: str = "",
+) -> str:
+    preamble = f"{repo_context}\n\n---\n\n" if repo_context else ""
     return (
+        f"{preamble}"
         f"{persona_body}\n\n"
         f"---\n"
         f"CONTEXT SOURCE: {source_label}\n\n"
@@ -310,6 +329,13 @@ def main() -> int:
     model_client = genai.GenerativeModel(args.model)
 
     checklist = load_security_checklist()
+    repo_context = load_repo_context()
+    if not repo_context:
+        print(
+            "[council] WARNING: .harness/council/repo_context.md not found — "
+            "personas may infer a hallucinated stack on text-heavy diffs.",
+            file=sys.stderr,
+        )
     budget = RequestBudget(CALL_CAP)
 
     print(f"[council] Model: {args.model}")
@@ -326,7 +352,7 @@ def main() -> int:
                 if name == "security"
                 else ""
             )
-            prompt = build_prompt(body, source_label, source_text, extra=extra)
+            prompt = build_prompt(body, source_label, source_text, repo_context=repo_context, extra=extra)
             futures[pool.submit(call_gemini, model_client, args.model, prompt, budget)] = name
         for fut in as_completed(futures):
             name = futures[fut]
@@ -344,7 +370,7 @@ def main() -> int:
     )
     for name, text in sorted(critiques.items()):
         synthesis_payload += f"\n### {name}\n{text}\n"
-    lead_prompt = build_prompt(lead_body, source_label, synthesis_payload)
+    lead_prompt = build_prompt(lead_body, source_label, synthesis_payload, repo_context=repo_context)
     synthesis = call_gemini(model_client, args.model, lead_prompt, budget)
     used, cap = budget.snapshot()
     print(f"[council] Requests consumed: {used}/{cap}")
