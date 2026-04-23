@@ -292,6 +292,34 @@ Frontmatter rules:
   replaces both with the human-provided ISO 8601 UTC timestamp.
 - `tags`: propose 0 to 7 lowercase-hyphenated ASCII tags drawn from the
   section's actual content. Array always present; empty `[]` if none.
+- Use plain ASCII punctuation throughout the frontmatter block —
+  straight quotes `'` and `"`, straight hyphens `-`, straight colons.
+  Do NOT emit curly / smart quotes (`“ ” ‘ ’`), em dashes (`—`) inside
+  quoted YAML strings, or other non-ASCII punctuation in frontmatter
+  values. Strict YAML parsers reject some of these; plain ASCII is
+  always safe. Non-ASCII punctuation in the body markdown is fine —
+  this rule applies only to the frontmatter block.
+
+Input-sanitization rules (applied before you emit anything):
+- If the source slice contains NUL bytes (`\0`) or other C0 control
+  characters (0x01–0x08, 0x0B, 0x0C, 0x0E–0x1F) that are not tab (0x09),
+  newline (0x0A), or carriage return (0x0D), strip them from your body
+  output. They are almost always artifacts of binary-to-text extraction
+  or encoding errors, never meaningful content. The app's parser will
+  reject them downstream; stripping upstream produces a clean note
+  instead of a validation error.
+- If the source slice is empty after sanitization (e.g., a chapter
+  heading immediately followed by the next chapter heading with no
+  body content between), emit a body containing only this literal line
+  and stop — do NOT fabricate content to fill the section:
+
+  ```
+  (This section has no body content in the source document.)
+  ```
+
+  The main agent surfaces this as a section that committed successfully
+  but contains only the placeholder note; the user can hand-edit after
+  commit if the source actually had content the slice missed.
 
 Body rules:
 - Self-contained: a reader opening this note alone (without the sibling
