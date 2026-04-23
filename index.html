@@ -704,6 +704,237 @@
         color: var(--color-text-muted);
       }
 
+      /* ── Multi-section import (M3) ────────────── */
+      .ingest-container {
+        max-width: 1000px;
+        padding: 0.5rem 0.25rem 2rem;
+      }
+
+      .ingest-header {
+        margin-bottom: 1.25rem;
+      }
+
+      .ingest-header h2 {
+        margin-bottom: 0.35rem;
+      }
+
+      .ingest-header .ingest-desc {
+        color: var(--color-text-muted);
+        font-size: 0.95rem;
+      }
+
+      .ingest-textarea-wrap {
+        margin-bottom: 1rem;
+      }
+
+      .ingest-textarea-wrap label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
+
+      .ingest-textarea {
+        width: 100%;
+        min-height: 14rem;
+        padding: 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        resize: vertical;
+      }
+
+      .ingest-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+      }
+
+      .ingest-actions button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .ingest-actions button.primary {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+      }
+
+      .ingest-actions button.primary:hover {
+        background: var(--color-primary-hover);
+      }
+
+      .ingest-actions button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .ingest-stats {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        margin-left: auto;
+      }
+
+      .ingest-errors,
+      .ingest-warnings,
+      .ingest-empty-state {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .ingest-errors {
+        background: var(--color-danger-bg);
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+      }
+
+      .ingest-warnings {
+        background: var(--color-warning-bg);
+        border: 1px solid #fde68a;
+        color: var(--color-warning-text);
+      }
+
+      .ingest-empty-state {
+        background: var(--color-tag-bg);
+        color: var(--color-text-muted);
+      }
+
+      .ingest-errors h3,
+      .ingest-warnings h3 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+      }
+
+      .ingest-errors ul,
+      .ingest-warnings ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .ingest-errors li,
+      .ingest-warnings li {
+        padding: 0.3rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      .ingest-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .ingest-row {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+      }
+
+      .ingest-row.has-issues {
+        border-color: #fecaca;
+      }
+
+      .ingest-row-head {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr) minmax(0, 2fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.6rem 0.75rem;
+      }
+
+      .ingest-row-head label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+      }
+
+      .ingest-row-head input[type='text'],
+      .ingest-row-head select {
+        min-height: 44px;
+        padding: 0.4rem 0.55rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        font: inherit;
+        margin-top: 0.2rem;
+      }
+
+      .ingest-row-slug {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        word-break: break-all;
+      }
+
+      .ingest-row-expand {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .ingest-row-mismatch {
+        padding: 0 0.75rem 0.5rem;
+        font-size: 0.8rem;
+        color: var(--color-warning-text);
+      }
+
+      .ingest-row-issues {
+        padding: 0 0.75rem 0.5rem;
+        font-size: 0.8rem;
+        color: var(--color-danger);
+      }
+
+      .ingest-row-issues ul {
+        list-style: disc;
+        padding-left: 1.25rem;
+        margin: 0.25rem 0 0;
+      }
+
+      .ingest-row-body {
+        padding: 0.6rem 0.75rem 0.75rem;
+        border-top: 1px solid var(--color-border);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .ingest-row-body.hidden {
+        display: none !important;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ingest-row,
+        .ingest-row-body {
+          transition: none !important;
+        }
+      }
+
       /* ── Visibility helper ────────────────────── */
       .hidden {
         display: none !important;
@@ -734,6 +965,7 @@
           </div>
           <button id="btn-review" type="button"></button>
           <button id="btn-outline" type="button"></button>
+          <button id="btn-ingest" type="button"></button>
           <button id="btn-rescan" type="button"></button>
         </div>
       </header>
@@ -747,6 +979,7 @@
         <div id="note-view"></div>
         <div id="review-view" class="hidden"></div>
         <div id="outline-view" class="hidden"></div>
+        <div id="ingest-view" class="hidden" role="region" aria-label="Multi-section import"></div>
         <div id="broken-panel" class="status-panel broken hidden" role="region" aria-label="Broken notes"></div>
         <div id="conflict-panel" class="status-panel conflict hidden" role="region" aria-label="Sync conflicts"></div>
         <div id="broken-cards-panel" class="status-panel broken hidden" role="region" aria-label="Broken cards"></div>
@@ -844,6 +1077,61 @@
         outlineTitle: 'Knowledge Graph \u2014 Outline',
         outlineEmpty: 'No notes to display.',
         outlineLinks: 'Links to:',
+        // Multi-section import (M3) strings
+        ingest: 'Import',
+        ingestTitle: 'Multi-section import',
+        ingestDesc:
+          'Paste a multi-section document emitted by a GenAI.mil agent-mode prompt. Each section becomes a separate note. Preview and resolve any issues before committing.',
+        ingestTextareaLabel: 'Paste agent-formatted content here',
+        ingestTextareaPlaceholder:
+          '<<<LLMWIKI-SECTION:slug>>>\n---\ntitle: ...\ntier: warm\n---\n\nsection body\n\n<<<LLMWIKI-SECTION-END:slug>>>',
+        ingestParse: 'Parse',
+        ingestClear: 'Clear',
+        ingestCommitPending: 'Commit (writer ships next)',
+        ingestCommitDisabledTitle:
+          'Commit button is wired in the next implementation commit \u2014 this view currently previews parsed sections only.',
+        ingestParseStarted: 'Parsing paste\u2026',
+        ingestParseComplete: function (n) {
+          return 'Parsed ' + n + (n === 1 ? ' section' : ' sections') + '. Review before committing.';
+        },
+        ingestParseFailed: function (n) {
+          return 'Parse failed: ' + n + (n === 1 ? ' fatal error' : ' fatal errors') + ' blocked the paste.';
+        },
+        ingestParseFailedWithCategory: function (category, line) {
+          return 'Parse failed: ' + category + ' at line ' + line + '.';
+        },
+        ingestZeroSections:
+          'No sections found. Paste must contain <<<LLMWIKI-SECTION:slug>>> / <<<LLMWIKI-SECTION-END:slug>>> delimiter pairs.',
+        ingestEmptyPaste: 'Paste some content first, then click Parse.',
+        ingestErrorsHeading: 'Parse errors',
+        ingestWarningsHeading: 'Warnings',
+        ingestSectionsHeading: 'Sections',
+        ingestRowTitleLabel: 'Title',
+        ingestRowTierLabel: 'Tier',
+        ingestRowSlugLabel: 'Slug (auto-derived)',
+        ingestRowExpand: 'Expand preview',
+        ingestRowCollapse: 'Collapse preview',
+        ingestRowIssuesHeading: 'Section issues:',
+        ingestSlugMismatch: function (canonical, reason) {
+          return 'Canonical slug \u201c' + canonical + '\u201d differs from sentinel (' + reason + ').';
+        },
+        ingestSectionIssues: function (n) {
+          return n + (n === 1 ? ' issue' : ' issues');
+        },
+        ingestStatsBom: 'BOM stripped from paste',
+        ingestStatsLineEndings: 'Line endings normalized to LF',
+        ingestStatsTooMany: function (n, cap) {
+          return 'Parsed ' + n + ' sections (limit ' + cap + ')';
+        },
+        ingestTierLabelBedrock: 'Bedrock',
+        ingestTierLabelWarm: 'Warm (default)',
+        ingestTierLabelCold: 'Cold',
+        ingestEmptyTitle: '(no title)',
+        ingestEmptyBody: '(empty body)',
+        ingestErrorLine: function (category, line, column, message) {
+          var loc = line > 0 ? ' [line ' + line + (column > 1 ? ':' + column : '') + ']' : '';
+          return category + loc + ' \u2014 ' + message;
+        },
       };
 
       // ══════════════════════════════════════════════
@@ -2807,6 +3095,7 @@
           document.getElementById('filter-cold').textContent = STRINGS.filterCold;
           document.getElementById('btn-review').textContent = STRINGS.review;
           document.getElementById('btn-outline').textContent = STRINGS.outline;
+          document.getElementById('btn-ingest').textContent = STRINGS.ingest;
           document.getElementById('btn-rescan').textContent = STRINGS.rescan;
           document.getElementById('backlinks-title').textContent = STRINGS.backlinksTitle;
 
@@ -2818,6 +3107,9 @@
           });
           document.getElementById('btn-outline').addEventListener('click', function () {
             App._toggleView('outline');
+          });
+          document.getElementById('btn-ingest').addEventListener('click', function () {
+            App._toggleView('ingest');
           });
 
           // Tier filter buttons
@@ -3313,18 +3605,386 @@
           }
           App._syncViewVisibility();
           if (App._currentView === 'outline') App._renderOutline();
+          if (App._currentView === 'ingest') App._renderIngest();
         },
 
         _syncViewVisibility: function () {
           var noteView = document.getElementById('note-view');
           var reviewView = document.getElementById('review-view');
           var outlineView = document.getElementById('outline-view');
+          var ingestView = document.getElementById('ingest-view');
           var aside = document.querySelector('.aside-panel');
 
           noteView.classList.toggle('hidden', App._currentView !== 'notes');
           reviewView.classList.toggle('hidden', App._currentView !== 'review');
           outlineView.classList.toggle('hidden', App._currentView !== 'outline');
+          ingestView.classList.toggle('hidden', App._currentView !== 'ingest');
           if (aside) aside.classList.toggle('hidden', App._currentView !== 'notes');
+        },
+
+        // ── Multi-section import (M3) ───────────────
+        // Scaffold only. Parses pastes via SectionDelimiterParser and
+        // renders a preview. Commit / writer / collision handling lands in
+        // a follow-up commit; the button is present but disabled here.
+        // Every DOM node is built via createElement + textContent +
+        // setAttribute. Zero innerHTML/outerHTML/insertAdjacentHTML.
+
+        _ingestScaffoldRendered: false,
+        _ingestLastResult: null,
+
+        _renderIngest: function () {
+          if (App._ingestScaffoldRendered) return;
+          var view = document.getElementById('ingest-view');
+          view.textContent = '';
+
+          var container = document.createElement('div');
+          container.className = 'ingest-container';
+
+          var header = document.createElement('div');
+          header.className = 'ingest-header';
+          var h = document.createElement('h2');
+          h.textContent = STRINGS.ingestTitle;
+          var desc = document.createElement('p');
+          desc.className = 'ingest-desc';
+          desc.textContent = STRINGS.ingestDesc;
+          header.appendChild(h);
+          header.appendChild(desc);
+          container.appendChild(header);
+
+          var textareaWrap = document.createElement('div');
+          textareaWrap.className = 'ingest-textarea-wrap';
+          var label = document.createElement('label');
+          label.setAttribute('for', 'ingest-textarea');
+          label.textContent = STRINGS.ingestTextareaLabel;
+          var textarea = document.createElement('textarea');
+          textarea.id = 'ingest-textarea';
+          textarea.className = 'ingest-textarea';
+          textarea.setAttribute('spellcheck', 'false');
+          textarea.setAttribute('autocomplete', 'off');
+          textarea.setAttribute('autocorrect', 'off');
+          textarea.setAttribute('autocapitalize', 'off');
+          textarea.setAttribute('placeholder', STRINGS.ingestTextareaPlaceholder);
+          textareaWrap.appendChild(label);
+          textareaWrap.appendChild(textarea);
+          container.appendChild(textareaWrap);
+
+          var actions = document.createElement('div');
+          actions.className = 'ingest-actions';
+
+          var parseBtn = document.createElement('button');
+          parseBtn.type = 'button';
+          parseBtn.className = 'primary';
+          parseBtn.id = 'ingest-parse';
+          parseBtn.textContent = STRINGS.ingestParse;
+          parseBtn.addEventListener('click', App._onParseIngest);
+
+          var clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.id = 'ingest-clear';
+          clearBtn.textContent = STRINGS.ingestClear;
+          clearBtn.addEventListener('click', App._onClearIngest);
+
+          var commitBtn = document.createElement('button');
+          commitBtn.type = 'button';
+          commitBtn.id = 'ingest-commit';
+          commitBtn.textContent = STRINGS.ingestCommitPending;
+          commitBtn.disabled = true;
+          commitBtn.setAttribute('title', STRINGS.ingestCommitDisabledTitle);
+          commitBtn.setAttribute('aria-label', STRINGS.ingestCommitDisabledTitle);
+
+          actions.appendChild(parseBtn);
+          actions.appendChild(clearBtn);
+          actions.appendChild(commitBtn);
+
+          var stats = document.createElement('div');
+          stats.id = 'ingest-stats';
+          stats.className = 'ingest-stats';
+          actions.appendChild(stats);
+
+          container.appendChild(actions);
+
+          var resultsMount = document.createElement('div');
+          resultsMount.id = 'ingest-results';
+          container.appendChild(resultsMount);
+
+          view.appendChild(container);
+          App._ingestScaffoldRendered = true;
+        },
+
+        _onClearIngest: function () {
+          var textarea = document.getElementById('ingest-textarea');
+          if (textarea) textarea.value = '';
+          var results = document.getElementById('ingest-results');
+          if (results) results.textContent = '';
+          var stats = document.getElementById('ingest-stats');
+          if (stats) stats.textContent = '';
+          App._ingestLastResult = null;
+        },
+
+        _onParseIngest: function () {
+          var textarea = document.getElementById('ingest-textarea');
+          var results = document.getElementById('ingest-results');
+          var stats = document.getElementById('ingest-stats');
+          if (!textarea || !results) return;
+
+          results.textContent = '';
+          if (stats) stats.textContent = '';
+
+          var paste = textarea.value;
+          if (paste.length === 0) {
+            App._renderIngestEmptyState(results, STRINGS.ingestEmptyPaste);
+            App.announce(STRINGS.ingestEmptyPaste);
+            return;
+          }
+
+          App.announce(STRINGS.ingestParseStarted);
+          var result = SectionDelimiterParser.parse(paste);
+          App._ingestLastResult = result;
+          App._renderIngestStats(stats, result);
+          App._renderIngestPreview(results, result);
+
+          var fatalErrors = (result.errors || []).filter(function (e) {
+            return e.fatal;
+          });
+          if (fatalErrors.length > 0) {
+            // Lead with the first fatal's category + line so the announcement
+            // is actionable, not just a count.
+            var first = fatalErrors[0];
+            App.announce(STRINGS.ingestParseFailedWithCategory(first.category, first.line || 0));
+          } else if (result.stats && result.stats.zeroSections) {
+            App.announce(STRINGS.ingestZeroSections);
+          } else {
+            App.announce(STRINGS.ingestParseComplete(result.sections.length));
+          }
+        },
+
+        _renderIngestStats: function (mount, result) {
+          if (!mount) return;
+          var parts = [];
+          if (result.stats) {
+            if (result.stats.bomStripped) parts.push(STRINGS.ingestStatsBom);
+            if (result.stats.lineEndingsNormalized) parts.push(STRINGS.ingestStatsLineEndings);
+            if (result.stats.tooManySections) {
+              parts.push(STRINGS.ingestStatsTooMany(result.stats.totalSections, SectionDelimiterParser.MAX_SECTIONS));
+            }
+          }
+          mount.textContent = parts.join(' · ');
+        },
+
+        _renderIngestPreview: function (mount, result) {
+          var fatalErrors = (result.errors || []).filter(function (e) {
+            return e.fatal;
+          });
+          if (fatalErrors.length > 0) {
+            App._renderIngestErrorBox(mount, fatalErrors);
+            return;
+          }
+
+          if (result.stats && result.stats.zeroSections) {
+            App._renderIngestEmptyState(mount, STRINGS.ingestZeroSections);
+            return;
+          }
+
+          if ((result.warnings || []).length > 0) {
+            App._renderIngestWarningsBox(mount, result.warnings);
+          }
+
+          App._renderIngestSectionList(mount, result.sections || []);
+        },
+
+        _renderIngestErrorBox: function (mount, errors) {
+          var box = document.createElement('div');
+          box.className = 'ingest-errors';
+          box.setAttribute('role', 'alert');
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestErrorsHeading;
+          box.appendChild(h);
+          var ul = document.createElement('ul');
+          for (var i = 0; i < errors.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = STRINGS.ingestErrorLine(
+              errors[i].category,
+              errors[i].line || 0,
+              errors[i].column || 0,
+              errors[i].message || ''
+            );
+            ul.appendChild(li);
+          }
+          box.appendChild(ul);
+          mount.appendChild(box);
+        },
+
+        _renderIngestWarningsBox: function (mount, warnings) {
+          var box = document.createElement('div');
+          box.className = 'ingest-warnings';
+          box.setAttribute('role', 'status');
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestWarningsHeading;
+          box.appendChild(h);
+          var ul = document.createElement('ul');
+          for (var i = 0; i < warnings.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = STRINGS.ingestErrorLine(
+              warnings[i].category,
+              warnings[i].line || 0,
+              warnings[i].column || 0,
+              warnings[i].message || ''
+            );
+            ul.appendChild(li);
+          }
+          box.appendChild(ul);
+          mount.appendChild(box);
+        },
+
+        _renderIngestEmptyState: function (mount, text) {
+          var box = document.createElement('div');
+          box.className = 'ingest-empty-state';
+          box.textContent = text;
+          mount.appendChild(box);
+        },
+
+        _renderIngestSectionList: function (mount, sections) {
+          var h = document.createElement('h3');
+          h.textContent = STRINGS.ingestSectionsHeading;
+          mount.appendChild(h);
+
+          var list = document.createElement('div');
+          list.className = 'ingest-sections';
+          for (var i = 0; i < sections.length; i++) {
+            list.appendChild(App._renderIngestSectionRow(sections[i], i));
+          }
+          mount.appendChild(list);
+        },
+
+        _renderIngestSectionRow: function (section, index) {
+          var row = document.createElement('div');
+          row.className = 'ingest-row';
+          if ((section.errors || []).length > 0) row.classList.add('has-issues');
+
+          var head = document.createElement('div');
+          head.className = 'ingest-row-head';
+
+          // Title input
+          var titleLabel = document.createElement('label');
+          var titleId = 'ingest-row-title-' + index;
+          titleLabel.setAttribute('for', titleId);
+          titleLabel.appendChild(document.createTextNode(STRINGS.ingestRowTitleLabel));
+          var titleInput = document.createElement('input');
+          titleInput.type = 'text';
+          titleInput.id = titleId;
+          var fmTitle =
+            section.frontmatter && typeof section.frontmatter.title === 'string' ? section.frontmatter.title : '';
+          titleInput.value = fmTitle;
+          titleInput.setAttribute('placeholder', STRINGS.ingestEmptyTitle);
+          titleLabel.appendChild(titleInput);
+
+          // Tier select
+          var tierLabel = document.createElement('label');
+          var tierId = 'ingest-row-tier-' + index;
+          tierLabel.setAttribute('for', tierId);
+          tierLabel.appendChild(document.createTextNode(STRINGS.ingestRowTierLabel));
+          var tierSelect = document.createElement('select');
+          tierSelect.id = tierId;
+          var tierOptions = [
+            { value: 'bedrock', label: STRINGS.ingestTierLabelBedrock },
+            { value: 'warm', label: STRINGS.ingestTierLabelWarm },
+            { value: 'cold', label: STRINGS.ingestTierLabelCold },
+          ];
+          var currentTier =
+            section.frontmatter && typeof section.frontmatter.tier === 'string' ? section.frontmatter.tier : 'warm';
+          for (var t = 0; t < tierOptions.length; t++) {
+            var opt = document.createElement('option');
+            opt.value = tierOptions[t].value;
+            opt.textContent = tierOptions[t].label;
+            if (tierOptions[t].value === currentTier) opt.selected = true;
+            tierSelect.appendChild(opt);
+          }
+          tierLabel.appendChild(tierSelect);
+
+          // Slug display (read-only)
+          var slugBlock = document.createElement('div');
+          var slugLabel = document.createElement('div');
+          slugLabel.style.fontSize = '0.75rem';
+          slugLabel.style.fontWeight = '600';
+          slugLabel.style.color = 'var(--color-text-muted)';
+          slugLabel.textContent = STRINGS.ingestRowSlugLabel;
+          var slugValue = document.createElement('div');
+          slugValue.className = 'ingest-row-slug';
+          slugValue.textContent = section.canonicalSlug || section.sentinelSlug;
+          slugBlock.appendChild(slugLabel);
+          slugBlock.appendChild(slugValue);
+
+          // Expand toggle
+          var expandBtn = document.createElement('button');
+          expandBtn.type = 'button';
+          expandBtn.className = 'ingest-row-expand';
+          expandBtn.textContent = STRINGS.ingestRowExpand;
+          expandBtn.setAttribute('aria-expanded', 'false');
+
+          head.appendChild(titleLabel);
+          head.appendChild(tierLabel);
+          head.appendChild(slugBlock);
+          head.appendChild(expandBtn);
+          row.appendChild(head);
+
+          // Slug-mismatch banner
+          if (section.slugMismatch && section.canonicalSlug) {
+            var mis = document.createElement('div');
+            mis.className = 'ingest-row-mismatch';
+            mis.textContent = STRINGS.ingestSlugMismatch(section.canonicalSlug, section.slugMismatchReason || '');
+            row.appendChild(mis);
+          }
+
+          // Per-section issues
+          if ((section.errors || []).length > 0) {
+            var issues = document.createElement('div');
+            issues.className = 'ingest-row-issues';
+            var issuesH = document.createElement('div');
+            issuesH.textContent = STRINGS.ingestRowIssuesHeading;
+            issues.appendChild(issuesH);
+            var issuesUl = document.createElement('ul');
+            for (var k = 0; k < section.errors.length; k++) {
+              var ei = section.errors[k];
+              var ili = document.createElement('li');
+              ili.textContent = STRINGS.ingestErrorLine(ei.category, ei.line || 0, ei.column || 0, ei.message || '');
+              issuesUl.appendChild(ili);
+            }
+            issues.appendChild(issuesUl);
+            row.appendChild(issues);
+          }
+
+          // Collapsed body mount (rendered on expand)
+          var bodyMount = document.createElement('div');
+          bodyMount.className = 'ingest-row-body hidden';
+          bodyMount.setAttribute('aria-hidden', 'true');
+          row.appendChild(bodyMount);
+
+          var bodyRendered = false;
+          expandBtn.addEventListener('click', function () {
+            var isHidden = bodyMount.classList.contains('hidden');
+            if (isHidden && !bodyRendered) {
+              bodyMount.textContent = '';
+              if (section.body && section.body.length > 0) {
+                var frag = MarkdownParser.parse(section.body, {
+                  resolve: function () {
+                    return null;
+                  },
+                });
+                bodyMount.appendChild(frag);
+              } else {
+                var empty = document.createElement('em');
+                empty.textContent = STRINGS.ingestEmptyBody;
+                bodyMount.appendChild(empty);
+              }
+              bodyRendered = true;
+            }
+            bodyMount.classList.toggle('hidden', !isHidden);
+            bodyMount.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+            expandBtn.textContent = isHidden ? STRINGS.ingestRowCollapse : STRINGS.ingestRowExpand;
+            expandBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+          });
+
+          return row;
         },
 
         // ── SRS Review mode ─────────────────────────
