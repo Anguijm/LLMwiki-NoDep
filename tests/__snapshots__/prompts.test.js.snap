@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`/_prompts/ frontmatter discipline > discovered prompt-file set matches snapshot 1`] = `
+[
+  "flashcards-agent.md",
+  "flashcards.md",
+  "gap-analysis-agent.md",
+  "gap-analysis.md",
+  "ingest-agent.md",
+  "ingest-large-agent.md",
+  "ingest.md",
+  "linker-agent.md",
+  "linker.md",
+  "review-packet-agent.md",
+  "review-packet.md",
+]
+`;
