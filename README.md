@@ -268,19 +268,24 @@ Click the **Outline** button in the header to see all notes grouped by tier, wit
 
 ## How to use a prompt template
 
-Five templates live under `/_prompts/`:
+Eleven templates live under `/_prompts/`. Most tasks have both a **chat-mode** template (single GenAI.mil chat turn) and an **agent-mode** sibling (main + subagents orchestration). Pick chat for simplicity; pick agent for large/dense inputs where separating concerns into focused subagents produces measurably better output. See [`_prompts/README.md`](./_prompts/README.md) for the chat-vs-agent picking guide and the cost kill criterion that retires agent-mode prompts if they fail to pay their way.
 
-| Template | Purpose | Human turn budget |
-|---|---|---|
-| `ingest.md` | Normalize a source → one note with frontmatter | 2 |
-| `linker.md` | Inject `[[wiki links]]` into a note | 1 |
-| `flashcards.md` | Generate SRS cards (one YAML file per card, saved to `/srs/`) — optional retention layer on your reference material | 1 |
-| `review-packet.md` | Compile a targeted refresher on a topic from a subset of your corpus | 2 |
-| `gap-analysis.md` | Find contradictions / missing concepts in a narrow subset of your corpus | 3 |
+**Human turn budget** is **paste round-trips between you and GenAI.mil**, not internal agent turns — agent-mode prompts may do several internal subagent hops for free; only clipboard round-trips count.
+
+| Task | Chat mode | Agent mode | Budget (chat / agent) |
+|---|---|---|---|
+| Normalize a source → one note with frontmatter | [`ingest.md`](./_prompts/ingest.md) | [`ingest-agent.md`](./_prompts/ingest-agent.md) | 2 / 1 |
+| Split a large source document into one note per section | — (agent only) | [`ingest-large-agent.md`](./_prompts/ingest-large-agent.md) | — / 1 |
+| Inject `[[wiki links]]` into a note | [`linker.md`](./_prompts/linker.md) | [`linker-agent.md`](./_prompts/linker-agent.md) | 1 / 1 |
+| Generate SRS cards (one YAML file per card, saved to `/srs/`) | [`flashcards.md`](./_prompts/flashcards.md) | [`flashcards-agent.md`](./_prompts/flashcards-agent.md) | 1 / 1 |
+| Compile a targeted refresher on a topic | [`review-packet.md`](./_prompts/review-packet.md) | [`review-packet-agent.md`](./_prompts/review-packet-agent.md) | 2 / 1 |
+| Find contradictions / missing concepts / ambiguities | [`gap-analysis.md`](./_prompts/gap-analysis.md) | [`gap-analysis-agent.md`](./_prompts/gap-analysis-agent.md) | 3 / 2 |
+
+`ingest-large-agent.md` is agent-only — there is no chat-mode sibling because the single-turn paradigm doesn't fit multi-section orchestration. For the end-to-end workflow (GenAI.mil agent setup → Import view paste → preview pane → commit), see the "How to import a large document" section above.
 
 Usage pattern for each is identical:
 - Copy the template from `/_prompts/<name>.md`.
-- Paste into GenAI.mil.
+- Paste into GenAI.mil (the chat window for chat-mode; the agent-UI configuration panels for agent-mode).
 - Paste your input into the `=== UNTRUSTED INPUT START ===` section.
 - Follow the template's output instructions for where to save the response.
 
