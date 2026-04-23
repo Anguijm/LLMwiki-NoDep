@@ -1292,6 +1292,7 @@
         },
         ingestStatsBom: 'BOM stripped from paste',
         ingestStatsLineEndings: 'Line endings normalized to LF',
+        ingestStatsDedented: 'Common leading whitespace stripped',
         ingestStatsTooMany: function (n, cap) {
           return 'Parsed ' + n + ' sections (limit ' + cap + ')';
         },
@@ -2121,6 +2122,17 @@
           var lineEndingsNormalized = /\r\n|\r/.test(text);
           text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
+          // Dedent: strip common leading whitespace across all non-blank
+          // lines. Defends against the common paste-from-chat-UI case where
+          // every line picks up a uniform indent (2 or 4 spaces, or a tab).
+          // Uniform dedent preserves intra-section relative indentation,
+          // so markdown code-blocks etc. remain correctly indented. The
+          // strict prefix-match rule for sentinels still applies AFTER
+          // dedent — this is a preprocessor, not a rule relaxation.
+          var preDedent = text;
+          text = SectionDelimiterParser._stripCommonLeadingWhitespace(text);
+          var dedented = text !== preDedent;
+
           var lines = text.split('\n');
           var errors = [];
           var warnings = [];
@@ -2283,10 +2295,34 @@
               totalSections: sections.length,
               bomStripped: bomStripped,
               lineEndingsNormalized: lineEndingsNormalized,
+              dedented: dedented,
               zeroSections: !hadFatalError && sections.length === 0,
               tooManySections: tooMany,
             },
           };
+        },
+
+        _stripCommonLeadingWhitespace: function (text) {
+          // Character-wise common-prefix dedent across non-blank lines.
+          // Runs before line splitting in .parse; no effect if any non-blank
+          // line is flush-left.
+          var lines = text.split('\n');
+          var minIndent = Infinity;
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.length === 0) continue;
+            var j = 0;
+            while (j < line.length && (line.charAt(j) === ' ' || line.charAt(j) === '\t')) j++;
+            if (j === line.length) continue; // whitespace-only line
+            if (j < minIndent) minIndent = j;
+            if (minIndent === 0) break; // can't dedent further
+          }
+          if (!isFinite(minIndent) || minIndent === 0) return text;
+          var out = [];
+          for (var k = 0; k < lines.length; k++) {
+            out.push(lines[k].length >= minIndent ? lines[k].substring(minIndent) : lines[k]);
+          }
+          return out.join('\n');
         },
 
         _emptyResult: function (errors) {
@@ -4389,6 +4425,7 @@
           if (result.stats) {
             if (result.stats.bomStripped) parts.push(STRINGS.ingestStatsBom);
             if (result.stats.lineEndingsNormalized) parts.push(STRINGS.ingestStatsLineEndings);
+            if (result.stats.dedented) parts.push(STRINGS.ingestStatsDedented);
             if (result.stats.tooManySections) {
               parts.push(STRINGS.ingestStatsTooMany(result.stats.totalSections, SectionDelimiterParser.MAX_SECTIONS));
             }

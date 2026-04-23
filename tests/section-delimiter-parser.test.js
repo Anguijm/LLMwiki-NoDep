@@ -258,6 +258,43 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.stats.lineEndingsNormalized).toBe(true);
     expect(result.valid).toBe(true);
   });
+
+  it('dedents common leading whitespace so chat-UI-indented pastes still parse', () => {
+    // Real-world case: some chat-client copy buttons add 2 spaces of indent
+    // to every line. Without a dedent preprocessor the strict-prefix-match
+    // scanner would see `  <<<LLMWIKI-SECTION:…` and silently skip it,
+    // producing a zero-sections result — the exact UX bug we are pinning.
+    const base = wrapSection('foo', minimalFrontmatter('Foo') + 'body');
+    const indented = base
+      .split('\n')
+      .map((line) => (line.length > 0 ? '  ' + line : line))
+      .join('\n');
+    const result = SectionDelimiterParser.parse(indented);
+    expect(result.valid).toBe(true);
+    expect(result.stats.dedented).toBe(true);
+    expect(result.sections).toHaveLength(1);
+    expect(result.sections[0].sentinelSlug).toBe('foo');
+  });
+
+  it('does not dedent when any non-blank line is already flush-left', () => {
+    const input = wrapSection('foo', minimalFrontmatter('Foo') + '    indented body line');
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.stats.dedented).toBe(false);
+    expect(result.valid).toBe(true);
+    expect(result.sections[0].body).toContain('    indented body line');
+  });
+
+  it('dedents with tabs as well as spaces', () => {
+    const base = wrapSection('foo', minimalFrontmatter('Foo') + 'body');
+    const indented = base
+      .split('\n')
+      .map((line) => (line.length > 0 ? '\t' + line : line))
+      .join('\n');
+    const result = SectionDelimiterParser.parse(indented);
+    expect(result.stats.dedented).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(1);
+  });
 });
 
 describe('SectionDelimiterParser.parse — redaction discipline', () => {
