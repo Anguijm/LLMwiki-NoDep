@@ -2145,10 +2145,17 @@
           for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
             var lineNo = i + 1;
+            // Sentinel detection is per-line whitespace-tolerant: the dedent
+            // preprocessor above normalizes the *common* leading indent, but
+            // it can't handle the mixed-indent case where one line is flush-
+            // left by accident of copy-paste and the rest are indented. The
+            // probe trims both sides, the strict-match rule still applies to
+            // the trimmed content, body lines are captured verbatim below.
+            var sentinelProbe = line.replace(/^[ \t]+|[ \t]+$/g, '');
 
-            if (line.indexOf(SectionDelimiterParser.OPEN_PREFIX) === 0) {
+            if (sentinelProbe.indexOf(SectionDelimiterParser.OPEN_PREFIX) === 0) {
               var openResult = SectionDelimiterParser._parseSentinelLine(
-                line,
+                sentinelProbe,
                 SectionDelimiterParser.OPEN_PREFIX,
                 lineNo,
                 'open'
@@ -2183,9 +2190,9 @@
               continue;
             }
 
-            if (line.indexOf(SectionDelimiterParser.CLOSE_PREFIX) === 0) {
+            if (sentinelProbe.indexOf(SectionDelimiterParser.CLOSE_PREFIX) === 0) {
               var closeResult = SectionDelimiterParser._parseSentinelLine(
-                line,
+                sentinelProbe,
                 SectionDelimiterParser.CLOSE_PREFIX,
                 lineNo,
                 'close'

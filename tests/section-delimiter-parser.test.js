@@ -295,6 +295,49 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.valid).toBe(true);
     expect(result.sections).toHaveLength(1);
   });
+
+  it('parses mixed-indent pastes where one sentinel is flush-left and others are indented', () => {
+    // This is the exact shape that bit a real user: the first line landed
+    // flush-left from copy-paste and every subsequent line picked up a
+    // 2-space indent. The dedent preprocessor sees min-indent = 0 (from
+    // the flush-left line) and does nothing — which is the conservative
+    // default behavior. Sentinel recognition must still work per-line
+    // via the left-trim probe.
+    const input = [
+      '<<<LLMWIKI-SECTION:one>>>',
+      '  ---',
+      '  title: Same Name',
+      '  tier: warm',
+      '  ---',
+      '  body one',
+      '  <<<LLMWIKI-SECTION-END:one>>>',
+      '',
+      '  <<<LLMWIKI-SECTION:two>>>',
+      '  ---',
+      '  title: Same Name',
+      '  tier: warm',
+      '  ---',
+      '  body two',
+      '  <<<LLMWIKI-SECTION-END:two>>>',
+    ].join('\n');
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(2);
+    expect(result.sections[0].sentinelSlug).toBe('one');
+    expect(result.sections[1].sentinelSlug).toBe('two');
+  });
+
+  it('tolerates trailing whitespace on sentinel lines', () => {
+    const input = [
+      '<<<LLMWIKI-SECTION:foo>>>   ',
+      minimalFrontmatter('Foo') + 'body',
+      '<<<LLMWIKI-SECTION-END:foo>>>\t',
+    ].join('\n');
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(1);
+  });
 });
 
 describe('SectionDelimiterParser.parse — redaction discipline', () => {
