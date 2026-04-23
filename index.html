@@ -1447,6 +1447,514 @@
       };
 
       // ══════════════════════════════════════════════
+      // Slugger — canonical filename derivation from titles
+      // ══════════════════════════════════════════════
+
+      const Slugger = {
+        // Algorithm follows docs/data_schemas.md "Filename slugging". Output
+        // character set is [a-z0-9-] with an optional leading '_' for reserved
+        // Windows stems. Length <= 81 (80 + optional '_').
+        _combiningMarkRegex: /[\u0300-\u036f]/g,
+        // Apostrophes (ASCII ', curly U+2019, modifier U+02BC) drop to empty
+        // before hyphenization, so "Parseval's" slugs to "parsevals" not
+        // "parseval-s". Matches the example in docs/data_schemas.md.
+        _apostropheRegex: /['\u2019\u02bc]/g,
+        _nonSlugCharRegex: /[^a-z0-9]+/g,
+        _consecutiveHyphensRegex: /-+/g,
+        _trimHyphensRegex: /^-+|-+$/g,
+        _reservedStemRegex: /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/,
+        _slugFormatRegex: /^_?[a-z0-9]+(-[a-z0-9]+)*$/,
+
+        slugify: function (title, timestampForEmpty) {
+          // Returns a canonical slug string, or null if the title normalizes to
+          // empty and no timestamp was supplied. Timestamps come from the app
+          // (OS clock) or the human — never from an LLM.
+          if (typeof title !== 'string') return null;
+          var s = title.normalize('NFKD');
+          s = s.replace(Slugger._combiningMarkRegex, '');
+          s = s.toLowerCase();
+          s = s.replace(Slugger._apostropheRegex, '');
+          s = s.replace(Slugger._nonSlugCharRegex, '-');
+          s = s.replace(Slugger._consecutiveHyphensRegex, '-');
+          s = s.replace(Slugger._trimHyphensRegex, '');
+
+          if (s.length === 0) {
+            if (typeof timestampForEmpty === 'number' && isFinite(timestampForEmpty)) {
+              s = 'untitled-' + Math.trunc(timestampForEmpty);
+            } else {
+              return null;
+            }
+          }
+
+          if (s.length > 80) {
+            var cut = 80;
+            var hyphenIdx = s.lastIndexOf('-', 80);
+            if (hyphenIdx >= 60) cut = hyphenIdx;
+            s = s.substring(0, cut);
+            s = s.replace(/-+$/, '');
+          }
+
+          if (Slugger._reservedStemRegex.test(s)) {
+            s = '_' + s;
+          }
+          return s;
+        },
+
+        isValidSlug: function (slug) {
+          if (typeof slug !== 'string') return false;
+          if (slug.length === 0 || slug.length > 81) return false;
+          return Slugger._slugFormatRegex.test(slug);
+        },
+
+        isReservedOSName: function (name) {
+          // Accepts bare stems, stems with extensions, and '.'/'..'.
+          // Case-insensitive per Windows filesystem semantics.
+          if (typeof name !== 'string') return false;
+          var lower = name.toLowerCase();
+          if (lower === '.' || lower === '..') return true;
+          // First-dot strip so `NUL.txt.md` reduces to stem `nul` (reserved),
+          // not `nul.txt` (not reserved). Reserved names are forbidden
+          // regardless of how many extensions a user piles on.
+          var stem = lower.replace(/\..*$/, '');
+          return Slugger._reservedStemRegex.test(stem);
+        },
+
+        slugMismatchReason: function (agentSlug, canonicalSlug) {
+          // Best-effort human-readable rationale. Both inputs are assumed to be
+          // validated-safe (no raw-content leakage through this path).
+          if (agentSlug === canonicalSlug) return null;
+          if (typeof agentSlug !== 'string' || typeof canonicalSlug !== 'string') {
+            return 'invalid slug input';
+          }
+          if (agentSlug.toLowerCase() === canonicalSlug) return 'normalized case';
+          if (/[^a-z0-9-]/i.test(agentSlug)) return 'removed non-ASCII or special characters';
+          if (
+            agentSlug.length > canonicalSlug.length &&
+            agentSlug.substring(0, canonicalSlug.length) === canonicalSlug
+          ) {
+            return 'truncated to length limit';
+          }
+          return 're-derived from title per canonical rules';
+        },
+      };
+
+      // ══════════════════════════════════════════════
+      // SectionDelimiterParser — chunked-ingest sentinel scanner (M3)
+      // ══════════════════════════════════════════════
+
+      const SectionDelimiterParser = {
+        // Linear single-pass scanner with strict prefix match. No regex
+        // alternation or backtracking on the line-scan hot path. Error
+        // messages NEVER include raw ingested content — only error category,
+        // validated sentinel slug, and line/column metadata. See
+        // .harness/active_plan.md §"Error-log redaction (new in rev 5)".
+        OPEN_PREFIX: '<<<LLMWIKI-SECTION:',
+        CLOSE_PREFIX: '<<<LLMWIKI-SECTION-END:',
+        SUFFIX: '>>>',
+        MAX_SECTIONS: 200,
+        MAX_TITLE_LENGTH: 200,
+        // C0 control bytes minus TAB (0x09), LF (0x0A), CR (0x0D).
+        _controlByteRegex: /[\x00-\x08\x0B\x0C\x0E-\x1F]/,
+
+        parse: function (rawText) {
+          if (typeof rawText !== 'string') {
+            return SectionDelimiterParser._emptyResult([
+              {
+                category: 'input.invalid-type',
+                message: 'input must be a string',
+                line: 0,
+                column: 0,
+                fatal: true,
+              },
+            ]);
+          }
+
+          var bomStripped = false;
+          var text = rawText;
+          if (text.charCodeAt(0) === 0xfeff) {
+            text = text.slice(1);
+            bomStripped = true;
+          }
+
+          var lineEndingsNormalized = /\r\n|\r/.test(text);
+          text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+          var lines = text.split('\n');
+          var errors = [];
+          var warnings = [];
+          var sections = [];
+          var preambleLines = [];
+          var state = 'IDLE';
+          var currentSection = null;
+          var hadFatalError = false;
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var lineNo = i + 1;
+
+            if (line.indexOf(SectionDelimiterParser.OPEN_PREFIX) === 0) {
+              var openResult = SectionDelimiterParser._parseSentinelLine(
+                line,
+                SectionDelimiterParser.OPEN_PREFIX,
+                lineNo,
+                'open'
+              );
+              if (openResult.error) {
+                errors.push(openResult.error);
+                hadFatalError = true;
+                continue;
+              }
+              if (state === 'IN_SECTION') {
+                errors.push({
+                  category: 'delimiter.nested-open',
+                  message:
+                    'open sentinel at line ' +
+                    lineNo +
+                    ' found inside already-open section (opened at line ' +
+                    currentSection.startLine +
+                    ')',
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              currentSection = {
+                sentinelSlug: openResult.slug,
+                startLine: lineNo,
+                bodyLines: [],
+              };
+              state = 'IN_SECTION';
+              continue;
+            }
+
+            if (line.indexOf(SectionDelimiterParser.CLOSE_PREFIX) === 0) {
+              var closeResult = SectionDelimiterParser._parseSentinelLine(
+                line,
+                SectionDelimiterParser.CLOSE_PREFIX,
+                lineNo,
+                'close'
+              );
+              if (closeResult.error) {
+                errors.push(closeResult.error);
+                hadFatalError = true;
+                continue;
+              }
+              if (state !== 'IN_SECTION') {
+                errors.push({
+                  category: 'delimiter.orphan-close',
+                  message: 'close sentinel at line ' + lineNo + ' has no matching open',
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              if (closeResult.slug !== currentSection.sentinelSlug) {
+                errors.push({
+                  category: 'delimiter.mismatched-close',
+                  message:
+                    'close sentinel slug at line ' +
+                    lineNo +
+                    ' does not match open at line ' +
+                    currentSection.startLine,
+                  line: lineNo,
+                  column: 1,
+                  fatal: true,
+                });
+                hadFatalError = true;
+                continue;
+              }
+              var processed = SectionDelimiterParser._processSection(currentSection, lineNo);
+              sections.push(processed);
+              currentSection = null;
+              state = 'IDLE';
+              continue;
+            }
+
+            if (state === 'IN_SECTION') {
+              currentSection.bodyLines.push(line);
+            } else {
+              preambleLines.push(line);
+            }
+          }
+
+          if (state === 'IN_SECTION') {
+            errors.push({
+              category: 'delimiter.unterminated-section',
+              message:
+                'open sentinel at line ' + currentSection.startLine + ' has no matching close before end of paste',
+              line: currentSection.startLine,
+              column: 1,
+              fatal: true,
+            });
+            hadFatalError = true;
+          }
+
+          var tooMany = sections.length > SectionDelimiterParser.MAX_SECTIONS;
+          if (tooMany) {
+            errors.push({
+              category: 'delimiter.too-many-sections',
+              message:
+                'parsed ' +
+                sections.length +
+                ' sections; per-batch limit is ' +
+                SectionDelimiterParser.MAX_SECTIONS +
+                '. Split the source document or re-prompt the agent to coarsen section boundaries.',
+              line: 0,
+              column: 0,
+              fatal: true,
+            });
+            hadFatalError = true;
+          }
+
+          for (var s = 0; s < sections.length; s++) {
+            var sec = sections[s];
+            if (sec.slugMismatch) {
+              warnings.push({
+                category: 'slug.mismatch',
+                message:
+                  'section ' +
+                  (s + 1) +
+                  " sentinel slug '" +
+                  sec.sentinelSlug +
+                  "' differs from canonical slug '" +
+                  sec.canonicalSlug +
+                  "' (" +
+                  sec.slugMismatchReason +
+                  ')',
+                line: sec.startLine,
+                column: 1,
+              });
+            }
+          }
+
+          return {
+            valid: !hadFatalError && sections.length > 0,
+            preamble: preambleLines.join('\n'),
+            sections: hadFatalError ? [] : sections,
+            errors: errors,
+            warnings: warnings,
+            stats: {
+              totalSections: sections.length,
+              bomStripped: bomStripped,
+              lineEndingsNormalized: lineEndingsNormalized,
+              zeroSections: !hadFatalError && sections.length === 0,
+              tooManySections: tooMany,
+            },
+          };
+        },
+
+        _emptyResult: function (errors) {
+          return {
+            valid: false,
+            preamble: '',
+            sections: [],
+            errors: errors,
+            warnings: [],
+            stats: {
+              totalSections: 0,
+              bomStripped: false,
+              lineEndingsNormalized: false,
+              zeroSections: false,
+              tooManySections: false,
+            },
+          };
+        },
+
+        _parseSentinelLine: function (line, prefix, lineNo, role) {
+          // Strict structure: <prefix><slug><suffix>, nothing else. Trailing
+          // whitespace or extra characters → malformed.
+          if (line.length < prefix.length + SectionDelimiterParser.SUFFIX.length + 1) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.malformed-' + role,
+                message: 'malformed ' + role + " sentinel (empty slug or missing '>>>')",
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          if (line.substring(line.length - SectionDelimiterParser.SUFFIX.length) !== SectionDelimiterParser.SUFFIX) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.malformed-' + role,
+                message: 'malformed ' + role + " sentinel (missing or misplaced '>>>')",
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          var slug = line.substring(prefix.length, line.length - SectionDelimiterParser.SUFFIX.length);
+          if (!Slugger.isValidSlug(slug)) {
+            return {
+              slug: null,
+              error: {
+                category: 'delimiter.invalid-slug',
+                message:
+                  'invalid slug in ' + role + ' sentinel at line ' + lineNo + ' (does not match canonical slug format)',
+                line: lineNo,
+                column: 1,
+                fatal: true,
+              },
+            };
+          }
+          return { slug: slug, error: null };
+        },
+
+        _processSection: function (section, closeLine) {
+          var lines = section.bodyLines;
+          var sectionErrors = [];
+          var frontmatter = null;
+          var body = lines.join('\n');
+
+          var fmStartIdx = -1;
+          for (var i = 0; i < lines.length; i++) {
+            if (lines[i] === '') continue;
+            if (lines[i] === '---') {
+              fmStartIdx = i;
+            }
+            break;
+          }
+
+          if (fmStartIdx === -1) {
+            sectionErrors.push({
+              category: 'frontmatter.missing-block',
+              message:
+                "section '" + section.sentinelSlug + "' has no frontmatter (section body must start with '---' line)",
+              line: section.startLine + 1,
+              column: 1,
+              fatal: false,
+            });
+          } else {
+            var fmEndIdx = -1;
+            for (var j = fmStartIdx + 1; j < lines.length; j++) {
+              if (lines[j] === '---') {
+                fmEndIdx = j;
+                break;
+              }
+            }
+            if (fmEndIdx === -1) {
+              sectionErrors.push({
+                category: 'frontmatter.unterminated',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' has an open '---' but no matching close before end of section",
+                line: section.startLine + 1 + fmStartIdx,
+                column: 1,
+                fatal: false,
+              });
+            } else {
+              var yamlBlock = lines.slice(fmStartIdx + 1, fmEndIdx).join('\n');
+              try {
+                frontmatter = FrontmatterParser._parseYaml(yamlBlock);
+              } catch (e) {
+                sectionErrors.push({
+                  category: 'frontmatter.yaml-parse-error',
+                  message:
+                    "section '" +
+                    section.sentinelSlug +
+                    "' frontmatter YAML parse failed (kind: " +
+                    (e && e.name ? e.name : 'Error') +
+                    ')',
+                  line: section.startLine + 1 + fmStartIdx,
+                  column: 1,
+                  fatal: false,
+                });
+              }
+              body = lines.slice(fmEndIdx + 1).join('\n');
+              if (body.charAt(0) === '\n') body = body.slice(1);
+            }
+          }
+
+          var canonicalSlug = null;
+          var slugMismatch = false;
+          var slugMismatchReason = null;
+
+          if (frontmatter && typeof frontmatter.title === 'string') {
+            var title = frontmatter.title;
+            if (title.length > SectionDelimiterParser.MAX_TITLE_LENGTH) {
+              sectionErrors.push({
+                category: 'title.too-long',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' title exceeds maximum length (" +
+                  SectionDelimiterParser.MAX_TITLE_LENGTH +
+                  ' chars; got ' +
+                  title.length +
+                  ')',
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            if (SectionDelimiterParser._controlByteRegex.test(title)) {
+              sectionErrors.push({
+                category: 'title.control-bytes',
+                message: "section '" + section.sentinelSlug + "' title contains disallowed control bytes (NUL or C0)",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            if (SectionDelimiterParser._controlByteRegex.test(body)) {
+              sectionErrors.push({
+                category: 'body.control-bytes',
+                message: "section '" + section.sentinelSlug + "' body contains disallowed control bytes (NUL or C0)",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            }
+            canonicalSlug = Slugger.slugify(title);
+            if (canonicalSlug === null) {
+              sectionErrors.push({
+                category: 'title.empty-slug',
+                message:
+                  "section '" +
+                  section.sentinelSlug +
+                  "' title normalizes to an empty slug — provide timestamp-or-rename at commit time",
+                line: section.startLine + 1,
+                column: 1,
+                fatal: false,
+              });
+            } else if (canonicalSlug !== section.sentinelSlug) {
+              slugMismatch = true;
+              slugMismatchReason = Slugger.slugMismatchReason(section.sentinelSlug, canonicalSlug);
+            }
+          } else if (frontmatter !== null) {
+            sectionErrors.push({
+              category: 'frontmatter.invalid-title',
+              message: "section '" + section.sentinelSlug + "' frontmatter missing required 'title' field",
+              line: section.startLine + 1,
+              column: 1,
+              fatal: false,
+            });
+          }
+
+          return {
+            sentinelSlug: section.sentinelSlug,
+            canonicalSlug: canonicalSlug,
+            slugMismatch: slugMismatch,
+            slugMismatchReason: slugMismatchReason,
+            frontmatter: frontmatter,
+            body: body,
+            startLine: section.startLine,
+            endLine: closeLine,
+            errors: sectionErrors,
+          };
+        },
+      };
+
+      // ══════════════════════════════════════════════
       // WikiLinkResolver
       // ══════════════════════════════════════════════
 
