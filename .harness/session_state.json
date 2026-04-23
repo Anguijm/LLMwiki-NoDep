@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": ".harness/active_plan.md — Phase 3 course corrections complete. M1 + M2 + council-infra + M3 all merged or at merge gate; PR #11 pending merge after round 13 Proceed + the two small round-13 follow-ups in the same commit as session close.",
-  "focus_area": "phase-3-m3-session-close",
-  "approval_state": "plan-pending-council-then-merge",
+  "active_plan": null,
+  "focus_area": "phase-3-complete",
+  "approval_state": "idle",
   "last_council": {
-    "source": "PR #11 round 13",
-    "decision": "Proceed (round 13; 11th Proceed of 13 rounds on this PR)",
+    "source": "PR #12 round 3",
+    "decision": "Proceed (round 3; all three rounds Proceed)",
     "scores": { "accessibility": 10, "architecture": 10, "bugs": 9, "cost": 10, "product": 10, "security": 10 },
-    "run_at": "2026-04-23T07:15:54Z"
+    "run_at": "2026-04-23T18:42:04Z"
   },
   "last_commit": {
-    "hash": "d6ff5c5",
-    "short": "d6ff5c5",
-    "subject": "fix(m3): address council rev 12 Revise blockers — serializer + regen guard + revoked-handle recovery",
-    "author": "Claude <noreply@anthropic.com>",
-    "branch": "feat/phase-3-m3-chunked-ingest",
-    "committed_at": "2026-04-23T07:10:00+00:00",
-    "files_changed": 3
+    "hash": "e0d2adf",
+    "short": "e0d2adf",
+    "subject": "feat(prompts): Phase 3 M3 docs-gap — ingest-large-agent template + Import-view how-to (#12)",
+    "author": "GitHub <noreply@github.com>",
+    "branch": "main",
+    "committed_at": "2026-04-23T18:58:29+00:00",
+    "files_changed": 5
   },
-  "notes": "M3 shipping: ESLint DOM-sink ban + Slugger + SectionDelimiterParser + 28-case security test battery + UI scaffold + writer + post-write verification + newline-safe serializer + regen-index guard + revoked-handle recovery flow. 13 council rounds total (11 Proceed, 2 Revise), zero stack hallucinations. 185 tests (74 baseline + 111 new). User manual-tested writer end-to-end and confirmed all 7 checkpoints passed. Session-close commit includes learnings append, this state file update, yolo_log event, plus the two small round-13 polish items (console.error on .tmp cleanup failure, mixed-line-endings + mixed-whitespace tests) so they don't burn a separate council round."
+  "notes": "PR #12 merged via squash. Closes M3 producer-side documentation gap from PR #11. Shipped: _prompts/ingest-large-agent.md (agent-only template, main + 4 subagents), _prompts/README.md table update, README.md How-to-import-a-large-document section + 3 troubleshooting entries, tests/prompts.test.js expected-files list update. Council: 3 rounds, all Proceed, zero non-negotiables. Four prompt-hardening passes folded in across rounds (double-sided sentinel escape + URL scheme guard, --- body-line handling + critical-failure reporting, ASCII-only frontmatter punctuation + NUL-byte stripping + graceful empty-section placeholder). Merged after round 3 per docs-PR diminishing-returns discipline. Session-close reflection (.harness/learnings.md append) not yet landed — deferred to follow-up session-close PR per council-gating requirement on institutional-knowledge content."
 }
