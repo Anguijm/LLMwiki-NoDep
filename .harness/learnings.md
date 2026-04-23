@@ -161,3 +161,107 @@
   re-scan, (4) Security-persona ESLint DOM-sink ban nice-to-have that
   the human promoted to plan-level commitment.
 - Month-to-date council budget: ~5 of 60 runs used. Well within cap.
+
+## 2026-04-22/23 — Phase 3 M2 (dual-mode prompts) + council persona hallucination fix
+
+### KEEP
+- Agent-mode prompts benefit from a small number of focused subagents
+  with explicit per-subagent I/O contracts, NOT a big orchestration
+  monster. Linker used 2 subagents (match-scanner + wrap-applier);
+  review-packet used 5 (one per output section). Both felt right.
+  Matching subagent count to the natural decomposition of the task
+  matters more than hitting a "standard" count.
+- Per-subagent untrusted-content framing caught real drift during
+  development: writing the Vitest framing-position check BEFORE the
+  prompts were done would have caught both bugs in my own draft agent
+  prompts faster. The test IS the enforcement. Use test-first discipline
+  for any security-sensitive prompt pattern in future milestones.
+- When the council critique is demonstrably wrong (references files
+  that do not exist, demands features already present, re-raises
+  explicitly-declined scope), document the override with specific
+  evidence — what the council claimed vs. what the diff actually
+  contains — and merge. The override mechanism is cheap; re-litigating
+  a hallucinated review burns budget and slows real work.
+
+### IMPROVE
+- Before writing a Vitest test that walks markdown structure, think
+  through the whole-line-vs-substring distinction AND the blank-line
+  skip-back. My first test used `line.includes(marker)` and matched
+  the framing paragraph's own mention of the marker text. Second
+  iteration missed that code-fence openers (```) should be skipped
+  along with blank lines. Three iterations to converge. Next time:
+  write the "what counts as a content line" predicate first, then the
+  marker-scanner, then the assertion.
+- Two consecutive council runs (PR #8 session-close, PR #9 Milestone 2)
+  returned Revise based on hallucinated stack (Vue + TS + pnpm + `src/`
+  directories that do not exist). Root cause: persona files and the
+  Lead Architect prompt lack an explicit repo-context anchor, so on
+  text-heavy diffs Gemini fills in the gap with whatever web-stack
+  defaults are most frequent in its priors. Fix lands in this same
+  session via `.harness/council/repo_context.md` + `council.py`
+  injection.
+
+### INSIGHT
+- Council hallucinations are **stack-agnostic in both directions** —
+  the same Gemini model that accurately reviewed code-bearing PRs
+  (Phase 2b, 2c) fabricates frameworks when the diff is predominantly
+  text (prompt templates, learnings, harness bookkeeping). The grounding
+  anchor is the fix, not a persona-file rewrite. Infrastructure change
+  beats persona tuning here.
+- Cost and Security personas stayed accurate across both hallucinated
+  rounds (10/10 on both PR #8 and PR #9 when the others went sideways).
+  Hypothesis: these two personas' scopes are concrete and bounded
+  (cost = human turns on GenAI.mil; security = untrusted-content
+  handling, injection, PII), so there is less surface area for
+  hallucination to colonize. The structural personas (arch, bugs,
+  product, a11y) have broader scope that invites speculative
+  architecture inference when the diff doesn't constrain it.
+- Two overrides in a row in this session. The override mechanism is
+  necessary, but its frequency is a signal — the harness needs to
+  prevent the situation, not rely on the escape hatch. Hence the
+  repo-context anchor. If the anchor doesn't reduce hallucination
+  frequency materially over the next few PRs, the next lever is
+  persona-file tuning (tighter scope definitions, explicit "do NOT
+  propose changes outside this list" guardrails).
+
+### COUNCIL
+- PR #7 (Milestone 1): 5 rounds total, final 10-across-the-board Proceed.
+- PR #8 (session close for M1): 1 round, Revise, hallucinated Vue/TS.
+  Overridden — critique cited files that do not exist.
+- PR #9 (Milestone 2): 1 round, Revise, hallucinated Vue/pnpm/`src/lib/`.
+  Overridden — critique cited files that do not exist + demanded i18n
+  (explicitly declined in plan rev 3) + demanded features already in
+  the diff.
+- Month-to-date council budget: ~7 of ~60 runs used across this session.
+
+## 2026-04-23 — Council persona hallucination fix (this session, continued)
+
+### KEEP
+- Root-causing the hallucination pattern to "persona prompt lacks
+  repo-context anchor" before attempting persona-level tuning was the
+  right call. Infrastructure fix (one file + 4-line council.py change)
+  addresses every persona at once; a persona-by-persona rewrite would
+  have been 7x the work and still wouldn't have caught what we can't
+  anticipate.
+- Keeping the anchor as a SEPARATE file (`repo_context.md`) injected
+  by the runner, rather than editing each persona file, means the next
+  stack change (e.g., if Phase 4 ever adopts a dev-only framework for
+  tests) is a one-file edit, not a 7-file sync.
+
+### IMPROVE
+- (Open observation for next session.) If the repo-context anchor
+  reduces hallucination rate on the next 3-5 council runs, the
+  pattern is validated. If it doesn't, escalate to persona-file
+  tuning — specifically, add "do NOT invent file paths not in the
+  provided repo context" guardrails to arch / bugs / product / a11y.
+
+### INSIGHT
+- Fixing the council infrastructure IS itself council-gated per
+  CLAUDE.md (persona file edits + changes to council.py). If this
+  PR's council round hallucinates again, the override justification
+  is built in: a council that says "do not fix the council" on a
+  diff that consists of "fix the council" is empirically proving
+  the need for the fix.
+
+### COUNCIL
+- (To be filled after this PR runs.)

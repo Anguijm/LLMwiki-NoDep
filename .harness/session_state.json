@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 merged (PR #7). M2 and M3 pending.",
-  "focus_area": "phase-3-m1-merged",
+  "active_plan": ".harness/active_plan.md — Phase 3 course corrections, 3 milestones. M1 + M2 merged; M3 pending.",
+  "focus_area": "phase-3-m2-merged-plus-council-anchor",
   "approval_state": "idle",
   "last_council": {
-    "source": "PR #7 round 5 (implementation review)",
-    "decision": "Proceed",
-    "scores": { "accessibility": 9, "architecture": 10, "bugs": 10, "cost": 10, "product": 10, "security": 10 },
-    "run_at": "2026-04-22T23:25:35Z"
+    "source": "PR #9 round 1 (override-merged)",
+    "decision": "Revise (overridden — hallucinated critique)",
+    "scores": { "accessibility": 6, "architecture": 7, "bugs": 5, "cost": 10, "product": 7, "security": 10 },
+    "run_at": "2026-04-23T01:29:39Z"
   },
   "last_commit": {
-    "hash": "b3847b7",
-    "short": "b3847b7",
-    "subject": "plan: course corrections — corpus reframe, dual-mode prompts, chunked ingest (#7)",
+    "hash": "cb8a348",
+    "short": "cb8a348",
+    "subject": "feat: Phase 3 Milestone 2 — dual-mode prompts (chat + agent) (#9)",
     "author": "Claude <noreply@anthropic.com>",
     "branch": "main",
-    "committed_at": "2026-04-22T23:27:00+00:00",
+    "committed_at": "2026-04-23T01:35:00+00:00",
     "files_changed": 12
   },
-  "notes": "Phase 3 Milestone 1 merged. Corpus reframed single-user personal reference; warm is default tier. Milestones 2 (dual-mode prompts) and 3 (large-doc chunked ingest) remain. Active plan document stays on main and is re-referenced by each subsequent PR."
+  "notes": "M1 + M2 merged. M2 council round hallucinated a Vue/pnpm/src/lib/ stack (same pattern as M1-session-close PR #8); overridden on evidence that referenced files do not exist. This PR ships .harness/council/repo_context.md + council.py injection as the root-cause fix before M3. Milestone 3 (large-doc chunked ingest) remains as the final PR."
 }
