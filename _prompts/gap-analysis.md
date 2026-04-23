@@ -2,6 +2,7 @@
 purpose: Find contradictions and missing concepts across a narrow pasted corpus of notes. Output is a diagnostic report, not new notes.
 inputs: A narrow pasted corpus (5-15 notes on a single subject area). Optional: a specific concern the human wants validated.
 outputs: A markdown report listing (a) contradictions found between notes, (b) concepts expected in the subject area but missing from the corpus, (c) ambiguities worth clarifying.
+mode: chat
 human_turn_budget: 3
 version: 1
 ---

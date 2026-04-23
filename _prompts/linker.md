@@ -2,6 +2,7 @@
 purpose: Given a new or edited note plus a title-only slice of /_index.md, return the note with /_prompts/linker.md-injected [[wiki links]] where the note references existing titles.
 inputs: One note body (markdown with frontmatter). A title+tier slice of /_index.md (NOT full note bodies — see context discipline below).
 outputs: The same note body, unchanged except that phrases matching existing note titles are wrapped in [[...]] per Obsidian-style wiki-link syntax.
+mode: chat
 human_turn_budget: 1
 version: 1
 ---
