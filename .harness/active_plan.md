@@ -1,6 +1,6 @@
 # Active plan — Session close: Phase 3 docs-currency sweep + reflection
 
-**Status:** Plan draft, revision 2. Follow-up to PR #12 (M3 docs-gap closure, merged as `e0d2adf`). This PR does two discrete jobs bundled by theme — **documentation currency** across the repo:
+**Status:** Plan draft, revision 3. Follow-up to PR #12 (M3 docs-gap closure, merged as `e0d2adf`). This PR does two discrete jobs bundled by theme — **documentation currency** across the repo:
 
 1. Correct documentation that went stale across Phase 3 (architecture persona still references `srs.csv`, `CONTRIBUTING.md` still references `srs.csv`, `docs/data_schemas.md` missing M3 delimiter spec and M2 prompt-frontmatter section, `README.md` prompt table missing M2 agent-mode siblings).
 2. Append the Phase 3 session-close reflection to `.harness/learnings.md`.
@@ -18,6 +18,10 @@
 - Council bugs persona asked the `tests/prompts.test.js` glob conversion to land in this PR rather than an IMPROVE-listed follow-up; added as Edit 6.
 
 **Audit method:** read-only audit performed 2026-04-24 by cross-referencing shipped code on `main` @ `5270fa8` (post-PR-#12) + `.harness/council/repo_context.md` against every `.md` file in `/`, `/_prompts/`, `/docs/`, `/bedrock/`, `/warm/`, `/cold/`, `/power-automate/`, `/.harness/`, and `/.harness/council/`. "Clean" findings mean the file's claims are consistent with what the current code actually does and what `repo_context.md` says the stack is; "stale" findings cite the specific line and the specific fact that is wrong.
+
+**Rev 3 changes (council round 2 Revise):**
+- Edit 6 redesigned per council round-2 bugs-persona blocker: the `files.length >= 1` check was a real test-coverage regression (accidental prompt deletion would not fail CI). Replaced with a Vitest snapshot test over glob-discovered filenames — preserves the regression guard without hard-coding names in test logic. Adding a new prompt requires a deliberate `npm test -- -u` to regenerate the snapshot, which is committed alongside the new prompt as an intentional record. Added an explicit non-recursive-glob test per council's edge-case request.
+- Edit 2 clarified per council round-2 bugs-persona blocker: the parser-error-category list is silent on validation errors (e.g., a syntactically valid section missing a required `title` field). Added a contract-boundary paragraph: parser errors reject the whole paste; validation errors reject individual rows; both live in this file, in different sections; readers should consult both.
 
 ## Why now
 
@@ -55,6 +59,7 @@ Two additions:
 - The slug re-derivation rule — the agent's emitted slug is a suggestion; the canonical slug derives from `title` via `Filename slugging` (existing section).
 - The literal-sentinel escape rule — source content containing literal `<<<LLMWIKI-SECTION:` / `<<<LLMWIKI-SECTION-END:` must be escaped with `&lt;` to avoid nested-open or orphan-close parse errors.
 - The differentiated parse-error category list, verified against the shipped parser at `index.html` lines 2210–2492: `delimiter.invalid-slug`, `delimiter.unterminated-section`, `delimiter.orphan-close`, `delimiter.nested-open`, `delimiter.mismatched-close` (opening slug does not match its closing slug — distinct from orphan-close and unterminated-section), `delimiter.too-many-sections` (> 200), `delimiter.malformed-<role>` (parameterized by delimiter role; emitted when a sentinel line is structurally malformed in a way specific to its role — open vs close), `frontmatter.missing-block`, `frontmatter.unterminated` (opening `---` without a matching closing `---`), `frontmatter.yaml-parse-error`.
+- **Parser errors vs validation errors — contract boundary** (council round-2 bugs-persona blocker). The list above enumerates errors the multi-section **parser** produces — failures in the delimiter structure or per-section YAML syntax. A syntactically valid section whose frontmatter is missing a required field (e.g., `title`, `tier`) or has an out-of-range value is a **validation error**, not a parse error. Validation is handled at a higher layer — the same note-frontmatter validator documented earlier in this file under *Parser behavior on violations* (see `validation` / `kind` table). The multi-section Import view surfaces both kinds of errors to the user, but the two contracts are separate: parse errors reject the whole paste with a category + location; validation errors reject individual rows with the field-level `validation` error shape documented for single-note frontmatter. A reader looking for the exhaustive list of failures a section can produce should consult both this subsection (parse) and the *Parser behavior on violations* table (validation).
 - Cross-reference back to `_prompts/ingest-large-agent.md` for the producer-side prompt contract.
 
 Consuming reference: the parser lives in `index.html` (shipped in PR #11); the prompt lives in `_prompts/ingest-large-agent.md` (shipped in PR #12). `data_schemas.md` is the contract between them.
@@ -125,14 +130,21 @@ Append a `## 2026-04-24 — Phase 3 complete (M1 + M2 + M3 + docs-gap closure)` 
 
 ### Edit 6 — `tests/prompts.test.js` (MEDIUM leverage: test-hygiene; promoted into this PR per council round-1 bugs-persona guidance)
 
-Convert the hard-coded expected-files list to glob-based discovery. Specifically:
+Convert the hard-coded expected-files list to a **Vitest snapshot test** over glob-discovered filenames. Snapshot testing was council round-2 bugs-persona's required substitute for the naive `files.length >= 1` approach (which round-2 correctly blocked as a test-coverage regression: accidental deletion of a prompt file would not fail CI). Specifics:
 
-- Remove the `'finds at least the expected prompt files'` test's `toEqual(...sorted)` check against a hard-coded name list (current lines 95–111).
-- Replace with a glob-based assertion: the directory contains at least one `*.md` file other than `README.md`, AND every discovered file has frontmatter, AND the framing-position rule holds for every discovered file. The second and third conditions are already enforced by the `for (const f of files) { ... }` loops below; the `'finds at least the expected prompt files'` test becomes a smoke check that the glob found files at all.
-- Rename that test to `'finds at least one prompt file'` and assert `files.length >= 1`. Anything stronger is a hard-coded-list regression in disguise.
-- Add a short docstring comment above `listPromptFiles()` explaining the invariant: *every non-README `.md` file under `_prompts/` is subject to the mode + framing-position checks; adding a prompt file adds test cases automatically.*
+- Keep `listPromptFiles()` glob-based: `readdirSync(promptsDir)` (non-recursive, already), filter `.md` suffix, exclude `README.md`.
+- Add a short docstring above `listPromptFiles()` explaining the invariant: *every non-README `.md` file under `_prompts/` is subject to the mode + framing-position checks; adding a prompt file adds test cases automatically. The snapshot below asserts the discovered set itself; changes require a deliberate `npm test -- -u` to regenerate the snapshot, which is then committed alongside the new prompt as an intentional record.*
+- Replace the `'finds at least the expected prompt files'` test's body with: assemble the sorted list of discovered filenames and assert `expect(sortedNames).toMatchSnapshot()`. Vitest persists the snapshot to `tests/__snapshots__/prompts.test.js.snap`; that file is committed to git.
+- Rename the test to `'discovered prompt-file set matches snapshot'` to make the intent explicit (it is not a "finds at least N" smoke check; it is a set-identity check against a committed record).
+- Add a second test `'discovery is non-recursive'`: verify every entry in `readdirSync(promptsDir)` with `.md` suffix is a file (not a directory), via `statSync(path).isFile()`. Belt-and-suspenders against future refactors that might switch to a recursive glob and accidentally start scanning subdirectories. Council round-2 bugs-persona's specific edge-case request.
+- Generate the initial snapshot during implementation: first run after the test code changes lands will produce `tests/__snapshots__/prompts.test.js.snap`; commit that file in the same commit that modifies the test code. The snapshot contents will be the current 11 prompt filenames in sorted order.
 
-Verification: after the change, `npm run test` must show the existing per-file mode + framing-position tests still running once per prompt file, and the expected-files test replaced with a glob smoke check. Total test count may drop by one (the hard-coded `toEqual` becomes a count check) but per-file coverage is unchanged.
+Verification after the change:
+- `npm run test` must still pass with 187+ tests; the snapshot test replaces the `toEqual` test (count shifts by +1 for the new non-recursive test, so total goes 187 → 188 or stays the same depending on how Vitest counts the snapshot).
+- Induced failure check (manual): delete a prompt file locally and run `npm run test` — the snapshot test should fail with a clear diff showing the missing filename. This is the regression guard the hard-coded `toEqual` provided; snapshot-based discovery preserves it without hard-coding the list in test-logic.
+- Induced addition check (manual): add a throwaway `_prompts/__throwaway.md` file and run `npm run test` — the snapshot test fails with the new filename as a diff. Running `npm test -- -u` regenerates the snapshot; reverting the throwaway + `npm test -- -u` restores it.
+
+The snapshot file is small (one line per filename) and belongs in git as an intentional record of the prompt-file set.
 
 ## Non-negotiables check (per `CLAUDE.md`)
 
