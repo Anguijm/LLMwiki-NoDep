@@ -1,20 +1,21 @@
 # `/bedrock/` — permanent reference
 
-Notes in this folder are the permanent, slow-changing substrate of your knowledge. They are always loaded into the graph view on app open and are the default source for `[[wiki links]]` that don't specify a tier.
+Notes in this folder are the **durable, invariant substrate** of your personal reference corpus. They are always loaded into the graph view on app open and are the default source for `[[wiki links]]` that don't specify a tier.
+
+`/bedrock/` is a **high bar**: use it only when a note is genuinely stable reference material you expect to reach for repeatedly without revision. When in doubt, leave it in `/warm/`.
 
 ## What belongs here
 
-- First-principles derivations you'll reach for years from now (e.g., Laplace transform tables, Fourier series identities, SI unit prefixes).
-- Canonical definitions and axioms for core subjects.
-- Reference tables you consult without re-reading the derivation every time.
-- Textbook chapter distillations after they've survived multiple review cycles in `/warm/`.
+- Canonical definitions, reference tables, and invariant rules you consult without re-reading the derivation every time.
+- Foundational documents whose content rarely changes (core policies, standing procedures, reference constants).
+- Distillations of source material after they've proven durable in `/warm/` — stable content plus demonstrated reuse frequency.
 
 ## What does NOT belong here
 
-- Anything you're actively learning this semester (that's `/warm/`).
-- Material you've finished a course on and won't reach for again (that's `/cold/`).
-- Personal notes, meeting notes, TODO lists (not a study-wiki concern).
-- Work-in-progress derivations you haven't sanity-checked (that's `/warm/`).
+- Anything you're still actively refining, cross-linking, or validating (that's `/warm/`).
+- Material you've stopped consulting routinely (that's `/cold/`).
+- Notes whose underlying source is expected to be revised (e.g., policies with a known update cadence) — keep those in `/warm/` until their content stabilizes.
+- Meeting notes, task lists, ephemeral artifacts (not a corpus concern).
 
 ## Frontmatter
 
@@ -22,19 +23,19 @@ Every note in this folder carries `tier: bedrock` in frontmatter. Full schema in
 
 ```yaml
 ---
-title: Laplace transform — pair table
+title: Personnel security standards — reference
 tier: bedrock
 created: 2026-03-15T09:12:00Z
 updated: 2026-04-02T14:40:00Z
-tags: [laplace-transforms, signals, reference]
+tags: [personnel-security, standards, reference]
 ---
 ```
 
 ## Lifecycle: moving notes in and out
 
-- `warm` → `bedrock`: after a note has survived 2–3 SRS review cycles at ease ≥ 2.8 without edits to the core content, it has earned promotion. Move the file to `/bedrock/`, update `tier:` in frontmatter, bump `updated:`.
-- `bedrock` → `warm`: if the note contains an error you need to re-derive, or a new source requires significant revision. Demote and put it through the review loop again.
-- `bedrock` → `cold`: never, as a rule. Bedrock content is permanent or wrong — if it's wrong, it gets fixed in place, not archived.
+- `warm` → `bedrock`: a note earns promotion after it has been content-stable for an extended period and you find yourself reaching for it repeatedly. Durability + reuse frequency, not review cycles. Move the file to `/bedrock/`, update `tier:` in frontmatter, bump `updated:`.
+- `bedrock` → `warm`: if the note contains an error that needs re-verification, or if the underlying source has been revised enough to require substantial edits. Demote back to `/warm/` until the content is stable again.
+- `bedrock` → `cold`: avoid. Bedrock content is either maintained in place or demoted to `/warm/` for revision. Archiving invariant reference is usually a sign that the note belonged in `/warm/` all along.
 
 ## Phase 2b interaction
 
