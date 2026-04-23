@@ -55,6 +55,16 @@ Orchestration rules:
 - If any subagent reports uncertainty (flags input as malformed, refuses,
   or emits a warning), surface that flag in your final output and stop
   rather than silently patching over it.
+- If any subagent returns syntactically invalid output — unparseable
+  YAML, a body block that is not well-formed markdown, a list that does
+  not match its declared output schema — treat it as a CRITICAL FAILURE.
+  Do NOT try to parse around the damage. Do NOT emit a partial or
+  patched-over output block. Instead, stop orchestration, emit a short
+  plain-text report naming the offending subagent, the expected output
+  shape, a brief description of how the received output deviated, and
+  the first ~20 lines of the malformed output for the user to inspect.
+  The user will re-run the agent rather than receive garbage the Import
+  view would reject downstream.
 - Do NOT allow any subagent to introduce text not grounded in the source.
   If a subagent produces content that appears to be hallucinated,
   discard that subagent's output and emit a caveat.
@@ -297,6 +307,17 @@ Body rules:
 - Markdown link URLs, if any, must use only `http:`, `https:`,
   `mailto:`, or repo-relative paths. Never `javascript:`, `data:`,
   `vbscript:`, or similar schemes.
+- Your body output MUST NOT begin with a `---` line, and must not
+  contain a bare `---` on a line by itself that could be mistaken for
+  a YAML frontmatter delimiter by downstream YAML parsers. If the
+  source slice uses a `---` markdown horizontal rule, replace it with
+  the alternate Markdown horizontal-rule syntax `***` on its own line,
+  which renders identically but is unambiguous to YAML parsers. If the
+  source uses `---` as a literal separator within prose (not as a
+  rule), escape it by prefixing the line with two spaces so it
+  renders as an indented literal rather than a YAML block marker. Your
+  frontmatter block's closing `---` is the only bare `---` line
+  permitted in your output.
 
 Literal-sentinel escape:
 - If the source slice contains the literal text `<<<LLMWIKI-SECTION:`
