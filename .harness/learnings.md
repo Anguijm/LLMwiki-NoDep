@@ -370,3 +370,192 @@
 - Month-to-date council budget: ~91 of ~60 runs used. Overrun
   source documented in IMPROVE; not attributable to council
   inefficiency.
+
+## 2026-04-24 — Phase 3 complete (M1 + M2 + M3 + docs-gap closure + currency sweep)
+
+### KEEP
+- Council's repo-context anchor (PR #10) eliminated stack
+  hallucinations across the M3 code-bearing PR (13 rounds, zero
+  hallucinations) and the M3 docs-gap PR #12 (3 rounds, zero
+  hallucinations). The anchor is the most leveraged piece of
+  council infrastructure in the repo — three-paragraph file,
+  loaded into every review, every persona gets the same ground
+  truth. Pattern worth naming: "load-bearing preamble," preventing
+  stack hallucination from text-heavy diffs.
+- Docs-PR council iteration discipline held on both follow-ups:
+  PR #12 merged after round 3 of Proceed and PR #13 merged after
+  round 3 (one Revise → round 3 Proceed) rather than chasing
+  round-4+ rotating score-9 refinements from the bugs persona.
+  Validates the Phase-2 IMPROVE note ("merge after 3 rounds max
+  on docs-only PRs") a second and third time.
+- Plan-first, council-gated, human-approved, then execute — all
+  four Phase-3 milestones landed with this discipline and zero
+  incidents. The prime directive is load-bearing, not ceremonial.
+- Four prompt-hardening passes on PR #12's `ingest-large-agent.md`
+  (double-sided sentinel escape + URL scheme guard + `---`
+  body-line handling + invalid-subagent-output critical failure +
+  ASCII-only frontmatter + NUL-byte stripping + empty-section
+  placeholder) demonstrate defense-in-depth at the prompt layer
+  for surfaces where the parser is the hard backstop. The repo's
+  convention of "prompt is soft defense; parser is hard defense"
+  scales.
+- Codex P2 inline review on PR #13 rev 1 caught two concrete
+  plan-accuracy bugs council's round-1 reviewers missed:
+  required-vs-optional SRS field confusion, and a wrong
+  parser-error-category name. Gemini council reviews the
+  architectural shape; Codex reviews the specific token-level
+  claims. Both are complementary; running both on institutional-
+  knowledge PRs is worth the review latency.
+- The Import view's delimiter format is now documented in BOTH
+  `docs/data_schemas.md` (contract, post-PR-#13) and
+  `_prompts/ingest-large-agent.md` (producer instructions) — the
+  right redundancy. Future agents discover the spec whether they
+  start from schema-hunting or prompt-hunting.
+
+### IMPROVE
+- The M2 plan committed to adding a "Prompt template frontmatter"
+  section to `docs/data_schemas.md` and the M3 plan committed to
+  documenting the delimiter spec there. Neither landed with the
+  milestone it belonged to. Both landed in PR #13 as part of the
+  docs-currency sweep, which is how these kinds of deferred-
+  schema-doc deliverables typically close, but the cleaner
+  pattern is to include schema-doc edits in the originating
+  milestone's "Execution order" checklist so they cannot slip
+  silently. Fold "schema doc updated" into the pre-merge
+  checklist for any PR that adds a new parseable format.
+- The architecture persona (`.harness/council/architecture.md`)
+  was written in Phase 1 against the then-proposed `srs.csv`
+  storage model. Phase 2c switched to one-file-per-card YAML
+  (correctly reflected in `repo_context.md`) but the persona was
+  never updated. Persona drift is a compounding blast-radius bug
+  — every future architecture-axis review runs against a wrong
+  mental model. Fixed in PR #13 Edit 1. Lesson: when the stack
+  changes, persona files are first-class update targets, not
+  optional polish. Add a persona-currency check to the pre-merge
+  checklist for any PR that touches the storage layer, routing
+  layer, or schema.
+- Docs-gap debt from a code-focused milestone is predictable:
+  when the agent is heads-down on code + tests + security, the
+  producer-side prompt and user-facing README typically slip. We
+  closed M3's docs gap as a dedicated follow-up PR (#12) rather
+  than fold it into PR #11. That worked but introduced a session
+  gap where the feature was unreachable end-to-end. Next time a
+  code-bearing milestone ships a new producer/consumer pair, try
+  carving the producer-side prompt and user-facing README into
+  the SAME PR as the consumer-side parser. If that's too much
+  PR scope, explicitly frame the docs PR as the milestone's
+  closing deliverable (not as a next-session task) so no ship
+  lag exists.
+- The `tests/prompts.test.js` expected-files list was hard-coded.
+  Every new prompt file required a one-line mechanical update.
+  Council round-1 on PR #13 asked that the fix land in that PR
+  rather than get deferred — a deferred test-hygiene IMPROVE
+  becomes a trap for the next prompt author. Addressed as Edit 6
+  of PR #13 with a Vitest snapshot test (council round-2 blocked
+  an earlier `files.length >= 1` approach as a coverage
+  regression). Lesson for future PRs: when the reflection
+  identifies a concrete test-hygiene issue, fold the fix into
+  the same PR unless there is a specific reason it can't land.
+  "Deferred to follow-up" is not free — it creates trap-ness
+  that accumulates across sessions.
+- Codex bot review does not auto-re-review on push. PR #13 Codex
+  P2 comments were against plan rev 1; rev 2 addressed them but
+  Codex never re-reviewed, leaving the P2 badges visible on
+  stale content. Low-cost mitigation: drop a "@codex review"
+  comment after a significant plan revision, or accept that
+  Codex is effectively a one-shot reviewer at PR-open time.
+
+### INSIGHT
+- Council persona compounding-leverage asymmetry. A single
+  persona file defines the lens every future architecture-axis
+  review uses. One wrong line (e.g., "CSV schema stability")
+  propagates into thousands of future decisions. Compare to a
+  single wrong line in a README, which is discoverable to one
+  user at one moment. The persona files deserve the same
+  editorial discipline as schema contracts — arguably more,
+  because schema contracts have tests guarding them and persona
+  contracts do not.
+- Bugs-persona rotating refinements on docs PRs follow a
+  pattern: round N finds category X (encoding, escaping,
+  error-handling), round N+1 finds category Y, round N+2 finds
+  category Z. Each is individually defensible; collectively
+  they're a bucket-brigade of nice-to-haves. The kill-round
+  policy is the right response — not because the bugs persona
+  is wrong but because marginal defense-in-depth at round 4
+  costs more than the defense is worth on docs content. The
+  persona is working as intended; the rate-limiter lives at the
+  human-approval layer.
+- The repo-context anchor's design pattern — a short,
+  authoritative "this is the stack" preamble injected into every
+  LLM call that reviews the code — generalizes to other meta-AI
+  tools in other repos. Worth naming: the pattern is
+  "load-bearing preamble" and the failure mode it prevents is
+  "stack hallucination from text-heavy diffs." Useful to port
+  if/when this harness is reused.
+- Single-user anti-scope discipline survived four milestones of
+  pressure from the product persona. Every milestone saw
+  product-persona probing for "team," "shared," or "multi-user"
+  surface area; every milestone held the line. Explicit
+  anti-scope in CLAUDE.md + plan bodies works when the human is
+  disciplined about re-affirming it during council reviews.
+- Complementary review systems catch different classes of bug.
+  Council (Gemini, architectural critique) + Codex (OpenAI,
+  token-level accuracy check) caught strictly disjoint issues on
+  PR #13: council caught the test-coverage regression and the
+  parser-vs-validation contract gap; Codex caught the wrong
+  required-fields list and the wrong error-category name. Each
+  missed what the other caught. The cost of running both is
+  lower than the cost of shipping either class of bug into
+  institutional knowledge.
+
+### COUNCIL
+- PR #7 (M1) round 1: product persona (score 2 / blocker) vetoed
+  "team / shared corpus" framing as anti-scope violation.
+  Reframe to "single-user personal reference corpus" was the
+  right response. Product-persona as anti-scope guardian is
+  working.
+- PR #9 (M2) round 1: council hallucinated a Vue / pnpm /
+  `src/lib/` stack against a pure-markdown diff. Override-merged
+  on evidence; root-cause-fixed in PR #10 via the repo-context
+  anchor. The `override council:` escape hatch is reserved for
+  exactly this class of failure and should not be expanded.
+- PR #11 (M3) rounds 1–13: 11 Proceed, 2 Revise, zero
+  hallucinations. Rev 2 Revise caught collision-check staleness
+  (pre-commit rescan added). Rev 12 Revise caught serializer
+  newline-safety edge cases. Both were legitimate catches that a
+  scoped anchor could not preempt.
+- PR #12 (docs-gap) rounds 1–3: all Proceed, zero
+  non-negotiables, bugs-persona rotated score-9 items each
+  round. Validated the 3-round-kill heuristic on docs PRs.
+- PR #13 (docs-currency + reflection) rounds 1–3: Proceed /
+  Revise / Proceed. Round-2 Revise was a real test-coverage
+  regression blocker (council caught a concrete bug I
+  introduced in rev 2). Round-3 rotated to low-priority
+  nice-to-haves. Merged after round 3.
+
+**Counter to Phase 2 note on test extraction from `index.html`:**
+the Phase 2 IMPROVE proposed extracting modules from
+`index.html` to shared `.js` files if the file grew much
+larger. `index.html` is now 5,885 lines (Phase 3 M3 added ~1,000
+lines). The test-extract-via-eval pattern still holds; no
+extraction has been necessary. The note's threshold ("if
+`index.html` grows much larger") has been crossed and the
+extraction was still not the right call. **Revised trigger:**
+revisit extraction if — and only if — tests fail on changes
+that don't touch the code they cover (e.g., a Prettier-reformat
+of unrelated `index.html` code breaks an unrelated test's
+eval-parse step), and the failure happens more than once per
+milestone. File-length alone is not a sufficient trigger;
+brittleness — measured as failure correlation with unrelated
+edits — is. As of this session, that threshold has not been
+crossed; keep the eval-extract pattern.
+
+**Counter to Phase 2c note on council-round budgets:** the
+Phase 2c IMPROVE observed that code-heavy milestones run
+longer than "3-5 rounds" and recommended budgeting 2-3 fix-up
+rounds separately. PR #13's 3-round close (including one
+Revise-and-fix) confirms that docs-only PRs can still hit the
+3-round heuristic with a Revise folded in, provided the Revise
+is a specific, scoped blocker rather than a general concern.
+Keep the 3-round docs heuristic; keep the Phase-2c observation
+that code PRs budget separately for fix-up rounds.
