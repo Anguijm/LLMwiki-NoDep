@@ -1,6 +1,10 @@
 # Council
 
-Each `*.md` file in this directory (other than this README and `lead-architect.md`) defines a reviewer persona. The Gemini runner (`../scripts/council.py`) dispatches them in parallel and then runs the Lead Architect synthesis.
+Each `*.md` file in this directory (other than this README, `lead-architect.md`, and `repo_context.md`) defines a reviewer persona. The Gemini runner (`../scripts/council.py`) dispatches them in parallel and then runs the Lead Architect synthesis.
+
+## Repo-context anchor
+
+`repo_context.md` is injected as preamble into every persona prompt and the Lead Architect synthesis prompt. It asserts the actual stack / file layout / anti-scope of this repo so personas do not hallucinate (e.g., inferring a Vue + pnpm + `src/lib/` codebase on text-heavy diffs). Update this file whenever the stack materially changes; it is itself council-gated institutional knowledge.
 
 ## Active angles
 
