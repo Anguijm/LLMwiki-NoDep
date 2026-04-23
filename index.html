@@ -2951,11 +2951,22 @@
               throw verifyErr;
             }
 
-            // Step 4: Clean up temp file (only after verified-successful write)
+            // Step 4: Clean up temp file (only after verified-successful write).
+            // Log failures via console.error so an orphan .tmp after an
+            // otherwise-successful write isn't silent. The write is still
+            // treated as successful (caller sees no error), but the cleanup
+            // miss is visible for debugging. [council rev 13 — bugs: surface
+            // silent .tmp cleanup failures.]
             try {
               await dirHandle.removeEntry(tmpName);
             } catch (e) {
-              /* orphan — cleaned on next scan */
+              console.error(
+                '_atomicWrite: post-write cleanup of ' +
+                  tmpName +
+                  ' failed (' +
+                  (e && e.name ? e.name : 'Error') +
+                  '); orphan will be collected on next scan'
+              );
             }
           } catch (outerErr) {
             // Ensure temp writable is closed if step 1 failed mid-write

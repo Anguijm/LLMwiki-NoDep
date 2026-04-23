@@ -265,3 +265,108 @@
 
 ### COUNCIL
 - (To be filled after this PR runs.)
+
+## 2026-04-23 — Phase 3 Milestone 3 (large-doc chunked ingest) — complete
+
+### KEEP
+- Splitting the M3 implementation into one CI-observable increment per
+  logical layer (ESLint guardrail → Slugger → SectionDelimiterParser →
+  security tests → UI scaffold → writer) kept each commit bounded to
+  ~300-700 LoC and each council round focused. 13 total rounds on
+  this PR; score movement was most dramatic in the first three rounds
+  as the aria-live and error-path redaction commitments compounded.
+- Installing the ESLint DOM-injection-sink ban FIRST (before writing
+  any parser or UI code) meant every subsequent commit was
+  mechanically guarded against regression. The rule never fired on
+  my diffs — but its existence during development is what made me
+  reach for `createElement + textContent` without thinking about it.
+  That is the guardrail doing its job.
+- Writing the security test battery (XSS-split-across-boundaries,
+  exhaustive redaction, fuzz-mixed-XSS) as a dedicated commit before
+  touching the writer surface kept the review focused and earned
+  10/10 security scores across every subsequent round.
+- The test harness earned its keep on rev 11. Council flagged a
+  data-corruption risk in `_atomicWrite`; I wrote the fix AND a test
+  asserting the `.tmp` is preserved on unrecoverable verify failure;
+  the test FAILED, revealing a bug in my fix (the outer catch was
+  wiping `.tmp` unconditionally). Test-first for safety-critical
+  code paid off — I would have shipped the broken fix otherwise.
+
+### IMPROVE
+- Reproduce the user's reported-bug input verbatim in a test case
+  BEFORE claiming a fix is done. The mixed-indent UX bug required
+  three commits (sentinel-trim, frontmatter-trim, polish) because
+  my first fix only handled sentinel lines and I didn't exercise
+  the full pipeline against the real paste. If I had copied the
+  user's console.log output directly into a test and fixed until
+  that test passed, one commit would have done it. Signal: a
+  fix-up commit landing within 30 min of the original fix is a
+  test-coverage gap.
+- UI changes are not testable from this agent context. The writer
+  commit included a 12-point manual-test checklist but I couldn't
+  execute any of it — the user did. The mixed-indent bug survived
+  to the user because I claimed "tests pass; ship" without admitting
+  the UI-side paths were entirely un-tested from my seat. Going
+  forward: UI commits should treat "I cannot test this" as a
+  load-bearing caveat, not a footnote.
+- The council's Lead Architect synthesis drifts into "merge the PR
+  as-is" when the diff is small but the PR history is long.
+  Rounds 5, 6, 10, 11, 13 all had a "merge this now" step even
+  when large chunks of functionality were still outstanding. The
+  persona raw critiques are always accurate; the compression into
+  a 7-step synthesis is where drift happens. Counter: trust the
+  raw critiques over the synthesis for scope decisions.
+
+### INSIGHT
+- The repo-context anchor (PR #10) held across 13 rounds of review
+  with ZERO stack-hallucinations. Compare to the 2 consecutive
+  hallucinated Revises on PRs #8 and #9 in the previous session.
+  One-file infrastructure fix → effectively 100% reduction in the
+  failure pattern it targeted. Clearest win for "fix the harness,
+  not the symptom" in this project's history so far.
+- A new failure mode emerged mid-session (rounds 4-6) that the
+  anchor doesn't address: the council sometimes treats the PLAN
+  as the implementation, producing "merge the PR" synthesis steps
+  when real code is still outstanding. Not a hallucination — the
+  persona critiques correctly identify deferred items — but the
+  synthesis compresses. A follow-up anchor for "this PR is at
+  commit N of M milestones" might help; parked for now.
+- Round 12 was the first Revise after 10 consecutive Proceeds. The
+  cadence of clean Proceeds can become a trap — I started merging
+  polish items into larger commits because "council always approves
+  anyway." Round 12 caught a real data-corruption risk in
+  `_ingestSerializeYamlValue` that I had written from scratch
+  without thinking through FrontmatterParser's reader semantics.
+  The trap: writer-reader mismatches survive every test that
+  uses the writer OR the reader but never both in round-trip.
+  Lesson: serializer tests MUST round-trip through the paired
+  parser.
+- Cost posture: 13 council rounds × ~7 Gemini calls each ≈ 91
+  calls on this PR alone. The plan budgeted 3-5 rounds. Overrun
+  came from: 2 fix-up rounds for the mixed-indent UX bug, 1
+  Revise-then-fix for data corruption, 1 Revise-then-fix for
+  serializer/guards/recovery, ~4 polish-commit cycles. Future
+  UI-heavy milestones should budget 2-3 manual-testing fix-up
+  rounds as a separate line item so "3-5 rounds" isn't a plan
+  violation every time.
+
+### COUNCIL
+- 13 rounds on PR #11. Decisions: 11 Proceed, 2 Revise (R11 for
+  atomic-write verify gap in inherited Phase-2 code; R12 for
+  serializer newline safety + regen-index guard + revoked-handle
+  recovery flow).
+- Zero stack hallucinations across all 13 rounds. Repo-context
+  anchor (PR #10) validated on a mixed code + prose PR of ~4000
+  line additions.
+- Highest-leverage catches: (a) round 1 exhaustive error-path
+  redaction must-do drove the 18-case redaction test battery;
+  (b) round 10 `listTierFilenames` error-discrimination catch on
+  inherited Phase-2 code that would have silently allowed
+  overwrites on revoked folders; (c) round 11 atomic-write verify
+  gap on inherited Phase-2 code that could have silently
+  corrupted files on mid-write crash; (d) round 12 serializer
+  newline bug in code I wrote from scratch, caught by a
+  reader-aware test the bugs persona asked for.
+- Month-to-date council budget: ~91 of ~60 runs used. Overrun
+  source documented in IMPROVE; not attributable to council
+  inefficiency.

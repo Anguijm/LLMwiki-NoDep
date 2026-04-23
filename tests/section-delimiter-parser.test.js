@@ -406,6 +406,49 @@ describe('SectionDelimiterParser.parse — encoding and line endings', () => {
     expect(result.sections).toHaveLength(1);
   });
 
+  it('handles mixed line endings within a single paste (CRLF + LF + CR)', () => {
+    // Some chat clients (and some copy/paste paths on Windows) produce
+    // pastes where parts of the input use CRLF and other parts use LF.
+    // The two-step normalization — replace(\r\n, \n) then replace(\r, \n) —
+    // handles all combinations. Test pins that behavior end-to-end.
+    const input =
+      '<<<LLMWIKI-SECTION:mixed>>>\r\n' +
+      '---\n' +
+      'title: Mixed Endings\r' +
+      'tier: warm\n' +
+      '---\r\n' +
+      '\n' +
+      'body line one\r\n' +
+      'body line two\n' +
+      '<<<LLMWIKI-SECTION-END:mixed>>>';
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.stats.lineEndingsNormalized).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(1);
+    expect(result.sections[0].frontmatter.title).toBe('Mixed Endings');
+  });
+
+  it('handles mixed leading whitespace (tabs on some lines, spaces on others)', () => {
+    // Dedent uses character-wise common-prefix, so a tab and a space are
+    // different characters and the common prefix is zero. The per-line
+    // whitespace-tolerance in sentinel + frontmatter detection is what
+    // makes this parse correctly — dedent itself does nothing here.
+    const input = [
+      '\t<<<LLMWIKI-SECTION:mixedws>>>',
+      '  ---',
+      '\ttitle: Mixed Whitespace',
+      '  tier: warm',
+      '\t---',
+      '',
+      '  body content',
+      '\t<<<LLMWIKI-SECTION-END:mixedws>>>',
+    ].join('\n');
+    const result = SectionDelimiterParser.parse(input);
+    expect(result.valid).toBe(true);
+    expect(result.sections).toHaveLength(1);
+    expect(result.sections[0].frontmatter.title).toBe('Mixed Whitespace');
+  });
+
   it('preserves frontmatter keys that shadow Object.prototype properties', () => {
     // Guards the serializer's use of `Object.prototype.hasOwnProperty.call`
     // plus the parser's direct `result[key] = ...` semantics. A key like
