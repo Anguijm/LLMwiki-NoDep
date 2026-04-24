@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
   "active_plan": null,
-  "focus_area": "phase-3-complete",
+  "focus_area": "phase-3-fully-closed",
   "approval_state": "idle",
   "last_council": {
-    "source": "PR #12 round 3",
-    "decision": "Proceed (round 3; all three rounds Proceed)",
-    "scores": { "accessibility": 10, "architecture": 10, "bugs": 9, "cost": 10, "product": 10, "security": 10 },
-    "run_at": "2026-04-23T18:42:04Z"
+    "source": "PR #13 round 4",
+    "decision": "Proceed (round 4; final of 4 rounds, all non-blocker verdicts: Proceed/Revise/Proceed/Proceed)",
+    "scores": { "accessibility": 10, "architecture": 10, "bugs": 9, "cost": 10, "product": 9, "security": 10 },
+    "run_at": "2026-04-23T21:57:42Z"
   },
   "last_commit": {
-    "hash": "e0d2adf",
-    "short": "e0d2adf",
-    "subject": "feat(prompts): Phase 3 M3 docs-gap — ingest-large-agent template + Import-view how-to (#12)",
+    "hash": "3ab7bc9",
+    "short": "3ab7bc9",
+    "subject": "chore: session close — Phase 3 docs-currency sweep + reflection (#13)",
     "author": "GitHub <noreply@github.com>",
     "branch": "main",
-    "committed_at": "2026-04-23T18:58:29+00:00",
-    "files_changed": 5
+    "committed_at": "2026-04-23T21:59:00+00:00",
+    "files_changed": 8
   },
-  "notes": "PR #12 merged via squash. Closes M3 producer-side documentation gap from PR #11. Shipped: _prompts/ingest-large-agent.md (agent-only template, main + 4 subagents), _prompts/README.md table update, README.md How-to-import-a-large-document section + 3 troubleshooting entries, tests/prompts.test.js expected-files list update. Council: 3 rounds, all Proceed, zero non-negotiables. Four prompt-hardening passes folded in across rounds (double-sided sentinel escape + URL scheme guard, --- body-line handling + critical-failure reporting, ASCII-only frontmatter punctuation + NUL-byte stripping + graceful empty-section placeholder). Merged after round 3 per docs-PR diminishing-returns discipline. Session-close reflection (.harness/learnings.md append) not yet landed — deferred to follow-up session-close PR per council-gating requirement on institutional-knowledge content."
+  "notes": "PR #13 merged via squash. Closes Phase 3 fully — docs-currency sweep + Phase 3 session-close reflection. Shipped: .harness/council/architecture.md (srs.csv → per-card YAML across 5 lines), docs/data_schemas.md (+113 lines: multi-section delimiter spec + parser/validation contract boundary + prompt-template frontmatter spec), CONTRIBUTING.md (3 CSV refs → YAML), README.md (prompts table expanded 5 chat-only → 11 chat×agent×agent-only with frontmatter-verified budgets), .harness/learnings.md (+189 lines: Phase 3 reflection covering M1/M2/M3/docs-gap), tests/prompts.test.js (glob + snapshot + non-recursive test; committed snapshot at tests/__snapshots__/prompts.test.js.snap). Council: 4 rounds (Proceed/Revise/Proceed/Proceed), zero non-negotiables. Round-2 Revise caught a real test-coverage regression I introduced in an earlier Edit 6 design — council infrastructure working as intended. Codex inline review on rev 1 caught two concrete plan-accuracy bugs (required-vs-optional SRS fields, wrong parse-error category); folded in rev 2. Test posture: 188 tests pass (187 → 188 net +1 after Edit 6 refactor). Phase 3 is now fully closed end-to-end: code + prompts + user-facing docs + institutional-knowledge docs + reflection. Repo is in a graceful-handoff state."
 }
