@@ -14,11 +14,21 @@
  * fires at build time rather than at real use.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
 
 const promptsDir = resolve(import.meta.dirname, '..', '_prompts');
 
+/**
+ * Glob-discover every non-README `.md` file under `/_prompts/` (non-recursive).
+ *
+ * Every discovered file is automatically subject to the mode + framing-position
+ * checks below; adding a prompt file adds test cases automatically. The snapshot
+ * test `'discovered prompt-file set matches snapshot'` asserts the discovered
+ * set itself — additions or deletions require a deliberate `npm test -- -u` to
+ * regenerate the snapshot, which is then committed alongside the prompt change
+ * as an intentional record.
+ */
 function listPromptFiles() {
   return readdirSync(promptsDir)
     .filter((name) => name.endsWith('.md'))
@@ -92,23 +102,17 @@ const FRAMING_PHRASE_B = 'ignore previous instructions';
 describe('/_prompts/ frontmatter discipline', () => {
   const files = listPromptFiles();
 
-  it('finds at least the expected prompt files', () => {
+  it('discovered prompt-file set matches snapshot', () => {
     const names = files.map((f) => f.name).sort();
-    expect(names).toEqual(
-      [
-        'flashcards-agent.md',
-        'flashcards.md',
-        'gap-analysis-agent.md',
-        'gap-analysis.md',
-        'ingest-agent.md',
-        'ingest-large-agent.md',
-        'ingest.md',
-        'linker-agent.md',
-        'linker.md',
-        'review-packet-agent.md',
-        'review-packet.md',
-      ].sort()
-    );
+    expect(names).toMatchSnapshot();
+  });
+
+  it('discovery is non-recursive — every discovered entry is a regular file', () => {
+    for (const f of files) {
+      const stat = statSync(f.path);
+      expect(stat.isFile(), `${f.name} is not a regular file`).toBe(true);
+      expect(stat.isDirectory(), `${f.name} unexpectedly resolved to a directory`).toBe(false);
+    }
   });
 
   for (const f of files) {

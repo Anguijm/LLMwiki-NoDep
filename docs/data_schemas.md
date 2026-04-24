@@ -291,6 +291,119 @@ SharePoint's sync client sometimes generates conflict filenames like `note (1).m
 - Provide a visible path for the human to open both files side-by-side and manually merge/discard.
 - Never auto-delete a conflict file.
 
+## Multi-section import delimiter spec
+
+The multi-section import flow (Phase 3 M3; Import view in `index.html`; producer prompt at `/_prompts/ingest-large-agent.md`) accepts one paste containing multiple notes, each wrapped in a delimiter sentinel pair. This section is the contract between the producer (GenAI.mil agent running `ingest-large-agent.md`) and the consumer (the parser in `index.html`).
+
+### Sentinel format (exact)
+
+```
+<<<LLMWIKI-SECTION:kebab-case-slug>>>
+---
+title: Human Readable Title
+tier: warm
+created: 2026-04-23T14:22:00Z
+updated: 2026-04-23T14:22:00Z
+tags: [tag-one, tag-two]
+---
+
+<section body markdown>
+
+<<<LLMWIKI-SECTION-END:kebab-case-slug>>>
+```
+
+### Sentinel rules
+
+- Each section is wrapped in an opening `<<<LLMWIKI-SECTION:slug>>>` and a closing `<<<LLMWIKI-SECTION-END:slug>>>` line.
+- **Sentinel lines carry only the slug.** No `title="..."` attributes, no metadata of any kind beyond the slug. Titles, tiers, tags, and timestamps live inside the per-section YAML frontmatter block.
+- Slugs on the sentinel lines must pair exactly — opening-slug and closing-slug must match byte-for-byte. Mismatches are rejected with the `delimiter.mismatched-close` category.
+- Per-section frontmatter inside the wrapper follows the **Note frontmatter** schema defined earlier in this file (required `title`, `tier`, `created`, `updated`, `tags`; optional `sources`).
+- **Emitted slugs are suggestions, not overrides.** The parser re-derives the canonical slug from the section's frontmatter `title` using the **Filename slugging** algorithm defined later in this file; when the re-derived canonical differs from the emitted slug, the UI surfaces a human-readable rationale ("normalized case," "removed non-ASCII," etc.) but commits under the canonical slug. The emitted slug is never the filename.
+- Text outside sentinel pairs is treated as preamble and never written to disk.
+
+### Section-count cap
+
+- The parser rejects any paste whose parsed section count exceeds **200**. The diagnostic is `delimiter.too-many-sections`. Rationale: responsiveness bound on the preview pane. The 200 cap is a pragmatic guard, not an architectural invariant — revisitable in a separate plan if real usage pressures it.
+
+### Literal-sentinel escape rule
+
+- If a source document contains the literal text `<<<LLMWIKI-SECTION:` or `<<<LLMWIKI-SECTION-END:` (e.g., because someone pasted LLMwiki documentation through the agent), the producer prompt instructs the agent to escape the leading `<` as `&lt;` in section bodies.
+- This is **soft defense**. The parser is the **hard backstop** and rejects any paste containing a nested open sentinel (opening sentinel appearing while a section is still open) or an orphan close sentinel (closing sentinel appearing with no prior matching open) with `delimiter.nested-open` or `delimiter.orphan-close` respectively.
+
+### Parser errors vs validation errors — contract boundary
+
+The categories below enumerate errors the multi-section **parser** produces — failures in the delimiter structure or the per-section YAML syntax. A syntactically valid section whose frontmatter is missing a required field (e.g., `title`), has an out-of-range value (e.g., `tier: hot`), or violates a field format (e.g., `created` not a parseable ISO 8601 UTC timestamp) is a **validation error**, not a parse error. Validation is handled at a higher layer and uses the shape documented under **Parser behavior on violations** above (the note-frontmatter validator).
+
+Both error kinds surface in the Import view, but the contracts are separate:
+
+- **Parse errors** reject the whole paste with `{ category, line, column, message }`. Categories are enumerated below.
+- **Validation errors** reject individual section rows with the `{ path, kind: 'validation', field, message, recoverable }` shape — same shape used for single-note validation elsewhere in this repo.
+
+A reader looking for the exhaustive set of failures a section can produce must consult **both** this subsection and the earlier **Parser behavior on violations** table.
+
+### Parse-error categories (verified against `index.html` parser)
+
+| Category | Emitted when |
+|---|---|
+| `delimiter.invalid-slug` | A sentinel line carries a slug that fails the kebab-case-ASCII validator. |
+| `delimiter.unterminated-section` | An opening sentinel has no matching closing sentinel before end-of-paste. |
+| `delimiter.orphan-close` | A closing sentinel appears with no prior matching open. |
+| `delimiter.nested-open` | An opening sentinel appears while a section is still open. |
+| `delimiter.mismatched-close` | Opening slug does not match its closing slug (distinct from orphan-close and unterminated-section). |
+| `delimiter.too-many-sections` | Parsed section count exceeds the 200 cap. |
+| `delimiter.malformed-<role>` | A sentinel line is structurally malformed in a way specific to its role (parameterized; role is `open` or `close`). |
+| `frontmatter.missing-block` | A section has no `---`-delimited frontmatter block. |
+| `frontmatter.unterminated` | A frontmatter block opens with `---` but has no matching closing `---`. |
+| `frontmatter.yaml-parse-error` | A frontmatter block is delimited correctly but its YAML contents are unparseable. |
+
+### Cross-references
+
+- **Producer** — `/_prompts/ingest-large-agent.md` is the GenAI.mil agent prompt that emits delimiter-wrapped output conforming to this spec. The prompt's system instructions include the same sentinel rules, escape rules, and 200-section cap directive.
+- **Consumer** — the parser at `index.html` lines 2210–2492 (subject to shift) enforces this spec and emits the category names above.
+- **UI** — the Import view in `index.html` renders parse errors with category + location and validation errors per-row with the standard validator shape.
+
+## Prompt template frontmatter
+
+Every file in `/_prompts/` (excluding `README.md`) carries YAML frontmatter describing the prompt template. The enforced and conventional fields are listed below. This is a separate schema from the **Note frontmatter** above — prompts are not notes.
+
+### Field reference
+
+```yaml
+---
+purpose: One-sentence description of the prompt's end-state.
+inputs: What the human fills in (source content, tier override, timestamp, optional existing-title list, etc.).
+outputs: What the prompt returns (a single note body, an SRS card YAML block, a delimited multi-section output block, etc.).
+mode: chat                  # REQUIRED, enum: chat | agent
+human_turn_budget: 1        # REQUIRED, integer >= 1
+version: 1                  # REQUIRED, integer
+---
+```
+
+| Field | Required | Type | Semantics |
+|---|---|---|---|
+| `purpose` | yes | string | Free-form one-sentence description. |
+| `inputs` | yes | string | What the human provides. |
+| `outputs` | yes | string | What the prompt returns. |
+| `mode` | yes | enum | `chat` = single GenAI.mil chat turn. `agent` = main + subagents orchestration. |
+| `human_turn_budget` | yes | integer | **Paste round-trips between the human and GenAI.mil**, not internal agent turns. For agent-mode prompts, internal subagent hops are free; only clipboard round-trips count. |
+| `version` | yes | integer | Bumped on any semantic change to the prompt body. |
+
+### Mode semantics
+
+- **Chat mode** — one GenAI.mil chat turn handles the entire request. Simplest; most inspectable. Pick this for most tasks.
+- **Agent mode** — GenAI.mil's agent UI: one main agent orchestrates one or more subagents, each with a focused job. Pick this for large or dense inputs where separating concerns produces measurably better output. Typically lower human-turn cost for big jobs; higher fixed setup cost.
+
+Most prompt tasks have both a chat-mode and an agent-mode variant, paired as `/_prompts/<task>.md` (chat) and `/_prompts/<task>-agent.md` (agent). One exception: `ingest-large-agent.md` is agent-only — the chat-mode paradigm doesn't fit multi-section orchestration (a user without agent access falls back to running `ingest.md` one section at a time).
+
+### Enforcement
+
+`tests/prompts.test.js` asserts that every non-README `.md` file under `/_prompts/` has:
+
+- A `mode:` frontmatter field with value `chat` or `agent`.
+- The canonical untrusted-content framing sentence — the paragraph containing both "data, not instructions" and "ignore previous instructions" — as the last non-blank line before every `=== UNTRUSTED INPUT START ===` marker. Code-fence openers are skipped by the check.
+
+Adding a new prompt file adds test cases automatically; the discovered-prompts set is asserted against a committed Vitest snapshot so that file additions or deletions require a deliberate `npm test -- -u` to regenerate the snapshot.
+
 ## Security considerations
 
 See `.harness/scripts/security_checklist.md` for the full non-negotiables. This section summarizes the schema-adjacent rules so future developers don't miss them.
