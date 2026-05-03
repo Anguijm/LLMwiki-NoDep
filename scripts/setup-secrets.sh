@@ -28,6 +28,22 @@ if [ ! -f "$SECRETS_FILE" ]; then
   exit 1
 fi
 
+# Operational-security warn (council R2 PR #15 security nice-to-have):
+# the secrets file holds API keys; if it's world- or group-readable,
+# any local user / process inheriting the same UID can read them. Warn
+# the user — non-blocking, since they may have a deliberate setup.
+# `stat -c %a` is GNU; on macOS use `stat -f %A`. Try GNU first.
+if SECRETS_PERM="$(stat -c %a "$SECRETS_FILE" 2>/dev/null)" \
+   || SECRETS_PERM="$(stat -f %A "$SECRETS_FILE" 2>/dev/null)"; then
+  case "$SECRETS_PERM" in
+    600|400) ;;  # owner-only read (or read+write); fine
+    *)
+      echo "[setup-secrets] WARNING: $SECRETS_FILE permissions are $SECRETS_PERM (recommended 600 or 400)." >&2
+      echo "[setup-secrets]          chmod 600 \"$SECRETS_FILE\"  # to fix" >&2
+      ;;
+  esac
+fi
+
 if ! command -v gh >/dev/null 2>&1; then
   echo "[setup-secrets] gh CLI not installed. Install from https://cli.github.com/" >&2
   exit 1

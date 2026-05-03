@@ -59,6 +59,15 @@ permissions:
 jobs:
   drift:
     runs-on: ubuntu-latest
+    # 5 min is generous for a job that should take < 1 min on a normal run
+    # (`actions/checkout` × 2 + `setup-node` + `npm ci` + a single
+    # `harness check` invocation). The timeout guards against:
+    #   - npm registry slowness or transient outage during `npm ci`
+    #   - GitHub clone slowness when fetching the harness-cli repo
+    #   - a future regression in `harness check` that hangs (e.g., on a
+    #     symlinked path or pathological glob)
+    # If you see runs hitting this ceiling, the right fix is usually
+    # caching `node_modules` rather than raising the timeout.
     timeout-minutes: 5
     steps:
       - name: Checkout this repo
