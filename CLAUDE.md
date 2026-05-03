@@ -146,6 +146,13 @@ A plan that breaks any of these constraints is architecturally unsound for this 
 4. **Open `index.html` from `file://` in Edge (or a chromium-based browser) and exercise the touched feature manually.** Confirm the golden path works; spot-check one edge case. Type checking and unit tests verify code correctness, not feature correctness.
 5. Conventional-commit message.
 
+## Hook timeouts (`.claude/settings.json`)
+
+JSON doesn't allow inline comments, so the rationale for the two configured hook timeouts lives here:
+
+- **`SessionStart` hook timeout: 10s.** Runs `.claude/hooks/session-start.sh`, which prints last-commit / halt-status / active-plan / last-council-verdict at session start. Typical run < 2s (just local file reads + `git log`). **Failure mode if exceeded:** the hook is killed and Claude proceeds without the session-start context — the cost is missing the halt warning or active-plan reminder, which is annoying but not unsafe. If you find this timing out regularly, optimize the hook script rather than raising the timeout.
+- **`PreToolUse` (Bash) hook timeout: 15s.** Runs `.claude/hooks/check-branch-not-merged.sh` before any Bash tool call. The check involves `git fetch origin main`, which can be slow on poor networks. **Failure mode if exceeded:** the hook fails OPEN and the push is allowed. **This is by design** — `check-branch-not-merged.sh` is a **best-effort developer guardrail, not a security gate**. The hard merge-discipline gates are PR review + the council + `branch-guard.yml`. The pre-push hook just catches the common "I'm on a stale branch" mistake earlier than the council would. If you need stricter behavior, swap to fail-closed in the hook itself, but be ready for hooks to refuse pushes on flaky networks.
+
 ## References
 
 - `.harness/README.md` — one-time setup and file map.
